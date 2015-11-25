@@ -22,7 +22,6 @@ abstract class Module extends Command
         );
         $this->addOption('directory', 'd', InputOption::VALUE_REQUIRED, 'Module directory');
         $this->addOption('exclude', 'e', InputOption::VALUE_NONE, "Makes list of modules exclusive instead of inclusive");
-        $this->addOption('push', 'p', InputOption::VALUE_NONE, "Push to git origin if successful");
     }
 
     /**
@@ -57,10 +56,5 @@ abstract class Module extends Command
     protected function getInputExclude()
     {
         return (bool)$this->input->getOption('exclude');
-    }
-
-    protected function getInputPush()
-    {
-        return (bool)$this->input->getOption('push');
     }
 }

@@ -5,6 +5,7 @@ namespace SilverStripe\Cow\Steps\Release;
 use InvalidArgumentException;
 use SilverStripe\Cow\Commands\Command;
 use SilverStripe\Cow\Model\Module;
+use SilverStripe\Cow\Steps\ModuleStep;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 

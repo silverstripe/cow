@@ -3,6 +3,8 @@
 namespace SilverStripe\Cow\Commands\Module;
 
 use SilverStripe\Cow\Steps\Release\UpdateTranslations;
+use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputOption;
 
 /**
  * Description of Create
@@ -17,6 +19,17 @@ class Translate extends Module
     protected $name = 'module:translate';
 
     protected $description = 'Translate your modules';
+    
+    protected function configureOptions()
+    {
+        parent::configureOptions();
+        $this->addOption('push', 'p', InputOption::VALUE_NONE, "Push to git origin if successful");
+    }
+
+    protected function getInputPush()
+    {
+        return (bool)$this->input->getOption('push');
+    }
 
     protected function fire()
     {

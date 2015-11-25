@@ -39,6 +39,7 @@ class Application extends Console\Application
 
         // Module commands
         $commands[] = new Commands\Module\Translate();
+        $commands[] = new Commands\Module\Changelog();
 
         // Branch commands
         $commands[] = new Commands\Branch\Merge();

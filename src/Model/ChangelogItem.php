@@ -151,7 +151,7 @@ class ChangelogItem
         $message = $this->getRawMessage();
 
         // Strip emails
-        $$message = preg_replace('/(<?[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}>?)/mi', '', $message);
+        $message = preg_replace('/(<?[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}>?)/mi', '', $message);
 
         // Condense git-style "From:" messages (remove preceding newline)
         if (preg_match('/^From\:/mi', $message)) {

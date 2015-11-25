@@ -4,6 +4,7 @@ namespace SilverStripe\Cow\Steps\Release;
 
 use SilverStripe\Cow\Commands\Command;
 use SilverStripe\Cow\Model\ReleaseVersion;
+use SilverStripe\Cow\Steps\ModuleStep;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 

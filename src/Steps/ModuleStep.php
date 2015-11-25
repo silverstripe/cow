@@ -1,6 +1,6 @@
 <?php
 
-namespace SilverStripe\Cow\Steps\Release;
+namespace SilverStripe\Cow\Steps;
 
 use SilverStripe\Cow\Commands\Command;
 use SilverStripe\Cow\Model\Module;

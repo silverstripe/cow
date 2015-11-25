@@ -156,6 +156,12 @@ class Module
     {
         $team = $this->getTeam();
         $name = $this->getName();
+        
+        // Use gitlab for cwp repos
+        if(stripos($name, 'cwp') === 0) {
+            return "https://gitlab.cwp.govt.nz/cwp/{$name}/";
+        }
+        
         return "https://github.com/{$team}/silverstripe-{$name}/";
     }
 

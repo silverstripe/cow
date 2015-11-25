@@ -3,6 +3,7 @@
 namespace SilverStripe\Cow\Model;
 
 use Gitonomy\Git\Exception\ReferenceNotFoundException;
+use SilverStripe\Cow\Steps\Step;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
@@ -28,7 +29,7 @@ class Changelog
      * @param array $modules Source of modules to generate changelog from
      * @param ReleaseVersion $fromVersion
      */
-    public function __construct(array $modules, ReleaseVersion $fromVersion)
+    public function __construct(array $modules, ReleaseVersion $fromVersion = null)
     {
         $this->modules = $modules;
         $this->fromVersion = $fromVersion;
@@ -36,17 +37,31 @@ class Changelog
 
     /**
      * Get the list of changes for this module
-     *
+     * 
      * @param OutputInterface $output
      * @param Module $module
+     * @param Step $step
      * @return array
      */
-    protected function getModuleLog(OutputInterface $output, Module $module)
+    protected function getModuleLog(OutputInterface $output, Module $module, Step $step = null)
     {
         $items = array();
-
+        
+        // get version
+        if($this->fromVersion) {
+            $fromVersion = $this->fromVersion->getValue();
+        } else {
+            $helper = $step->getDialogHelper();
+            $fromVersion = $helper->ask(
+                $output,
+                "What version to genererate the changelog from for module ".$module->getName()
+            );
+            if(!$fromVersion) {
+                return $items;
+            }
+        }
+        
         // Get raw log
-        $fromVersion = $this->fromVersion->getValue();
         $range = $fromVersion."..HEAD";
         try {
             $log = $module->getRepository()->getLog($range);
@@ -73,13 +88,14 @@ class Changelog
      * Get all changes grouped by type
      *
      * @param OutputInterface $output
+     * @param Step $step
      * @return array
      */
-    protected function getGroupedChanges(OutputInterface $output)
+    protected function getGroupedChanges(OutputInterface $output, Step $step = null)
     {
         $changes = array();
         foreach ($this->getModules() as $module) {
-            $moduleChanges = $this->getModuleLog($output, $module);
+            $moduleChanges = $this->getModuleLog($output, $module, $step);
             $changes = array_merge($changes, $moduleChanges);
         }
 
@@ -93,24 +109,24 @@ class Changelog
      * @param OutputInterface
      * @return string
      */
-    public function getMarkdown(OutputInterface $output)
+    public function getMarkdown(OutputInterface $output, Step $step = null)
     {
-        $groupedLog = $this->getGroupedChanges($output);
+        $groupedLog = $this->getGroupedChanges($output, $step);
 
         // Convert to string and generate markdown (add list to beginning of each item)
-        $output = "\n\n## Change Log\n";
+        $result = "\n\n## Change Log\n";
         foreach ($groupedLog as $groupName => $commits) {
             if (empty($commits)) {
                 continue;
             }
-
-            $output .= "\n### $groupName\n\n";
+            
+            $result .= "\n### $groupName\n\n";
             foreach ($commits as $commit) {
-                $output .= $commit->getMarkdown();
+                $result .= $commit->getMarkdown();
             }
         }
 
-        return $output;
+        return $result;
     }
 
     /**
