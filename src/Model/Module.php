@@ -140,8 +140,15 @@ class Module
     public function getTeam()
     {
         switch ($this->name) {
+            case 'queuedjobs':
+            case 'advancedworkflow':
+                return 'silverstripe-australia';
+            case 'fulltextsearch':
             case 'reports':
+            case 'tagfield':
                 return 'silverstripe-labs';
+            case 'gridfield-bulk-editing-tools':
+                return 'colymba';
             default:
                 return 'silverstripe';
         }
@@ -160,6 +167,16 @@ class Module
         // Use gitlab for cwp repos
         if(stripos($name, 'cwp') === 0) {
             return "https://gitlab.cwp.govt.nz/cwp/{$name}/";
+        }
+
+        if($name === 'gridfield-bulk-editing-tools') {
+            return "https://github.com/colymba/GridFieldBulkEditingTools/";
+        }
+
+        switch($name) {
+            case 'advancedworkflow':
+                return "https://github.com/{$team}/{$name}/";
+                break;
         }
         
         return "https://github.com/{$team}/silverstripe-{$name}/";
