@@ -146,6 +146,7 @@ class Module
             case 'fulltextsearch':
             case 'reports':
             case 'tagfield':
+            case 'sharedraftcontent':
                 return 'silverstripe-labs';
             case 'gridfield-bulk-editing-tools':
                 return 'colymba';
