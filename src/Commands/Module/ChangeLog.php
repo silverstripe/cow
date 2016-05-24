@@ -16,9 +16,9 @@ class ChangeLog extends Module
      * @var string
      */
     protected $name = 'module:changelog';
-    
+
     protected $description = 'Generate changelog for a bunch of module';
-    
+
     protected function fire()
     {
         // Get arguments
@@ -28,6 +28,7 @@ class ChangeLog extends Module
 
         // Steps
         $step = new ModuleChangeLog($this, $directory, $modules, $listIsExclusive);
+        $step->setVersionConstraint(null);
         $step->run($this->input, $this->output);
     }
 }

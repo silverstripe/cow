@@ -13,9 +13,8 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class ModuleChangeLog extends ChangeLogStep
 {
-    
     protected $title = null;
-    
+
     public function run(InputInterface $input, OutputInterface $output)
     {
         $this->log($output, "Generating changelog content");
