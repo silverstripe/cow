@@ -37,7 +37,6 @@ class Checkout extends Module
         $remote = $this->getInputRemote();
 
         $merge = new CheckoutBranch($this, $directory, $modules, $listIsExclusive, $branch, $remote);
-        $merge->setVersionConstraint(null); // checkout:branch doesn't filter by self.version
         $merge->run($this->input, $this->output);
     }
 

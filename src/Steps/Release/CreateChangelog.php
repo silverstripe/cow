@@ -5,7 +5,7 @@ namespace SilverStripe\Cow\Steps\Release;
 use Exception;
 use SilverStripe\Cow\Commands\Command;
 use SilverStripe\Cow\Model\Changelog;
-use SilverStripe\Cow\Model\ReleaseVersion;
+use SilverStripe\Cow\Model\Release\Version;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -15,13 +15,13 @@ use Symfony\Component\Console\Output\OutputInterface;
 class CreateChangelog extends ModuleStep
 {
     /**
-     * @var ReleaseVersion
+     * @var \SilverStripe\Cow\Model\Versions\\SilverStripe\Cow\Model\\SilverStripe\Cow\Model\Release\Version
      */
     protected $version;
 
     /**
      *
-     * @var ReleaseVersion
+     * @var \SilverStripe\Cow\Model\Versions\\SilverStripe\Cow\Model\\SilverStripe\Cow\Model\Release\Version
      */
     protected $from;
 
@@ -46,16 +46,17 @@ class CreateChangelog extends ModuleStep
      * Create a changelog command
      *
      * @param Command $command
-     * @param ReleaseVersion $version
-     * @param ReleaseVersion $from
+     * @param \SilverStripe\Cow\Model\Versions\\SilverStripe\Cow\Model\\SilverStripe\Cow\Model\Release\Version $version
+     * @param \SilverStripe\Cow\Model\\SilverStripe\Cow\Model\Release\Version $from
      * @param string $directory
      * @param array $modules Optional list of modules to limit changelog source to
      * @param bool $listIsExclusive If this list is exclusive. If false, this is inclusive
      */
     public function __construct(
         Command $command,
-        ReleaseVersion $version,
-        ReleaseVersion $from,
+        Project $project,
+        Version $version,
+        Version $from,
         $directory = '.',
         $modules = array(),
         $listIsExclusive = false

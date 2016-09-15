@@ -39,7 +39,8 @@ class Publish extends Release
     {
         // Get arguments
         $version = $this->getInputVersion();
-        $directory = $this->getInputDirectory($version);
+        $recipe = $this->getInputRecipe();
+        $directory = $this->getInputDirectory($version, $recipe);
         $awsProfile = $this->getInputAWSProfile();
         $modules = $this->getReleaseModules($directory);
 

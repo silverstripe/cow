@@ -3,6 +3,7 @@
 namespace SilverStripe\Cow\Steps\Release;
 
 use SilverStripe\Cow\Commands\Command;
+use SilverStripe\Cow\Model\Modules\Project;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -22,24 +23,33 @@ class CreateBranch extends ModuleStep
      * Create branch step
      *
      * @param Command $command
-     * @param string $directory Where to translate
+     * @param Project $project
      * @param string|null $branch Branch name, if necessary
      * @param array $modules Optional list of modules to limit to
      * @param bool $listIsExclusive If this list is exclusive. If false, this is inclusive
      */
-    public function __construct(Command $command, $directory, $branch, $modules = array(), $listIsExclusive = false)
+    public function __construct(Command $command, $project, $branch, $modules = array(), $listIsExclusive = false)
     {
-        parent::__construct($command, $directory, $modules, $listIsExclusive);
-
+        parent::__construct($command, $project, $modules, $listIsExclusive);
         $this->branch = $branch;
     }
 
     /**
-     * @return string|null
+     * @return string
      */
     public function getBranch()
     {
         return $this->branch;
+    }
+
+    /**
+     * @param string $branch
+     * @return $this
+     */
+    public function setBranch($branch)
+    {
+        $this->branch = $branch;
+        return $this;
     }
 
     public function getStepName()
@@ -61,7 +71,7 @@ class CreateBranch extends ModuleStep
             if ($thisBranch != $branch) {
                 $this->log(
                     $output,
-                    "Branching module ".$module->getName()." from <info>{$thisBranch}</info> to <info>{$branch}</info>"
+                    "Branching module ".$module->getInstalledName()." from <info>{$thisBranch}</info> to <info>{$branch}</info>"
                 );
                 $module->checkout($output, $branch, 'origin', true);
             }

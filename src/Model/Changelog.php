@@ -3,6 +3,8 @@
 namespace SilverStripe\Cow\Model;
 
 use Gitonomy\Git\Exception\ReferenceNotFoundException;
+use SilverStripe\Cow\Model\Modules\Module;
+use SilverStripe\Cow\Model\Release\Version;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
@@ -18,7 +20,7 @@ class Changelog
     protected $modules;
 
     /**
-     * @var ReleaseVersion
+     * @var Version
      */
     protected $fromVersion;
 
@@ -36,9 +38,9 @@ class Changelog
      * Create a new changelog
      *
      * @param Module[] $modules Source of modules to generate changelog from
-     * @param ReleaseVersion $fromVersion
+     * @param Version $fromVersion
      */
-    public function __construct(array $modules, ReleaseVersion $fromVersion)
+    public function __construct(array $modules, Version $fromVersion)
     {
         $this->modules = $modules;
         $this->fromVersion = $fromVersion;
@@ -70,7 +72,7 @@ class Changelog
                 }
             }
         } catch (ReferenceNotFoundException $ex) {
-            $moduleName = $module->getName();
+            $moduleName = $module->getInstalledName();
             $output->writeln(
                 "<error>Module {$moduleName} does not have from-version {$fromVersion}; "
                     . "Skipping changelog for this module</error>"
@@ -163,7 +165,7 @@ class Changelog
     protected $lineFormat = null;
 
     /**
-     * @return ReleaseVersion
+     * @return Version
      */
     public function getFromVersion()
     {
@@ -171,10 +173,10 @@ class Changelog
     }
 
     /**
-     * @param ReleaseVersion $fromVersion
+     * @param Version $fromVersion
      * @return $this
      */
-    public function setFromVersion(ReleaseVersion $fromVersion)
+    public function setFromVersion(Version $fromVersion)
     {
         $this->fromVersion = $fromVersion;
         return $this;

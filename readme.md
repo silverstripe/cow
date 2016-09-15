@@ -40,8 +40,9 @@ cow release:publish 3.1.14-rc1 -vvv
 
 ## Release
 
-`cow release <version>` will perform the first part of the release tasks.
+`cow release <version> <recipe>` will perform the first part of the release tasks.
 <version> is mandatory and must be the exact tag name to release.
+<recipe> will allow you to release a recipe other than 'silverstripe/installer'
 
 This command has these options:
 

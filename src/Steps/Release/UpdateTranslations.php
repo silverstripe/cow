@@ -4,7 +4,7 @@ namespace SilverStripe\Cow\Steps\Release;
 
 use InvalidArgumentException;
 use SilverStripe\Cow\Commands\Command;
-use SilverStripe\Cow\Model\Module;
+use SilverStripe\Cow\Model\Modules\Module;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -87,9 +87,6 @@ class UpdateTranslations extends ModuleStep
     {
         $modules = $this->getModules();
         $this->log($output, sprintf("Updating translations for %d module(s)", count($modules)));
-        if ($this->getVersionConstraint()) {
-            $this->log($output, sprintf("Note: Modules filtered by version %s", $this->getVersionConstraint()));
-        }
         $this->checkVersion($output);
         $this->storeJavascript($output, $modules);
         $this->pullSource($output, $modules);
@@ -126,7 +123,7 @@ class UpdateTranslations extends ModuleStep
      * Backup local javascript masters
      *
      * @param OutputInterface $output
-     * @param Module[] $modules
+     * @param \SilverStripe\Cow\Model\Modules\Module[] $modules
      */
     protected function storeJavascript(OutputInterface $output, $modules)
     {
@@ -134,7 +131,7 @@ class UpdateTranslations extends ModuleStep
         // Backup files prior to replacing local copies with transifex master
         $this->originalJSMasters = [];
         foreach ($modules as $module) {
-            $jsPath = $module->getJSLangDirectory();
+            $jsPath = $module->getJSLangDirectories();
             foreach ((array)$jsPath as $path) {
                 $masterPath = "{$path}/src/en.js";
                 if (file_exists($masterPath)) {
@@ -254,7 +251,7 @@ class UpdateTranslations extends ModuleStep
         $count = 0;
         foreach ($modules as $module) {
             $base = $module->getMainDirectory();
-            $jsPath = $module->getJSLangDirectory();
+            $jsPath = $module->getJSLangDirectories();
             foreach ((array)$jsPath as $path) {
                 $count += $this->generateJavascriptInDirectory($output, $base, $path);
             }
@@ -334,7 +331,7 @@ TMPL;
                 '(cd %s && tx push -s)',
                 $module->getDirectory()
             );
-            $moduleName = $module->getName();
+            $moduleName = $module->getInstalledName();
             $this->runCommand($output, $pushCommand, "Error pushing module {$moduleName} to origin");
         }
     }
@@ -353,7 +350,7 @@ TMPL;
             $repo = $module->getRepository();
 
             // Add all changes
-            $jsPath = $module->getJSLangDirectory();
+            $jsPath = $module->getJSLangDirectories();
             $langPath = $module->getLangDirectory();
             foreach (array_merge((array)$jsPath, (array)$langPath) as $path) {
                 if (is_dir($path)) {
@@ -364,13 +361,13 @@ TMPL;
             // Commit changes if any exist
             $status = $repo->run("status");
             if (stripos($status, 'Changes to be committed:')) {
-                $this->log($output, "Comitting changes for module " . $module->getName());
+                $this->log($output, "Comitting changes for module " . $module->getInstalledName());
                 $repo->run("commit", array("-m", "Update translations"));
             }
 
             // Do push if selected
             if ($this->push) {
-                $this->log($output, "Pushing upstream for module " . $module->getName());
+                $this->log($output, "Pushing upstream for module " . $module->getInstalledName());
                 $repo->run("push", array("origin"));
             }
         }
@@ -379,7 +376,7 @@ TMPL;
     /**
      * Get the list of module objects to translate
      *
-     * @return Module[]
+     * @return \SilverStripe\Cow\Model\Modules\Module[]
      */
     protected function getModules()
     {

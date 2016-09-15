@@ -15,17 +15,17 @@ class Create extends Release
      * @var string
      */
     protected $name = 'release:create';
-    
+
     protected $description = 'Setup a new release';
 
     protected function fire()
     {
         $version = $this->getInputVersion();
-        $directory = $this->getInputDirectory($version);
-        $security = $this->getInputSecurity();
+        $recipe = $this->getInputRecipe();
+        $directory = $this->getInputDirectory();
 
         // Steps
-        $step = new CreateProject($this, $version, $directory);
+        $step = new CreateProject($this, $version, $recipe, $directory);
         $step->run($this->input, $this->output);
     }
 }

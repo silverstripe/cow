@@ -4,8 +4,9 @@ namespace SilverStripe\Cow\Steps\Release;
 
 use Exception;
 use SilverStripe\Cow\Commands\Command;
-use SilverStripe\Cow\Model\ReleaseVersion;
+use SilverStripe\Cow\Model\Release\Version;
 use SilverStripe\Cow\Steps\Step;
+use SilverStripe\Cow\Utility\Composer;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -28,15 +29,15 @@ class Wait extends Step
     protected $timeout = 5400;
 
     /**
-     * @var ReleaseVersion
+     * @var \SilverStripe\Cow\Model\Versions\Version
      */
     protected $version;
 
     /**
      * @param Command $command
-     * @param ReleaseVersion $version
+     * @param \SilverStripe\Cow\Model\Versions\\SilverStripe\Cow\Model\Release\Version $version
      */
-    public function __construct(Command $command, ReleaseVersion $version)
+    public function __construct(Command $command, Version $version)
     {
         parent::__construct($command);
         $this->version = $version;
@@ -61,7 +62,11 @@ class Wait extends Step
         $start = time();
         $version = $this->version->getValue();
         while ($start + $this->timeout >= time()) {
-            $versions = $this->getAvailableVersions($output);
+
+            // todo - this line should get project name
+            throw new Exception("todo");
+
+            $versions = Composer::getLibraryVersions($this->getCommandRunner($output), $this->project);
             if (in_array($version, $versions)) {
                 return;
             }

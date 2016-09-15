@@ -4,6 +4,8 @@ namespace SilverStripe\Cow\Steps;
 
 use Exception;
 use SilverStripe\Cow\Commands\Command;
+use SilverStripe\Cow\Utility\CommandRunner;
+use SilverStripe\Cow\Utility\StepCommandRunner;
 use Symfony\Component\Console\Helper\ProcessHelper;
 use Symfony\Component\Console\Helper\QuestionHelper;
 use Symfony\Component\Console\Input\InputInterface;
@@ -86,7 +88,7 @@ abstract class Step
      * @return bool|string Output, or false if error
      * @throws Exception
      */
-    protected function runCommand(OutputInterface $output, $command, $error = null, $exceptionOnError = true)
+    public function runCommand(OutputInterface $output, $command, $error = null, $exceptionOnError = true)
     {
         $helper = $this->getProcessHelper();
 
@@ -113,5 +115,13 @@ abstract class Step
             }
             return false;
         }
+    }
+
+    /**
+     * @param OutputInterface $output
+     * @return CommandRunner
+     */
+    public function getCommandRunner(OutputInterface $output) {
+        return new StepCommandRunner($this, $output);
     }
 }

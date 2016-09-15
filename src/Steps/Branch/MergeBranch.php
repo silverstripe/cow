@@ -4,7 +4,7 @@ namespace SilverStripe\Cow\Steps\Branch;
 
 use Gitonomy\Git\Exception\ProcessException;
 use SilverStripe\Cow\Commands\Command;
-use SilverStripe\Cow\Model\Module;
+use SilverStripe\Cow\Model\Modules\Module;
 use SilverStripe\Cow\Steps\Release\ModuleStep;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -89,7 +89,7 @@ class MergeBranch extends ModuleStep
         if ($this->conflicts) {
             $this->log($output, "Merge conflicts exist which must be resolved manually:");
             foreach ($this->conflicts as $module) {
-                /** @var Module $module */
+                /** @var \SilverStripe\Cow\Model\Modules\Module $module */
                 $this->log($output, "<comment>" . $module->getDirectory() . "</comment>");
             }
         } else {
@@ -102,12 +102,12 @@ class MergeBranch extends ModuleStep
      *
      * @param InputInterface $input
      * @param OutputInterface $output
-     * @param Module $module
+     * @param \SilverStripe\Cow\Model\Modules\Module $module
      * @throws \Exception
      */
     protected function mergeModule(InputInterface $input, OutputInterface $output, Module $module)
     {
-        $this->log($output, "Merging module <info>" . $module->getComposerName() . "</info>");
+        $this->log($output, "Merging module <info>" . $module->getName() . "</info>");
 
         $module->fetch($output);
 
@@ -174,7 +174,7 @@ class MergeBranch extends ModuleStep
             }
         } catch (ProcessException $ex) {
             // Module has conflicts; Please merge!
-            $this->log($output, "<error>Merge conflict in module " . $module->getName() . "</error>");
+            $this->log($output, "<error>Merge conflict in module " . $module->getInstalledName() . "</error>");
             $this->conflicts[] = $module;
         }
     }

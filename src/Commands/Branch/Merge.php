@@ -48,7 +48,6 @@ class Merge extends Module
         }
 
         $merge = new MergeBranch($this, $directory, $modules, $listIsExclusive, $from, $to, $push, $interactive);
-        $merge->setVersionConstraint(null); // branch:merge doesn't filter by self.version
         $merge->run($this->input, $this->output);
     }
 

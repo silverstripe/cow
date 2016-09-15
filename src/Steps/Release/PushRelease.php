@@ -22,7 +22,7 @@ class PushRelease extends ModuleStep
         $this->log($output, "Pushing all modules to origin");
         $modules = $this->getModules();
         foreach ($modules as $module) {
-            $this->log($output, "Pushing module <info>" . $module->getName() . "</info>");
+            $this->log($output, "Pushing module <info>" . $module->getInstalledName() . "</info>");
             $module->pushTo('origin', true);
         }
         $this->log($output, 'Pushing complete');

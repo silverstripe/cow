@@ -3,7 +3,7 @@
 namespace SilverStripe\Cow\Steps\Branch;
 
 use SilverStripe\Cow\Commands\Command;
-use SilverStripe\Cow\Model\Module;
+use SilverStripe\Cow\Model\Modules\Module;
 use SilverStripe\Cow\Steps\Release\ModuleStep;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -60,7 +60,7 @@ class CheckoutBranch extends ModuleStep
      */
     protected function checkoutModule(InputInterface $input, OutputInterface $output, Module $module)
     {
-        $this->log($output, "Checking out module <info>" . $module->getComposerName() . "</info>");
+        $this->log($output, "Checking out module <info>" . $module->getName() . "</info>");
 
         $module->fetch($output, $this->getRemote());
 

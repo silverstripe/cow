@@ -1,32 +1,30 @@
 <?php
 
-namespace SilverStripe\Cow\Model;
+namespace SilverStripe\Cow\Model\Modules;
 
 use Exception;
 use Gitonomy\Git\Reference\Branch;
 use Gitonomy\Git\Repository;
 use InvalidArgumentException;
+use SilverStripe\Cow\Model\Release\Version;
+use SilverStripe\Cow\Model\VersionList;
+use SilverStripe\Cow\Utility\CommandRunner;
+use SilverStripe\Cow\Utility\Composer;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
- * A module installed in a project
+ * Represents a library which may not be a module
  */
-class Module
+class Library
 {
+
     /**
      * Parent project (installer module)
      *
      * @var Project
      */
     protected $parent;
-
-    /**
-     * Module name
-     *
-     * @var string
-     */
-    protected $name;
 
     /**
      * Directory of this module
@@ -36,15 +34,24 @@ class Module
      */
     protected $directory;
 
-    public function __construct($directory, $name, Project $parent = null)
+    public function __construct($directory, Project $parent = null)
     {
         $this->directory = realpath($directory);
-        $this->name = $name;
         $this->parent = $parent;
 
         if (!$this->isValid()) {
-            throw new InvalidArgumentException("No module in directory \"{$this->directory}\"");
+            throw new InvalidArgumentException("No library in directory \"{$this->directory}\"");
         }
+    }
+
+    /**
+     * A project is valid if it has a root composer.json
+     *
+     * @return bool
+     */
+    public function isValid()
+    {
+        return $this->directory && realpath($this->directory . '/composer.json');
     }
 
     /**
@@ -58,86 +65,15 @@ class Module
     }
 
     /**
-     * Gets the module lang dir
+     * Check if the given directory contains a library
      *
-     * @return string
-     */
-    public function getLangDirectory()
-    {
-        return $this->getMainDirectory() . '/lang';
-    }
-
-    /**
-     * Gets the directory(s) of the JS lang folder.
-     *
-     * Can be a string or an array result
-     *
-     * @return string|array
-     */
-    public function getJSLangDirectory()
-    {
-        $langBasePath = 'client/lang'; // 4.x+ style
-        if (!file_exists($this->getMainDirectory() . '/' . $langBasePath)) {
-            $langBasePath = 'javascript/lang'; // 3.x style
-        }
-
-        $dir = $this->getMainDirectory() . '/' . $langBasePath;
-
-        // Special case for framework which has a nested 'admin' submodule
-        if ($this->getName() === 'framework') {
-            return array(
-                $this->getMainDirectory() . '/admin/' . $langBasePath,
-                $dir
-            );
-        } else {
-            return $dir;
-        }
-    }
-
-    /**
-     * Directory where module files exist; Usually the one that sits just below the top level project
-     *
-     * @return string
-     */
-    public function getMainDirectory()
-    {
-        return $this->getDirectory();
-    }
-
-    /**
-     * A project is valid if it has a root composer.json
-     */
-    public function isValid()
-    {
-        return $this->directory && realpath($this->directory . '/composer.json');
-    }
-
-    /**
-     * Determine if this project has a .tx configured
-     *
+     * @param string $path
      * @return bool
      */
-    public function isTranslatable()
+    public static function isLibraryPath($path)
     {
-        return $this->directory && realpath($this->directory . '/.tx/config');
+        return is_file("$path/composer.json");
     }
-
-    /**
-     * Get name of this module
-     *
-     * @return string
-     */
-    public function getName()
-    {
-        return $this->name;
-    }
-
-    /**
-     * Cached link
-     *
-     * @var string
-     */
-    protected $link = null;
 
     /**
      * Get github slug. E.g. silverstripe/silverstripe-framework, or null
@@ -147,6 +83,12 @@ class Module
      */
     public function getGithubSlug()
     {
+        $data = $this->getCowData();
+        if (isset($data['github-slug'])) {
+            return $data['github-slug'];
+        }
+
+        // Guess from git remote
         $remotes = $this->getRemotes();
         foreach ($remotes as $remote) {
             if (preg_match('#github.com/(?<slug>[^\\s/\\.]+/[^\\s/\\.]+)#', $remote, $matches)) {
@@ -154,37 +96,6 @@ class Module
             }
         }
         return null;
-    }
-
-    /**
-     * Get link to github module
-     *
-     * @return string
-     */
-    public function getLink()
-    {
-        if ($this->link) {
-            return $this->link;
-        }
-
-        $remotes = $this->getRemotes();
-        foreach ($remotes as $name => $remote) {
-            if (preg_match('/^http(s)?:/', $remote)) {
-                // Remove trailing .git
-                $remote = preg_replace('/\\.git$/', '', $remote);
-                $remote = rtrim($remote, '/') . '/';
-                return $this->link = $remote;
-            }
-        }
-
-        // Fallback to looking for github slug
-        if ($slug = $this->getGithubSlug()) {
-            return $this->link = "https://github.com/{$slug}/";
-        }
-
-        // Fallback to best guess
-        $name = $this->getName();
-        return $this->link = "https://github.com/silverstripe/silverstripe-{$name}/";
     }
 
     /**
@@ -211,6 +122,8 @@ class Module
 
     /**
      * Figure out the branch this composer is installed against
+     *
+     * @return string
      */
     public function getBranch()
     {
@@ -220,6 +133,7 @@ class Module
         if ($head instanceof Branch) {
             return $head->getName();
         }
+        return null;
     }
 
     /**
@@ -331,7 +245,7 @@ class Module
         // Validate branch
         $branch = $this->getBranch();
         if (!$branch) {
-            throw new Exception("Module " . $this->getName() . " cannot push without a current branch");
+            throw new Exception("Module " . $this->getInstalledName() . " cannot push without a current branch");
         }
 
         // Check options
@@ -421,19 +335,95 @@ class Module
     {
         $path = $this->getDirectory() . '/composer.json';
         if (!file_exists($path)) {
-            throw new Exception("No composer.json found in module " . $this->getName());
+            throw new Exception("No composer.json found in module " . $this->getInstalledName());
         }
         return json_decode(file_get_contents($path), true);
     }
 
     /**
-     * Get composer name
+     * Gets cow config
+     *
+     * @array
+     */
+    public function getCowData()
+    {
+        $path = $this->getDirectory() . '/.cow.json';
+        if (file_exists($path)) {
+            return json_decode(file_get_contents($path), true);
+        }
+        return [];
+    }
+
+    /**
+     * Get name of this library
      *
      * @return string
      */
-    public function getComposerName()
+    public function getName()
     {
         $data = $this->getComposerData();
         return $data['name'];
+    }
+
+
+    /**
+     * Get link to github module
+     *
+     * @return string
+     */
+    public function getLink()
+    {
+        $data = $this->getCowData();
+        if (isset($data['link'])) {
+            return $data['link'];
+        }
+
+        $remotes = $this->getRemotes();
+        foreach ($remotes as $name => $remote) {
+            if (preg_match('/^http(s)?:/', $remote)) {
+                // Remove trailing .git
+                $remote = preg_replace('/\\.git$/', '', $remote);
+                $remote = rtrim($remote, '/') . '/';
+                return $remote;
+            }
+        }
+
+        // Fallback to looking for github slug
+        if ($name = $this->getGithubSlug()) {
+            return "https://github.com/{$name}/";
+        }
+
+        return null;
+    }
+
+    /**
+     * Gets dependencies for this
+     *
+     * @return LibraryList
+     */
+    public function getDependencies() {
+
+    }
+
+    /**
+     * Gets direct dependencies
+     *
+     * @return LibraryList
+     */
+    public function getDirectDependencies() {
+        $data = $this->getComposerData();
+        $list = new LibraryList();
+        if (isset($data['require']))
+    }
+
+    /**
+     * Given a release version, determine the from version
+     *
+     * @param Version $version
+     * @return Version Version to generate change log from
+     */
+    public function getFromVersion(Version $version) {
+        // Get list of existing tags
+        return $version->getPriorVersionFromTags($this->getTags(), $this->getName());
     }
 }

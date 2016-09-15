@@ -3,8 +3,8 @@
 namespace SilverStripe\Cow\Steps\Release;
 
 use SilverStripe\Cow\Commands\Command;
-use SilverStripe\Cow\Model\Project;
-use SilverStripe\Cow\Model\ReleaseVersion;
+use SilverStripe\Cow\Model\Modules\Project;
+use SilverStripe\Cow\Model\Release\Version;
 use SilverStripe\Cow\Steps\Step;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -31,7 +31,7 @@ class UploadArchive extends Step
     protected $awsProfile;
 
     /**
-     * @var ReleaseVersion
+     * @var \SilverStripe\Cow\Model\Versions\Version
      */
     protected $version;
 
@@ -44,13 +44,13 @@ class UploadArchive extends Step
      * Upload archives
      *
      * @param Command $command
-     * @param ReleaseVersion $version
+     * @param Version $version
      * @param string $directory Where to translate
      * @param string $awsProfile Name of aws profile to use
      */
     public function __construct(
         Command $command,
-        ReleaseVersion $version,
+        Version $version,
         $directory = '.',
         $awsProfile = 'silverstripe'
     ) {
@@ -70,7 +70,7 @@ class UploadArchive extends Step
     }
 
     /**
-     * @return ReleaseVersion
+     * @return \SilverStripe\Cow\Model\Versions\\SilverStripe\Cow\Model\Version
      */
     public function getVersion()
     {

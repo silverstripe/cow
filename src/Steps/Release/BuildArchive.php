@@ -4,8 +4,8 @@ namespace SilverStripe\Cow\Steps\Release;
 
 use Exception;
 use SilverStripe\Cow\Commands\Command;
-use SilverStripe\Cow\Model\Project;
-use SilverStripe\Cow\Model\ReleaseVersion;
+use SilverStripe\Cow\Model\Modules\Project;
+use SilverStripe\Cow\Model\Release\Version;
 use SilverStripe\Cow\Steps\Step;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -18,12 +18,12 @@ use Symfony\Component\Console\Output\OutputInterface;
 class BuildArchive extends Step
 {
     /**
-     * @var ReleaseVersion
+     * @var \SilverStripe\Cow\Model\Versions\\SilverStripe\Cow\Model\Release\Version
      */
     protected $version;
 
     /**
-     * @var Project
+     * @var \SilverStripe\Cow\Model\Modules\Project
      */
     protected $project;
 
@@ -31,11 +31,11 @@ class BuildArchive extends Step
      * Build archives
      *
      * @param Command $command
-     * @param ReleaseVersion $version
+     * @param \SilverStripe\Cow\Model\Versions\\SilverStripe\Cow\Model\\SilverStripe\Cow\Model\Release\Version $version
      * @param string $directory Where to translate
      * @param string $awsProfile Name of aws profile to use
      */
-    public function __construct(Command $command, ReleaseVersion $version, $directory = '.')
+    public function __construct(Command $command, Version $version, $directory = '.')
     {
         parent::__construct($command);
 
@@ -52,7 +52,7 @@ class BuildArchive extends Step
     }
 
     /**
-     * @return ReleaseVersion
+     * @return \SilverStripe\Cow\Model\Release\Version
      */
     public function getVersion()
     {

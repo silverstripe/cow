@@ -24,8 +24,8 @@ class Branch extends Release
         // Get arguments
         $version = $this->getInputVersion();
         $branch = $this->getInputBranch($version);
-        $directory = $this->getInputDirectory($version);
-        $modules = $this->getReleaseModules($directory);
+        $directory = $this->getInputDirectory();
+        $modules = $this->getReleaseModules();
 
         // Steps
         $step = new CreateBranch($this, $directory, $branch, $modules);

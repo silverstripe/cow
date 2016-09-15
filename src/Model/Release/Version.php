@@ -1,13 +1,13 @@
 <?php
 
-namespace SilverStripe\Cow\Model;
+namespace SilverStripe\Cow\Model\Release;
 
 use InvalidArgumentException;
 
 /**
  * Represents a version for a release
  */
-class ReleaseVersion
+class Version
 {
     /**
      * @var int
@@ -25,6 +25,8 @@ class ReleaseVersion
     protected $patch;
 
     /**
+     * Null if stable, or a stability string otherwise (rc, beta, alpha)
+     *
      * @var string|null
      */
     protected $stability;
@@ -89,6 +91,7 @@ class ReleaseVersion
     public function setStability($stability)
     {
         $this->stability = $stability;
+        return $this;
     }
 
     public function getStabilityVersion()
@@ -99,6 +102,7 @@ class ReleaseVersion
     public function setStabilityVersion($stabilityVersion)
     {
         $this->stabilityVersion = $stabilityVersion;
+        return $this;
     }
 
     public function getMajor()
@@ -109,6 +113,16 @@ class ReleaseVersion
     public function setMajor($major)
     {
         $this->major = $major;
+        return $this;
+    }
+
+    public function getMinor() {
+        return $this->minor;
+    }
+
+    public function setMinor($minor) {
+        $this->minor = $minor;
+        return $this;
     }
 
     public function getPatch()
@@ -119,6 +133,7 @@ class ReleaseVersion
     public function setPatch($patch)
     {
         $this->patch = $patch;
+        return $this;
     }
 
     /**
@@ -170,9 +185,10 @@ class ReleaseVersion
     }
 
     /**
-     * Guess the best prior version to release as changelog
+     * Guess the best prior version to release as changelog. Returns null if
+     * not found.
      *
-     * @return ReleaseVersion
+     * @return Version
      */
     public function getPriorVersion()
     {
@@ -189,17 +205,16 @@ class ReleaseVersion
         $prior->setStability(null);
         $prior->setStabilityVersion(null);
 
-        // If patch version is 0 we really can't guess
+        // If patch version is > 0 we can decrement it to get prior
         $patch = $prior->getPatch();
-        if (empty($patch)) {
-            throw new InvalidArgumentException(
-                "Can't guess version which comes before " . $this->getValue()
-            );
+        if ($patch) {
+            // Select prior patch version (e.g. 3.1.14 -> 3.1.13)
+            $prior->setPatch($patch - 1);
+            return $prior;
         }
 
-        // Select prior patch version (e.g. 3.1.14 -> 3.1.13)
-        $prior->setPatch($patch - 1);
-        return $prior;
+        // Will need to guess from composer. E.g. 3.1.0 has an ambiguous prior version
+        return null;
     }
 
     /**
@@ -230,5 +245,74 @@ class ReleaseVersion
         $type = $includeCMS ? 'cms' : 'framework';
         $version = $this->getValue();
         return "SilverStripe-{$type}-v{$version}{$extension}";
+    }
+
+    /**
+     * Compare versions.
+     *
+     * Note that stability is ignored. (4.0.0 === 4.0.0-alpha1, 4.0.0 < 4.0.1)
+     *
+     * @param Version $other
+     * @return int negative for smaller version, 0 for equal, positive for later version
+     */
+    public function compareTo(Version $other) {
+        $diff = $this->getMajor() - $other->getMajor();
+        if ($diff) {
+            return $diff;
+        }
+        $diff = $this->getMinor() - $other->getMinor();
+        if ($diff) {
+            return $diff;
+        }
+        return $this->getPatch() - $other->getPatch();
+    }
+
+    /**
+     * Given a list of tags, determine which is the best "from" version
+     *
+     * @param array $tags List of tags to search
+     * @param string $libraryName Name of library
+     * @return Version
+     */
+    public function getPriorVersionFromTags($tags, $libraryName) {
+        // If we can programatically detect a prior version, then use this
+        $prior = $this->getPriorVersion();
+        if ($prior) {
+            if (in_array($prior, $tags)) {
+                return $prior;
+            }
+            throw new InvalidArgumentException(
+                "Releasing version " . $this->getValue() . " of " . $libraryName
+                . " requires a prior tag at version " . $prior . ", but was not found."
+            );
+        }
+
+        $best = null;
+        foreach($tags as $tag) {
+            // Check if valid tag
+            if (!$this->parse($tag)) {
+                continue;
+            }
+            $tagVersion = new Version($tag);
+
+            // Skip pre-releases
+            if ($tagVersion->getStability()) {
+                continue;
+            }
+
+            // Skip newer versions
+            if ($tagVersion->compareTo($this) >= 0) {
+                continue;
+            }
+
+            // Skip if we found a better tag
+            if ($best && $tagVersion->compareTo($best) < 0) {
+                continue;
+            }
+
+            $best = $tagVersion;
+        }
+
+        return $best;
     }
 }

@@ -26,7 +26,6 @@ class Translate extends Module
         $push = $this->getInputPush();
 
         $translate = new UpdateTranslations($this, $directory, $modules, $listIsExclusive, $push);
-        $translate->setVersionConstraint(null); // module:translate doesn't filter by self.version
         $translate->run($this->input, $this->output);
     }
 }

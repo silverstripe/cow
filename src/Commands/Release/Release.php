@@ -2,16 +2,15 @@
 
 namespace SilverStripe\Cow\Commands\Release;
 
+use Exception;
 use SilverStripe\Cow\Commands\Command;
-use SilverStripe\Cow\Model\ReleaseVersion;
-use SilverStripe\Cow\Steps\Release\CreateBranch;
-use SilverStripe\Cow\Steps\Release\CreateChangelog;
+use SilverStripe\Cow\Model\Modules\Project;
+use SilverStripe\Cow\Model\Release\Version;
 use SilverStripe\Cow\Steps\Release\CreateProject;
-use SilverStripe\Cow\Steps\Release\RunTests;
-use SilverStripe\Cow\Steps\Release\UpdateTranslations;
+use SilverStripe\Cow\Steps\Release\PlanRelease;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Process\Exception\InvalidArgumentException;
+use InvalidArgumentException;
 
 /**
  * Execute each release step in order to publish a new version
@@ -30,6 +29,7 @@ class Release extends Command
     {
         $this
             ->addArgument('version', InputArgument::REQUIRED, 'Exact version tag to release this project as')
+            ->addArgument('recipe', InputArgument::OPTIONAL, 'Recipe to release', 'silverstripe/installer')
             ->addOption('from', 'f', InputOption::VALUE_REQUIRED, 'Version to generate changelog from')
             ->addOption('directory', 'd', InputOption::VALUE_REQUIRED, 'Optional directory to release project from')
             ->addOption('security', 's', InputOption::VALUE_NONE, 'Update git remotes to point to security project')
@@ -41,31 +41,36 @@ class Release extends Command
     {
         // Get arguments
         $version = $this->getInputVersion();
-        $fromVersion = $this->getInputFromVersion($version);
-        $directory = $this->getInputDirectory($version);
-        $branch = $this->getInputBranch($version);
+        $recipe = $this->getInputRecipe();
+        $directory = $this->getInputDirectory();
+        $branch = $this->getInputBranch();
 
         // Make the directory
-        $project = new CreateProject($this, $version, $directory);
-        $project->run($this->input, $this->output);
+        $createProject = new CreateProject($this, $version, $recipe, $directory);
+        $createProject->run($this->input, $this->output);
+        $project = $this->getProject();
 
-        // Once the project is setup, we can extract the module list to publish
-        $modules = $this->getReleaseModules($directory);
+        // Build and confirm release plan
+        $buildPlan = new PlanRelease($this, $project, $version);
+        $buildPlan->run($this->input, $this->output);
 
         // Change to the correct temp branch (if given)
-        $branch = new CreateBranch($this, $directory, $branch, $modules);
+        /*
+        $branch = new CreateBranch($this, $project, $branch);
         $branch->run($this->input, $this->output);
+        */
 
+        /*
         // Update all translations
-        $translate = new UpdateTranslations($this, $directory, $modules);
+        $translate = new UpdateTranslations($this, $project);
         $translate->run($this->input, $this->output);
 
         // Run tests
-        $test = new RunTests($this, $directory);
+        $test = new RunTests($this, $project);
         $test->run($this->input, $this->output);
 
         // Generate changelog
-        $changelogs = new CreateChangelog($this, $version, $fromVersion, $directory, $modules);
+        $changelogs = new CreateChangelog($this, $project, $version, $fromVersion);
         $changelogs->run($this->input, $this->output);
 
         // Output completion
@@ -73,27 +78,27 @@ class Release extends Command
         $this->output->writeln(
             "Please check the changes made by this command, and run <info>cow release:publish</info>"
         );
+        */
     }
 
     /**
      * Get the version to release
      *
-     * @return ReleaseVersion
+     * @return \SilverStripe\Cow\Model\Versions\\SilverStripe\Cow\Model\\SilverStripe\Cow\Model\Release\Version
      */
     protected function getInputVersion()
     {
         // Version
         $value = $this->input->getArgument('version');
-        return new ReleaseVersion($value);
+        return new Version($value);
     }
 
     /**
      * Determine the branch name that should be used
      *
-     * @param ReleaseVersion $version
      * @return string|null
      */
-    protected function getInputBranch(ReleaseVersion $version)
+    protected function getInputBranch()
     {
         $branch = $this->input->getOption('branch');
         if ($branch) {
@@ -102,38 +107,22 @@ class Release extends Command
 
         // If not explicitly specified, automatically select
         if ($this->input->getOption('branch-auto')) {
+            $version = $this->getInputVersion();
             return $version->getValueStable();
         }
         return null;
     }
 
     /**
-     * Determine the 'from' version for generating changelogs
-     *
-     * @param ReleaseVersion $version
-     * @return ReleaseVersion
-     */
-    protected function getInputFromVersion(ReleaseVersion $version)
-    {
-        $value = $this->input->getOption('from');
-        if ($value) {
-            return new ReleaseVersion($value);
-        } else {
-            return $version->getPriorVersion();
-        }
-    }
-
-    /**
      * Get the directory the project is, or will be in
      *
-     * @param ReleaseVersion $version
      * @return string
      */
-    protected function getInputDirectory(ReleaseVersion $version)
+    protected function getInputDirectory()
     {
         $directory = $this->input->getOption('directory');
         if (!$directory) {
-            $directory = $this->pickDirectory($version);
+            $directory = $this->pickDirectory();
         }
         return $directory;
     }
@@ -141,12 +130,14 @@ class Release extends Command
     /**
      * Guess a directory to install/read the given version
      *
-     * @param ReleaseVersion $version
      * @return string
      */
-    protected function pickDirectory(ReleaseVersion $version)
+    protected function pickDirectory()
     {
-        $filename = DIRECTORY_SEPARATOR . 'release-' . $version->getValue();
+        $version = $this->getInputVersion();
+        $recipe = $this->getInputRecipe();
+
+        $filename = DIRECTORY_SEPARATOR . 'release-' . str_replace('/', '_', $recipe) . '-'. $version->getValue();
         $cwd = getcwd();
 
         // Check if we are already in this directory
@@ -155,6 +146,20 @@ class Release extends Command
         }
 
         return $cwd . $filename;
+    }
+
+    /**
+     * Gets recipe name to release
+     *
+     * @return string
+     */
+    protected function getInputRecipe()
+    {
+        $recipe = $this->input->getArgument('recipe');
+        if (!preg_match('#(\w+)/(\w+)#', $recipe)) {
+            throw new InvalidArgumentException("Invalid recipe composer name $recipe");
+        }
+        return $recipe;
     }
 
     /**
@@ -173,30 +178,15 @@ class Release extends Command
     }
 
     /**
-     * Get modules to include in this release. Skips those not in the project's composer.json
+     * Get installed project
      *
-     * @param string $directory where the project is setup
-     * @return array
+     * @return Project
      */
-    protected function getReleaseModules($directory)
+    protected function getProject()
     {
-        $path = realpath($directory);
-        $composerPath = realpath($path . '/composer.json');
-        if (empty($composerPath)) {
-            throw new \InvalidArgumentException("Project not installed at \"{$path}\"");
-        }
-        $composer = json_decode(file_get_contents($composerPath), true);
-
-        $modules = array('installer');
-        foreach ($composer['require'] as $module => $version) {
-            // Only include self.version modules
-            if ($version !== 'self.version') {
-                continue;
-            }
-
-            list($vendor, $module) = explode('/', $module);
-            $modules[] = $module;
-        }
-        return $modules;
+        $directory = $this->getInputDirectory();
+        return new Project($directory);
     }
+
+
 }

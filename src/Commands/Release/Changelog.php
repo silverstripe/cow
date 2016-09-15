@@ -24,7 +24,8 @@ class Changelog extends Release
         // Get arguments
         $version = $this->getInputVersion();
         $fromVersion = $this->getInputFromVersion($version);
-        $directory = $this->getInputDirectory($version);
+        $recipe = $this->getInputRecipe();
+        $directory = $this->getInputDirectory($version, $recipe);
         $modules = $this->getReleaseModules($directory);
 
         // Steps

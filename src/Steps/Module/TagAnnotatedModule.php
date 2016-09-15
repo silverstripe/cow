@@ -7,9 +7,9 @@ use Github\Client as GithubClient;
 use Http\Adapter\Guzzle6\Client as GuzzleClient;
 use SilverStripe\Cow\Commands\Command;
 use SilverStripe\Cow\Model\Changelog;
-use SilverStripe\Cow\Model\Module;
-use SilverStripe\Cow\Model\Project;
-use SilverStripe\Cow\Model\ReleaseVersion;
+use SilverStripe\Cow\Model\Modules\Module;
+use SilverStripe\Cow\Model\Modules\Project;
+use SilverStripe\Cow\Model\Release\Version;
 use SilverStripe\Cow\Steps\Step;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -33,14 +33,14 @@ class TagAnnotatedModule extends Step
     /**
      * Version to tag
      *
-     * @var ReleaseVersion
+     * @var \SilverStripe\Cow\Model\Release\Version
      */
     protected $version;
 
     /**
      * From version for the changelog
      *
-     * @var ReleaseVersion
+     * @var \SilverStripe\Cow\Model\Version
      */
     protected $from;
 
@@ -63,7 +63,7 @@ class TagAnnotatedModule extends Step
     }
 
     /**
-     * @param Module $module
+     * @param \SilverStripe\Cow\Model\Modules\Module $module
      * @return TagAnnotatedModule
      */
     public function setModule(Module $module)
@@ -73,7 +73,7 @@ class TagAnnotatedModule extends Step
     }
 
     /**
-     * @return ReleaseVersion
+     * @return \SilverStripe\Cow\Model\\SilverStripe\Cow\Model\Release\Version
      */
     public function getVersion()
     {
@@ -81,7 +81,7 @@ class TagAnnotatedModule extends Step
     }
 
     /**
-     * @param ReleaseVersion $version
+     * @param \SilverStripe\Cow\Model\\SilverStripe\Cow\Model\Release\Version $version
      * @return TagAnnotatedModule
      */
     public function setVersion($version)
@@ -91,7 +91,7 @@ class TagAnnotatedModule extends Step
     }
 
     /**
-     * @return ReleaseVersion
+     * @return \SilverStripe\Cow\Model\\SilverStripe\Cow\Model\Release\Version
      */
     public function getFrom()
     {
@@ -99,10 +99,10 @@ class TagAnnotatedModule extends Step
     }
 
     /**
-     * @param ReleaseVersion $from
+     * @param \SilverStripe\Cow\Model\\SilverStripe\Cow\Model\Release\Version $from
      * @return $this
      */
-    public function setFrom(ReleaseVersion $from)
+    public function setFrom(Version $from)
     {
         $this->from = $from;
         return $this;
@@ -147,7 +147,7 @@ class TagAnnotatedModule extends Step
         return 'tag-annotated';
     }
 
-    public function __construct(Command $command, ReleaseVersion $version, ReleaseVersion $from, $directory, $module, $message)
+    public function __construct(Command $command, Version $version, Version $from, $directory, $module, $message)
     {
         parent::__construct($command);
         $this->setVersion($version);
@@ -164,7 +164,7 @@ class TagAnnotatedModule extends Step
     public function run(InputInterface $input, OutputInterface $output)
     {
         $module = $this->getModule();
-        $name = $module->getName();
+        $name = $module->getInstalledName();
         $version = $this->getVersion()->getValue();
         $from = $this->getFrom()->getValue();
         $slug = $module->getGithubSlug();

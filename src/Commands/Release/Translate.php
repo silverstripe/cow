@@ -14,13 +14,12 @@ class Translate extends Release
     protected $name = 'release:translate';
 
     protected $description = 'Translate this release';
-    
+
     protected function fire()
     {
         // Get arguments
-        $version = $this->getInputVersion();
-        $directory = $this->getInputDirectory($version);
-        $modules = $this->getReleaseModules($directory);
+        $directory = $this->getInputDirectory();
+        $modules = $this->getReleaseModules();
 
         // Steps
         $step = new UpdateTranslations($this, $directory, $modules);

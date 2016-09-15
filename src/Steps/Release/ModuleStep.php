@@ -3,8 +3,9 @@
 namespace SilverStripe\Cow\Steps\Release;
 
 use SilverStripe\Cow\Commands\Command;
-use SilverStripe\Cow\Model\Module;
-use SilverStripe\Cow\Model\Project;
+use SilverStripe\Cow\Model\Modules\LibraryList;
+use SilverStripe\Cow\Model\Modules\Module;
+use SilverStripe\Cow\Model\Modules\Project;
 use SilverStripe\Cow\Steps\Step;
 
 /**
@@ -27,6 +28,24 @@ abstract class ModuleStep extends Step
     protected $modules;
 
     /**
+     * @return bool
+     */
+    public function isListIsExclusive()
+    {
+        return $this->listIsExclusive;
+    }
+
+    /**
+     * @param bool $listIsExclusive
+     * @return $this
+     */
+    public function setListIsExclusive($listIsExclusive)
+    {
+        $this->listIsExclusive = $listIsExclusive;
+        return $this;
+    }
+
+    /**
      * If true, then $modules is the list of modules that should NOT be translated
      * rather than translated.
      *
@@ -35,26 +54,17 @@ abstract class ModuleStep extends Step
     protected $listIsExclusive;
 
     /**
-     * Set version constraint for filtering modules in this step.
-     * Will be ignored if $modules is non-empty and $listIsExclusive is false.
-     *
-     * @var string
-     */
-    protected $versionConstraint = 'self.version';
-
-    /**
      * Create a step
      *
      * @param Command $command
-     * @param string $directory
+     * @param Project $project
      * @param array $modules List of module names
      * @param bool $listIsExclusive True if this module list is exclusive, rather than inclusive list
      */
-    public function __construct(Command $command, $directory = '.', $modules = array(), $listIsExclusive = false)
+    public function __construct(Command $command, $project, $modules = array(), $listIsExclusive = false)
     {
         parent::__construct($command);
-
-        $this->project = new Project($directory);
+        $this->setProject($project);
         $this->modules = $modules;
         $this->listIsExclusive = $listIsExclusive;
     }
@@ -62,13 +72,13 @@ abstract class ModuleStep extends Step
     /**
      * Get instances of all modules this step should run on
      *
-     * @return Module[]
+     * @return LibraryList
      */
     protected function getModules()
     {
         return $this
             ->getProject()
-            ->getModules($this->modules, $this->listIsExclusive, $this->getVersionConstraint());
+            ->getFilteredModules($this->modules, $this->listIsExclusive);
     }
 
     /**
@@ -82,20 +92,11 @@ abstract class ModuleStep extends Step
     }
 
     /**
-     * @return string
-     */
-    public function getVersionConstraint()
-    {
-        return $this->versionConstraint;
-    }
-
-    /**
-     * @param string $versionConstraint
+     * @param Project $project
      * @return $this
      */
-    public function setVersionConstraint($versionConstraint)
-    {
-        $this->versionConstraint = $versionConstraint;
+    public function setProject(Project $project) {
+        $this->project = $project;
         return $this;
     }
 }

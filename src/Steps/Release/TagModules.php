@@ -3,7 +3,7 @@
 namespace SilverStripe\Cow\Steps\Release;
 
 use SilverStripe\Cow\Commands\Command;
-use SilverStripe\Cow\Model\ReleaseVersion;
+use SilverStripe\Cow\Model\Release\Version;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -15,7 +15,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class TagModules extends ModuleStep
 {
     /**
-     * @var ReleaseVersion
+     * @var \SilverStripe\Cow\Model\Versions\Version
      */
     protected $version;
 
@@ -23,14 +23,14 @@ class TagModules extends ModuleStep
      * Create module tag step
      *
      * @param Command $command
-     * @param ReleaseVersion $version
+     * @param \SilverStripe\Cow\Model\Version $version
      * @param string $directory
      * @param array $modules Optional list of modules to limit tagging to
      * @param bool $listIsExclusive If this list is exclusive. If false, this is inclusive
      */
     public function __construct(
         Command $command,
-        ReleaseVersion $version,
+        Version $version,
         $directory = '.',
         $modules = array(),
         $listIsExclusive = false
@@ -41,7 +41,7 @@ class TagModules extends ModuleStep
 
     /**
      *
-     * @return ReleaseVersion
+     * @return \SilverStripe\Cow\Model\Version
      */
     public function getVersion()
     {
@@ -54,7 +54,7 @@ class TagModules extends ModuleStep
         $this->log($output, "Tagging modules as " . $tag);
 
         foreach ($this->getModules() as $module) {
-            $this->log($output, "Tagging module " . $module->getName());
+            $this->log($output, "Tagging module " . $module->getInstalledName());
             $tags = $module->getTags();
             if (in_array($tag, $tags)) {
                 $this->log($output, "Skipping existing tag: <info>{$tag}</info>");
@@ -62,7 +62,7 @@ class TagModules extends ModuleStep
                 $module->addTag($tag);
             }
         }
-        
+
         $this->log($output, 'Tagging complete');
     }
 

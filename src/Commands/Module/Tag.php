@@ -3,7 +3,7 @@
 namespace SilverStripe\Cow\Commands\Module;
 
 use SilverStripe\Cow\Commands\Command;
-use SilverStripe\Cow\Model\ReleaseVersion;
+use SilverStripe\Cow\Model\Release\Version;
 use SilverStripe\Cow\Steps\Module\TagAnnotatedModule;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
@@ -45,14 +45,14 @@ class Tag extends Command
     /**
      * Determine the 'from' version for generating changelogs
      *
-     * @param ReleaseVersion $version
-     * @return ReleaseVersion
+     * @param \SilverStripe\Cow\Model\Release\Version $version
+     * @return \SilverStripe\Cow\Model\\SilverStripe\Cow\Model\Release\Version
      */
-    protected function getInputFromVersion(ReleaseVersion $version)
+    protected function getInputFromVersion(Version $version)
     {
         $value = $this->input->getOption('from');
         if ($value) {
-            return new ReleaseVersion($value);
+            return new Version($value);
         } else {
             return $version->getPriorVersion();
         }
@@ -62,13 +62,13 @@ class Tag extends Command
     /**
      * Get the version to release
      *
-     * @return ReleaseVersion
+     * @return \SilverStripe\Cow\Model\Versions\\SilverStripe\Cow\Model\\SilverStripe\Cow\Model\Release\Version
      */
     protected function getInputVersion()
     {
         // Version
         $value = $this->input->getArgument('version');
-        return new ReleaseVersion($value);
+        return new Version($value);
     }
 
     /**

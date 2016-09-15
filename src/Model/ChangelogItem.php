@@ -4,6 +4,7 @@ namespace SilverStripe\Cow\Model;
 
 use DateTime;
 use Gitonomy\Git\Commit;
+use SilverStripe\Cow\Model\Modules\Module;
 
 /**
  * Represents a line-item in a changelog
