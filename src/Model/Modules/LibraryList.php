@@ -66,7 +66,8 @@ class LibraryList implements IteratorAggregate
     }
 
     /**
-     * Create a new list with this and another list merged
+     * Create a new list with this and another list merged.
+     * Does not modify original list
      *
      * @param mixed $items
      * @return LibraryList

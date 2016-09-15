@@ -6,10 +6,9 @@ use Exception;
 use Gitonomy\Git\Reference\Branch;
 use Gitonomy\Git\Repository;
 use InvalidArgumentException;
+use LogicException;
 use SilverStripe\Cow\Model\Release\Version;
-use SilverStripe\Cow\Model\VersionList;
-use SilverStripe\Cow\Utility\CommandRunner;
-use SilverStripe\Cow\Utility\Composer;
+use SilverStripe\Cow\Utility\Config;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -33,6 +32,13 @@ class Library
      * @var string
      */
     protected $directory;
+
+    /**
+     * Direct child list
+     *
+     * @var LibraryList
+     */
+    protected $children;
 
     public function __construct($directory, Project $parent = null)
     {
@@ -245,7 +251,7 @@ class Library
         // Validate branch
         $branch = $this->getBranch();
         if (!$branch) {
-            throw new Exception("Module " . $this->getInstalledName() . " cannot push without a current branch");
+            throw new Exception("Module " . $this->getName() . " cannot push without a current branch");
         }
 
         // Check options
@@ -335,9 +341,9 @@ class Library
     {
         $path = $this->getDirectory() . '/composer.json';
         if (!file_exists($path)) {
-            throw new Exception("No composer.json found in module " . $this->getInstalledName());
+            throw new Exception("No composer.json found in module " . $this->getName());
         }
-        return json_decode(file_get_contents($path), true);
+        return Config::loadFromFile($path);
     }
 
     /**
@@ -348,10 +354,7 @@ class Library
     public function getCowData()
     {
         $path = $this->getDirectory() . '/.cow.json';
-        if (file_exists($path)) {
-            return json_decode(file_get_contents($path), true);
-        }
-        return [];
+        return Config::loadFromFile($path);
     }
 
     /**
@@ -397,23 +400,79 @@ class Library
     }
 
     /**
-     * Gets dependencies for this
+     * Gets all children, including recursive children
      *
      * @return LibraryList
      */
-    public function getDependencies() {
-
+    public function getAllChildren() {
+        $children = $this->getChildren();
+        $combined = $children;
+        foreach ($children as $child) {
+            $combined = $combined->merge($child->getAllChildren());
+        }
+        return $combined;
     }
 
     /**
-     * Gets direct dependencies
+     * Gets direct child dependencies
      *
      * @return LibraryList
      */
-    public function getDirectDependencies() {
+    public function getChildren() {
+        if ($this->children) {
+            return $this->children;
+        }
+
         $data = $this->getComposerData();
-        $list = new LibraryList();
-        if (isset($data['require']))
+        $this->children = new LibraryList();
+        if (empty($data['require'])) {
+            return $this->children;
+        }
+
+        // Check logical rules to pull out any direct dependencies
+        foreach ($data['require'] as $name => $version) {
+            if ($this->isChildLibrary($name)) {
+                $path = $this->getProject()->findModulePath($name);
+                if (empty($path)) {
+                    throw new LogicException("Required dependency $name is not installed");
+                }
+                $childLibrary = $this->createChildLibrary($path);
+                $this->children->add($childLibrary);
+            }
+        }
+
+        return $this->children;
+    }
+
+    /**
+     * Determine if the module of a given name is a child library.
+     * This module must have a vendor of a denoted vendor
+     *
+     * @param string $name
+     * @return bool
+     */
+    public function isChildLibrary($name) {
+        // Ensure name is valid
+        if (strstr($name, '/') === false) {
+            return false;
+        }
+
+        // Validate vs vendors. There must be at least one matching vendor.
+        $cowData = $this->getCowData();
+        if (empty($cowData['vendors'])) {
+            return false;
+        }
+        $vendors = $cowData['vendors'];
+        $vendor = strtok($name, '/');
+        if (!in_array($vendor, $vendors)) {
+            return false;
+        }
+
+        // validate exclusions
+        if (empty($cowData['exclude'])) {
+            return true;
+        }
+        return !in_array($name, $cowData['exclude']);
     }
 
     /**
@@ -425,5 +484,55 @@ class Library
     public function getFromVersion(Version $version) {
         // Get list of existing tags
         return $version->getPriorVersionFromTags($this->getTags(), $this->getName());
+    }
+
+    /**
+     * Get the top level project
+     *
+     * @return Project
+     */
+    public function getProject() {
+        return $this->getParent()->getProject();
+    }
+
+    /**
+     * Get parent project
+     *
+     * @return Project
+     */
+    public function getParent() {
+        return $this->parent;
+    }
+
+    /**
+     * Gets library depth, where 0 = project
+     *
+     * @return int
+     */
+    public function getDepth() {
+        $parent = $this->getParent();
+        if (empty($parent)) {
+            return 0;
+        }
+        return $parent->getDepth() + 1;
+    }
+
+    /**
+     * Create a child library
+     *
+     * @param string $path
+     * @return Library
+     */
+    protected function createChildLibrary($path)
+    {
+        if (Module::isModulePath($path)) {
+            return new Module($path, $this);
+        }
+
+        if (Library::isLibraryPath($path)) {
+            return new Library($path, $this);
+        }
+
+        return null;
     }
 }

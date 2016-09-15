@@ -54,32 +54,44 @@ class Project extends Module
     }
 
     /**
-     * Cache of installed library objects
-     *
-     * @var LibraryList
+     * Cache of module paths
      */
-    protected $installedLibraries = null;
+    protected $modulePaths = null;
 
     /**
-     * Find all installed modules.
-     * Note; Does not check inclusion / exclusion rules.
+     * Find directory for given module name
      *
-     * @return LibraryList
+     * @param string $name
+     * @return string
      */
-    public function getInstalledLibraries() {
-        if ($this->installedLibraries) {
-            return $this->installedLibraries;
+    public function findModulePath($name)
+    {
+        $paths = $this->cacheModulePaths();
+        if (isset($paths[$name])) {
+            return $paths[$name];
         }
-        $this->installedLibraries = new LibraryList();
+        return null;
+    }
 
-        // Search all directories
+    /**
+     * Cache all module paths
+     *
+     * @return array Map of module names to path
+     */
+    protected function cacheModulePaths() {
+        if (isset($this->modulePaths)) {
+            return $this->modulePaths;
+        }
+
+        // Cache all paths
+        $this->modulePaths = [];
         foreach ($this->getDirectories() as $dir) {
-            $module = $this->createModule($dir);
-            if ($module) {
-                $this->installedLibraries->add($module);
+            if ($this->isLibraryPath($dir)) {
+                $composerData = json_decode(file_get_contents($dir . '/composer.json'), true);
+                $this->modulePaths[$composerData['name']] = $dir;
             }
         }
-        return $this->installedLibraries;
+        return $this->modulePaths;
     }
 
     /**
@@ -106,28 +118,14 @@ class Project extends Module
         }
     }
 
-    /**
-     * Get a module by name
-     *
-     * @param string $path
-     * @return Library
-     */
-    protected function createModule($path)
-    {
-        if (Module::isModulePath($path)) {
-            return new Module($path, $this);
-        }
-
-        if (Library::isLibraryPath($path)) {
-            return new Library($path, $this);
-        }
-
-        return null;
-    }
-
     public function getMainDirectory()
     {
         // Look in mysite for main content
         return $this->getDirectory() . '/mysite';
+    }
+
+    public function getProject()
+    {
+        return $this;
     }
 }

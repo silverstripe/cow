@@ -23,13 +23,13 @@ tag all children at the same stability". If omitted, all children will be tagged
     "child-stability-inherit",
     "use-unstable-branch"
   ],
-  "vendors": {
+  "vendors": [
     "silverstripe",
-    "silverstripe-australia
-  },
-  "exclude": {
+    "silverstripe-australia"
+  ],
+  "exclude": [
     "silverstripe-themes/simple"
-  }
+  ]
 }
 ```
 

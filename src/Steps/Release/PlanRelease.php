@@ -5,6 +5,7 @@ namespace SilverStripe\Cow\Steps\Release;
 
 
 use SilverStripe\Cow\Commands\Command;
+use SilverStripe\Cow\Model\Modules\Library;
 use SilverStripe\Cow\Model\Release\LibraryRelease;
 use SilverStripe\Cow\Model\Modules\Project;
 use SilverStripe\Cow\Model\Release\Release;
@@ -70,7 +71,9 @@ class PlanRelease extends Step
      */
     protected function generateChildReleases(Release $plan, LibraryRelease $parent) {
         // Get children
-        $childModules = $parent->getLibrary()->getDirectDependencies();
+        $childModules = $parent->getLibrary()->getChildren();
+
+        todo finish this
     }
 
     /**
