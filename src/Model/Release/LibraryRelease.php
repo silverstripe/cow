@@ -93,11 +93,20 @@ class LibraryRelease
      */
     protected $version;
 
-    public function __construct(Library $library, Version $version, Version $from)
+    /**
+     * LibraryRelease constructor.
+     *
+     * @param Library $library
+     * @param Version $version
+     * @param Version|null $from Optional "from" version if creating a new tag
+     */
+    public function __construct(Library $library, Version $version, Version $from = null)
     {
         $this->setLibrary($library);
         $this->setVersion($version);
-        $this->setFromVersion($from);
+        if ($from) {
+            $this->setFromVersion($from);
+        }
     }
 
     /**

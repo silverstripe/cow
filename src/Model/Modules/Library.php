@@ -529,6 +529,16 @@ class Library
     }
 
     /**
+     * Do child releases inherit stability?
+     *
+     * @return bool
+     */
+    public function isStabilityInherited() {
+        $cowData = $this->getCowData();
+        return isset($cowData['options']) && in_array('child-stability-inherit', $cowData['options']);
+    }
+
+    /**
      * Given a release version, determine the from version
      *
      * @param Version $version

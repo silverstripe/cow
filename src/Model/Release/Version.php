@@ -89,6 +89,15 @@ class Version
         return $this->stability ?: ''; // Default to '' which is stable
     }
 
+    /**
+     * Is this version stable?
+     *
+     * @return bool
+     */
+    public function isStable() {
+        return empty($this->stability);
+    }
+
     public function setStability($stability)
     {
         $this->stability = $stability;
@@ -97,7 +106,10 @@ class Version
 
     public function getStabilityVersion()
     {
-        return $this->stabilityVersion;
+        if($this->isStable()) {
+            return null;
+        }
+        return (int)$this->stabilityVersion;
     }
 
     public function setStabilityVersion($stabilityVersion)
@@ -317,7 +329,7 @@ class Version
      * Given a list of tags, determine which is the best "from" version
      *
      * @param Version[] $tags List of tags to search
-     * @param string $libraryName Name of library
+     * @param string $libraryName Name of library (for error reporting only)
      * @return Version
      */
     public function getPriorVersionFromTags($tags, $libraryName) {
@@ -355,5 +367,51 @@ class Version
         }
 
         return $best;
+    }
+
+    /**
+     * Sort a list of tags, by default newest first
+     *
+     * @param Version[] $tags
+     * @param string $dir 'ascending' or 'descending'
+     * @return Version[]
+     */
+    public static function sort($tags, $dir = 'descending') {
+        uasort($tags, function(Version $left, Version $right) use ($dir) {
+            switch($dir) {
+                case 'ascending':
+                    return $left->compareTo($right);
+                case 'descending':
+                    return $right->compareTo($left);
+                default:
+                    throw new InvalidArgumentException("Invalid dir $dir");
+            }
+        });
+        return $tags;
+    }
+
+    /**
+     * Guess the next version to release from this version
+     *
+     * @param string $stability Stability of the next version to use
+     * @param int $stabilityVersion
+     * @return Version
+     */
+    public function getNextVersion($stability = '', $stabilityVersion = 0) {
+        $canditate = clone $this;
+
+        // Check if we can simply release a new stability of the same version
+        // E.g. 4.0.0-alpha1 -> 4.0.0, or 4.0.0-alpha1 -> 4.0.0-beta1
+        $canditate->setStability($stability);
+        $canditate->setStabilityVersion($stabilityVersion);
+        if($this->compareTo($canditate) < 0) {
+            return $canditate;
+        }
+
+        // if suggested stability isn't more stable, advance to next patch release
+        $canditate->setStability('');
+        $canditate->setStabilityVersion(null);
+        $canditate->setPatch($this->getPatch() + 1);
+        return $canditate;
     }
 }

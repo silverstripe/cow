@@ -21,41 +21,41 @@ class ComposerConstraint
      *
      * @var Version
      */
-    protected $from;
+    protected $minVersion;
 
     /**
      * @return Version
      */
-    public function getFrom()
+    public function getMinVersion()
     {
-        return $this->from;
+        return $this->minVersion;
     }
 
     /**
-     * @param Version $from
+     * @param Version $minVersion
      * @return ComposerConstraint
      */
-    public function setFrom($from)
+    public function setMinVersion($minVersion)
     {
-        $this->from = $from;
+        $this->minVersion = $minVersion;
         return $this;
     }
 
     /**
      * @return Version
      */
-    public function getTo()
+    public function getMaxVersion()
     {
-        return $this->to;
+        return $this->maxVersion;
     }
 
     /**
-     * @param mixed $to
+     * @param mixed $maxVersion
      * @return ComposerConstraint
      */
-    public function setTo($to)
+    public function setMaxVersion($maxVersion)
     {
-        $this->to = $to;
+        $this->maxVersion = $maxVersion;
         return $this;
     }
 
@@ -64,7 +64,7 @@ class ComposerConstraint
      *
      * @var Version
      */
-    protected $to;
+    protected $maxVersion;
 
     /**
      * Flag if self.version
@@ -74,27 +74,54 @@ class ComposerConstraint
     protected $isSelfVersion = false;
 
     /**
+     * Original value of the constraint
+     *
+     * @var string
+     */
+    protected $value;
+
+    /**
+     * @return string
+     */
+    public function getValue()
+    {
+        return $this->value;
+    }
+
+    /**
+     * @param string $value
+     * @return $this
+     */
+    public function setValue($value)
+    {
+        $this->value = $value;
+        return $this;
+    }
+
+    /**
      * ComposerConstraint constructor.
      * @param string $constraint
      * @param Version $parentVersion
      */
     public function __construct($constraint, $parentVersion = null)
     {
+        $this->value = $constraint;
+
         if ($constraint === 'self.version') {
              if (!$parentVersion instanceof Version) {
                 throw new InvalidArgumentException("self.version given with missing parent version");
             }
 
             $this->isSelfVersion = true;
-            $this->from = $parentVersion;
-            $this->to = $parentVersion;
+            $this->minVersion = $parentVersion;
+            $this->maxVersion = $parentVersion;
             return;
         }
 
         // Check if matches explicit version (4.0.0, no semver flags)
         if (Version::parse($constraint)) {
-            $this->from = new Version($constraint);
-            $this->to = new Version($constraint);
+            $this->minVersion = new Version($constraint);
+            $this->maxVersion = new Version($constraint);
             return;
         }
 
@@ -128,8 +155,8 @@ class ComposerConstraint
             $to = '99999.99999.99999';
         }
 
-        $this->from = new Version($from);
-        $this->to = new Version($to);
+        $this->minVersion = new Version($from);
+        $this->maxVersion = new Version($to);
     }
 
     /**
@@ -162,8 +189,8 @@ class ComposerConstraint
         $matches = [];
         foreach($tags as $tagName => $tag) {
             // Check lower and upper bounds
-            if ($this->getFrom()->compareTo($tag) <= 0
-                && $this->getTo()->compareTo($tag) >= 0
+            if ($this->getMinVersion()->compareTo($tag) <= 0
+                && $this->getMaxVersion()->compareTo($tag) >= 0
             ) {
                 $matches[$tagName] = $tag;
             }

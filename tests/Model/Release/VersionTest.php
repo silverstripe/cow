@@ -9,7 +9,7 @@ use SilverStripe\Cow\Model\Release\Version;
 
 class VersionTest extends PHPUnit_Framework_TestCase
 {
-    public function testCompare() {
+    public function testLessThan() {
         $this->assertVersionLessThan('4.1.1-alpha1', '4.1.1');
         $this->assertVersionLessThan('4.1.0', '4.1.1-alpha1');
         $this->assertVersionsEqual('4.1.1', '4.1.1');
@@ -24,13 +24,9 @@ class VersionTest extends PHPUnit_Framework_TestCase
     public function assertVersionLessThan($left, $right) {
         $leftVersion = new Version($left);
         $rightVersion = new Version($right);
+        // Test comparison can be inverted
         $this->assertLessThan(0, $leftVersion->compareTo($rightVersion), "$left is less than $right");
-    }
-
-    public function assertVersionGreaterThan($left, $right) {
-        $leftVersion = new Version($left);
-        $rightVersion = new Version($right);
-        $this->assertGreaterThan(0, $leftVersion->compareTo($rightVersion), "$left is greater than $right");
+        $this->assertGreaterThan(0, $rightVersion->compareTo($leftVersion), "$right is greater than $left");
     }
 
     public function assertVersionsEqual($left, $right) {

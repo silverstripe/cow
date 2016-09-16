@@ -77,25 +77,29 @@ class PlanRelease extends Step
 
             // Guess next version
             if ($parent->getLibrary()->isChildUpgradeOnly($childModule->getName())) {
-                $version = $this->findBestUpgradeVersion($parent, $childModule);
+                $release = $this->generateUpgradeRelease($parent, $childModule);
             } else {
-                $version = $this->findBestNextVersion($parent, $childModule);
+                $release = $this->proposeNewReleaseVersion($parent, $childModule);
             }
+            $plan->addChildItem($parent, $release);
+
+            // If this release tag doesn't match an existing tag, then recurse
+
+            // @todo finish this
+            throw new Exception("Not implemented");
         }
-
-        // Based on how each child is included in the parent, guess the before / after version
-
-        // @todo finish this
-        throw new Exception("Not implemented");
     }
 
     /**
-     * Given a parent release and child library, determine the best pre-existing tag to upgrade to
+     * Determine the best existing stable tag to upgrade a dependency to
      *
      * @param LibraryRelease $parentRelease
      * @param Library $childModule
+     * @return LibraryRelease
+     * @throws Exception
      */
-    protected function findBestUpgradeVersion(LibraryRelease $parentRelease, Library $childModule) {
+    protected function generateUpgradeRelease(LibraryRelease $parentRelease, Library $childModule) {
+        // Get tags and composer constraint to filter by
         $tags = $childModule->getTags();
         $constraint = $parentRelease->getLibrary()->getChildConstraint(
             $childModule->getName(),
@@ -111,15 +115,92 @@ class PlanRelease extends Step
                     . $candidate->getValue() . " without a new release"
                 );
             }
-            return $candidate;
+            return new LibraryRelease($childModule, $candidate);
+        }
+
+        // Get all stable tags that match the given composer constraint
+        $candidates = $constraint->filterVersions($tags);
+        foreach($candidates as $tag => $version) {
+            if (!$version->isStable()) {
+                unset($candidates[$tag]);
+            }
+        }
+
+        // Check if we have any candidates left
+        if (empty($candidates)) {
+            throw new Exception(
+                "Library " . $childModule->getName() . " has no available stable tags that matches "
+                . $constraint->getValue()
+                . ". Please remove upgrade-only for this module, or tag a new release."
+            );
+        }
+
+        // Upgrade to highest version
+        $tags = Version::sort($candidates, 'descending');
+        $candidate = reset($tags);
+        return new LibraryRelease($childModule, $candidate);
+    }
+
+    /**
+     * Propose a new version to tag for a given dependency
+     *
+     * @param LibraryRelease $parentRelease
+     * @param Library $childModule
+     * @return mixed|Version
+     * @throws Exception
+     */
+    protected function proposeNewReleaseVersion(LibraryRelease $parentRelease, Library $childModule) {
+        // Get tags and composer constraint to filter by
+        $tags = $childModule->getTags();
+        $constraint = $parentRelease->getLibrary()->getChildConstraint(
+            $childModule->getName(),
+            $parentRelease->getVersion()
+        );
+
+        // Upgrade to self.version
+        if ($constraint->isSelfVersion()) {
+            $candidate = $parentRelease->getVersion();
+
+            // If this is already tagged, just upgrade without a new release
+            if (array_key_exists($candidate->getValue(), $tags)) {
+                return new LibraryRelease($childModule, $candidate);
+            }
+
+            // Get prior version to generate changelog from
+            $priorVersion = $candidate->getPriorVersionFromTags($tags, $childModule->getName());
+            return new LibraryRelease($childModule, $candidate, $priorVersion);
+        }
+
+        // Get stability to use for the new tag
+        $useSameStability = $parentRelease->getLibrary()->isStabilityInherited();
+        if($useSameStability) {
+            $stability = $parentRelease->getVersion()->getStability();
+            $stabilityVersion = $parentRelease->getVersion()->getStabilityVersion();
+        } else {
+            $stability = '';
+            $stabilityVersion = null;
         }
 
         // Filter versions
         $candidates = $constraint->filterVersions($tags);
-    }
+        $tags = Version::sort($candidates, 'descending');
 
-    protected function findBestNextVersion(LibraryRelease $parentReleas, Library $childModule) {
-        throw new Exception("Not implemented");
+        // Determine which best tag to create (with the correct stability)
+        $existingTag = reset($tags);
+        if($existingTag) {
+            // Increment from to guess next version
+            $version = $existingTag->getNextVersion($stability, $stabilityVersion);
+        } else {
+            // In this case, the lower bounds of the constraint isn't a valid tag,
+            // so this is our new candidate
+            $version = clone $constraint->getMinVersion();
+            $version->setStability($stability);
+            $version->setStabilityVersion($stabilityVersion);
+        }
+
+        // Report new tag
+        $from = $version->getPriorVersionFromTags($tags, $childModule->getName());
+        return new LibraryRelease($childModule, $version, $from);
     }
 
     /**
