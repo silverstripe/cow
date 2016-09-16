@@ -4,14 +4,21 @@ Schema of a `.cow.json` file:
 
 Recipe example.
 
-Note that "child-stability-inherit" means "when tagging a recipe at a stability,
-tag all children at the same stability". If omitted, all children will be tagged as stable only.
+
 
 * `link` is used for all module types. Will be guessed from git remote if omitted.
 * `github-slug` is used for making github-api calls. Will be guessed from git remote if omitted.
 * `options` are array of options for this module. These are flags which may include:
-  - `child-stability-inherit` Child modules will be released with the same stability (e.g. -alpha1) as this
-  - `unstable-branch` Temporary branches (e.g. 4.0.1) will be used/created for unstable releases.
+  - `child-stability-inherit` Child modules will be released with the same stability (e.g. -alpha1) as the parent.
+  - `use-unstable-branch` Temporary branches (e.g. 4.0.1) will be used/created for unstable releases.
+* `vendors` Declare list of child requirement library vendors that will be released. A vendor must be declared,
+  otherwise no child dependencies will be released.
+* `exclude` Declares the list of requirements to not include. Requirements for these modules will be omitted,
+  and changes to these modules will not appear in any changelog.
+* `upgrade-only` Declare the list of requirements that should be upgraded. However, no releases to these modules
+  will be made directly. If a module is not in 'upgrade-only', but matches any of the above `vendor` whitelists,
+  then a new release of this module will be made. This can be overridden via the interactive release blueprint
+  confirmation interface.
 
 ```json
 {
@@ -29,6 +36,9 @@ tag all children at the same stability". If omitted, all children will be tagged
   ],
   "exclude": [
     "silverstripe-themes/simple"
+  ],
+  "upgrade-only": [
+     "silverstripe/some-module"
   ]
 }
 ```

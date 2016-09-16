@@ -7,6 +7,7 @@ use Gitonomy\Git\Reference\Branch;
 use Gitonomy\Git\Repository;
 use InvalidArgumentException;
 use LogicException;
+use SilverStripe\Cow\Model\Release\ComposerConstraint;
 use SilverStripe\Cow\Model\Release\Version;
 use SilverStripe\Cow\Utility\Config;
 use Symfony\Component\Console\Logger\ConsoleLogger;
@@ -216,16 +217,39 @@ class Library
     }
 
     /**
+     * Cached list of tags
+     *
+     * @var Version[]
+     */
+    protected $tags = [];
+
+    /**
      * Gets all tags that exist in the repository
      *
-     * @return array
+     * @return Version[] Array where the keys are the version tags, and the values are Version object instances
      */
     public function getTags()
     {
+        // Return cached values
+        if ($this->tags) {
+            return $this->tags;
+        }
+
+        // Get tag strings
         $repo = $this->getRepository();
         $result = $repo->run('tag');
         $tags = preg_split('~\R~u', $result);
-        return array_filter($tags);
+        $tags = array_filter($tags);
+
+        // Objectify tags
+        $this->tags = [];
+        foreach($tags as $tag) {
+            // Skip invalid tags
+            if (Version::parse($tag)) {
+                $this->tags[$tag] = new Version($tag);
+            }
+        }
+        return $this->tags;
     }
 
     /**
@@ -235,6 +259,8 @@ class Library
      */
     public function addTag($tag)
     {
+        // Flush tag cache
+        $this->tags = [];
         $repo = $this->getRepository();
         $repo->run('tag', array('-a', $tag, '-m', "Release {$tag}"));
     }
@@ -445,6 +471,22 @@ class Library
     }
 
     /**
+     * Given a child repo name, return the version constraint declared. E.g. `^4`, `~1.0.0` or `4.x-dev`
+     *
+     * @param string $name
+     * @param Version $thisVersion Value of self.version
+     * @return ComposerConstraint Composer constraint
+     */
+    public function getChildConstraint($name, Version $thisVersion = null) {
+        $data = $this->getComposerData();
+        $this->children = new LibraryList();
+        if (isset($data['require'][$name])) {
+            new ComposerConstraint($data['require'][$name], $thisVersion);
+        }
+        throw new InvalidArgumentException("Library {$this->getName()} does not have child dependency {$name}");
+    }
+
+    /**
      * Determine if the module of a given name is a child library.
      * This module must have a vendor of a denoted vendor
      *
@@ -473,6 +515,17 @@ class Library
             return true;
         }
         return !in_array($name, $cowData['exclude']);
+    }
+
+    /**
+     * Determine if this library is restricted to upgrade-only
+     *
+     * @param string $name
+     * @return bool
+     */
+    public function isChildUpgradeOnly($name) {
+        $cowData = $this->getCowData();
+        return isset($cowData['upgrade-only']) && in_array($name, $cowData['upgrade-only']);
     }
 
     /**

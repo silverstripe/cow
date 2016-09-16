@@ -4,6 +4,7 @@
 namespace SilverStripe\Cow\Steps\Release;
 
 
+use Exception;
 use SilverStripe\Cow\Commands\Command;
 use SilverStripe\Cow\Model\Modules\Library;
 use SilverStripe\Cow\Model\Release\LibraryRelease;
@@ -12,7 +13,6 @@ use SilverStripe\Cow\Model\Release\Release;
 use SilverStripe\Cow\Model\Release\Version;
 use SilverStripe\Cow\Steps\Step;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Output\Output;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class PlanRelease extends Step
@@ -67,13 +67,59 @@ class PlanRelease extends Step
      * Recursively generate a plan for this parent recipe
      *
      * @param Release $plan
-     * @param LibraryRelease $parent
+     * @param LibraryRelease $parent Parent releas object
      */
     protected function generateChildReleases(Release $plan, LibraryRelease $parent) {
         // Get children
         $childModules = $parent->getLibrary()->getChildren();
+        foreach($childModules as $childModule) {
+            // Get constraint and existing tags
 
-        todo finish this
+            // Guess next version
+            if ($parent->getLibrary()->isChildUpgradeOnly($childModule->getName())) {
+                $version = $this->findBestUpgradeVersion($parent, $childModule);
+            } else {
+                $version = $this->findBestNextVersion($parent, $childModule);
+            }
+        }
+
+        // Based on how each child is included in the parent, guess the before / after version
+
+        // @todo finish this
+        throw new Exception("Not implemented");
+    }
+
+    /**
+     * Given a parent release and child library, determine the best pre-existing tag to upgrade to
+     *
+     * @param LibraryRelease $parentRelease
+     * @param Library $childModule
+     */
+    protected function findBestUpgradeVersion(LibraryRelease $parentRelease, Library $childModule) {
+        $tags = $childModule->getTags();
+        $constraint = $parentRelease->getLibrary()->getChildConstraint(
+            $childModule->getName(),
+            $parentRelease->getVersion()
+        );
+
+        // Upgrade to self.version
+        if ($constraint->isSelfVersion()) {
+            $candidate = $parentRelease->getVersion();
+            if (!array_key_exists($candidate->getValue(), $tags)) {
+                throw new Exception(
+                    "Library " . $childModule->getName() . " cannot be upgraded to version "
+                    . $candidate->getValue() . " without a new release"
+                );
+            }
+            return $candidate;
+        }
+
+        // Filter versions
+        $candidates = $constraint->filterVersions($tags);
+    }
+
+    protected function findBestNextVersion(LibraryRelease $parentReleas, Library $childModule) {
+        throw new Exception("Not implemented");
     }
 
     /**
@@ -95,7 +141,7 @@ class PlanRelease extends Step
     }
 
     /**
-     * @param \SilverStripe\Cow\Model\Version $version
+     * @param Version $version
      * @return $this
      */
     public function setVersion($version)
@@ -105,7 +151,7 @@ class PlanRelease extends Step
     }
 
     /**
-     * @return \SilverStripe\Cow\Model\Versions\\SilverStripe\Cow\Model\\SilverStripe\Cow\Model\Release\Version
+     * @return Version
      */
     public function getVersion()
     {

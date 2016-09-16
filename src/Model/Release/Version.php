@@ -3,6 +3,7 @@
 namespace SilverStripe\Cow\Model\Release;
 
 use InvalidArgumentException;
+use LogicException;
 
 /**
  * Represents a version for a release
@@ -85,7 +86,7 @@ class Version
 
     public function getStability()
     {
-        return $this->stability;
+        return $this->stability ?: ''; // Default to '' which is stable
     }
 
     public function setStability($stability)
@@ -250,7 +251,7 @@ class Version
     /**
      * Compare versions.
      *
-     * Note that stability is ignored. (4.0.0 === 4.0.0-alpha1, 4.0.0 < 4.0.1)
+     *  (4.0.0 > 4.0.0-alpha1, 4.0.0 < 4.0.1)
      *
      * @param Version $other
      * @return int negative for smaller version, 0 for equal, positive for later version
@@ -264,13 +265,58 @@ class Version
         if ($diff) {
             return $diff;
         }
-        return $this->getPatch() - $other->getPatch();
+        $diff = $this->getPatch() - $other->getPatch();
+        if ($diff) {
+            return $diff;
+        }
+        // Compare stability
+        $diff = $this->compareStabliity($this->getStability(), $other->getStability());
+        if ($diff) {
+            return $diff;
+        }
+        // Fall back to stability type (e.g. alpha1 vs alpha2)
+        $diff = $this->getStabilityVersion() - $other->getStabilityVersion();
+        return $diff;
+    }
+
+    /**
+     * Compare stability strings
+     *
+     * @param string $left
+     * @param string $right
+     * @return int
+     */
+    protected function compareStabliity($left, $right) {
+        $precedence = [
+            '',
+            'rc',
+            'beta',
+            'alpha'
+        ];
+        if (!in_array($left, $precedence)) {
+            throw new InvalidArgumentException("Invalid stability $left");
+        }
+        if (!in_array($right, $precedence)) {
+            throw new InvalidArgumentException("Invalid stability $left");
+        }
+        if ($left === $right) {
+            return 0;
+        }
+        foreach($precedence as $type) {
+            if ($left === $type) {
+                return 1;
+            }
+            if ($right === $type) {
+                return -1;
+            }
+        }
+        throw new LogicException("Internal error");
     }
 
     /**
      * Given a list of tags, determine which is the best "from" version
      *
-     * @param array $tags List of tags to search
+     * @param Version[] $tags List of tags to search
      * @param string $libraryName Name of library
      * @return Version
      */
@@ -278,39 +324,34 @@ class Version
         // If we can programatically detect a prior version, then use this
         $prior = $this->getPriorVersion();
         if ($prior) {
-            if (in_array($prior, $tags)) {
+            if (array_key_exists($prior->getValue(), $tags)) {
                 return $prior;
             }
             throw new InvalidArgumentException(
                 "Releasing version " . $this->getValue() . " of " . $libraryName
-                . " requires a prior tag at version " . $prior . ", but was not found."
+                . " requires a prior tag at version " . $prior->getValue() . ", but was not found."
             );
         }
 
+        // Search all tags to find best prior version
         $best = null;
         foreach($tags as $tag) {
-            // Check if valid tag
-            if (!$this->parse($tag)) {
-                continue;
-            }
-            $tagVersion = new Version($tag);
-
             // Skip pre-releases
-            if ($tagVersion->getStability()) {
+            if ($tag->getStability()) {
                 continue;
             }
 
             // Skip newer versions
-            if ($tagVersion->compareTo($this) >= 0) {
+            if ($tag->compareTo($this) >= 0) {
                 continue;
             }
 
             // Skip if we found a better tag
-            if ($best && $tagVersion->compareTo($best) < 0) {
+            if ($best && $tag->compareTo($best) < 0) {
                 continue;
             }
 
-            $best = $tagVersion;
+            $best = $tag;
         }
 
         return $best;

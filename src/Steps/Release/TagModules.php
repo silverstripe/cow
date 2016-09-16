@@ -56,7 +56,7 @@ class TagModules extends ModuleStep
         foreach ($this->getModules() as $module) {
             $this->log($output, "Tagging module " . $module->getInstalledName());
             $tags = $module->getTags();
-            if (in_array($tag, $tags)) {
+            if (array_key_exists($tag, $tags)) {
                 $this->log($output, "Skipping existing tag: <info>{$tag}</info>");
             } else {
                 $module->addTag($tag);
