@@ -8,7 +8,7 @@ use InvalidArgumentException;
 /**
  * Represents a complete release, which will contain a list of many {@see ModuleReales} instances
  */
-class Release
+class ReleasePlan
 {
     /**
      * @var LibraryRelease

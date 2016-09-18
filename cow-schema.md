@@ -18,7 +18,7 @@ Recipe example.
 * `upgrade-only` Declare the list of requirements that should be upgraded. However, no releases to these modules
   will be made directly. If a module is not in 'upgrade-only', but matches any of the above `vendor` whitelists,
   then a new release of this module will be made. This can be overridden via the interactive release blueprint
-  confirmation interface.
+  confirmation interface. Note that this will ONLY match stable tags! (not pre-release tags or dev branches)
 
 ```json
 {

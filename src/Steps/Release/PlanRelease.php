@@ -3,13 +3,12 @@
 
 namespace SilverStripe\Cow\Steps\Release;
 
-
 use Exception;
 use SilverStripe\Cow\Commands\Command;
 use SilverStripe\Cow\Model\Modules\Library;
 use SilverStripe\Cow\Model\Release\LibraryRelease;
 use SilverStripe\Cow\Model\Modules\Project;
-use SilverStripe\Cow\Model\Release\Release;
+use SilverStripe\Cow\Model\Release\ReleasePlan;
 use SilverStripe\Cow\Model\Release\Version;
 use SilverStripe\Cow\Steps\Step;
 use Symfony\Component\Console\Input\InputInterface;
@@ -49,33 +48,42 @@ class PlanRelease extends Step
         $plan = $this->generatePlan($output);
 
         // Review with author
+        $plan = $this->reviewPlan($output, $input, $plan);
     }
 
+    /**
+     * Generate a draft plan for the current project based on configuration and automatic best-guess
+     * @param OutputInterface $output
+     * @return ReleasePlan
+     */
     protected function generatePlan(OutputInterface $output) {
-        $plan = new Release();
+        $plan = new ReleasePlan();
 
         // Build root release version
-        $from = $this->getProject()->getFromVersion($this->getVersion());
+        $from = $this->getVersion()->getPriorVersionFromTags(
+            $this->getProject()->getTags(),
+            $this->getProject()->getName()
+        );
         $moduleRelease = new LibraryRelease($this->getProject(), $this->getVersion(), $from);
         $plan->addRootItem($moduleRelease);
 
         // Recursively build child releases
         $this->generateChildReleases($plan, $moduleRelease);
+        return $plan;
     }
 
     /**
      * Recursively generate a plan for this parent recipe
      *
-     * @param Release $plan
-     * @param LibraryRelease $parent Parent releas object
+     * @param ReleasePlan $plan In-progress plan
+     * @param LibraryRelease $parent Parent release object
+     * @throws Exception
      */
-    protected function generateChildReleases(Release $plan, LibraryRelease $parent) {
+    protected function generateChildReleases(ReleasePlan $plan, LibraryRelease $parent) {
         // Get children
         $childModules = $parent->getLibrary()->getChildren();
         foreach($childModules as $childModule) {
-            // Get constraint and existing tags
-
-            // Guess next version
+            // For the given child module, guess the upgrade mechanism (upgrade or new tag)
             if ($parent->getLibrary()->isChildUpgradeOnly($childModule->getName())) {
                 $release = $this->generateUpgradeRelease($parent, $childModule);
             } else {
@@ -83,10 +91,13 @@ class PlanRelease extends Step
             }
             $plan->addChildItem($parent, $release);
 
-            // If this release tag doesn't match an existing tag, then recurse
-
-            // @todo finish this
-            throw new Exception("Not implemented");
+            // If this release tag doesn't match an existing tag, then recurse.
+            // If the tag exists, then we are simply updating the dependency to
+            // an existing tag, so there's no need to recursie.
+            $tags = $childModule->getTags();
+            if (!array_key_exists($release->getVersion()->getValue(), $tags)) {
+                $this->generateChildReleases($plan, $release);
+            }
         }
     }
 
@@ -237,5 +248,22 @@ class PlanRelease extends Step
     public function getVersion()
     {
         return $this->version;
+    }
+
+    /**
+     * Interactively confirm a plan with the user
+     *
+     * @param OutputInterface $output
+     * @param InputInterface $input
+     * @param ReleasePlan $plan
+     */
+    protected function reviewPlan(OutputInterface $output, InputInterface $input, ReleasePlan $plan)
+    {
+        $this->log(
+            $output,
+            "The below release plan has been generated for this project; Please confirm any manual changes below"
+        );
+
+        var_dump($plan);
     }
 }

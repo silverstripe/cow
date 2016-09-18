@@ -539,17 +539,6 @@ class Library
     }
 
     /**
-     * Given a release version, determine the from version
-     *
-     * @param Version $version
-     * @return Version Version to generate change log from
-     */
-    public function getFromVersion(Version $version) {
-        // Get list of existing tags
-        return $version->getPriorVersionFromTags($this->getTags(), $this->getName());
-    }
-
-    /**
      * Get the top level project
      *
      * @return Project
