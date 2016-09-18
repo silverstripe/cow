@@ -198,8 +198,11 @@ class Version
     }
 
     /**
-     * Guess the best prior version to release as changelog. Returns null if
-     * not found.
+     * Guess the best prior version to release as changelog.
+     * E.g. 4.1.1 -> 4.1.0, or 4.1.1-alpha2 -> 4.1.1-alpha1
+     *
+     * Returns null if this cannot be determined programatically.
+     * E.g. 4.0.0
      *
      * @return Version
      */
@@ -335,14 +338,8 @@ class Version
     public function getPriorVersionFromTags($tags, $libraryName) {
         // If we can programatically detect a prior version, then use this
         $prior = $this->getPriorVersion();
-        if ($prior) {
-            if (array_key_exists($prior->getValue(), $tags)) {
-                return $prior;
-            }
-            throw new InvalidArgumentException(
-                "Releasing version " . $this->getValue() . " of " . $libraryName
-                . " requires a prior tag at version " . $prior->getValue() . ", but was not found."
-            );
+        if ($prior && array_key_exists($prior->getValue(), $tags)) {
+            return $prior;
         }
 
         // Search all tags to find best prior version
@@ -408,7 +405,8 @@ class Version
             return $canditate;
         }
 
-        // if suggested stability isn't more stable, advance to next patch release
+        // if suggested stability isn't more stable, advance to next stable patch release
+        // E.g. 4.0.0-alpha2 -> 4.0.1
         $canditate->setStability('');
         $canditate->setStabilityVersion(null);
         $canditate->setPatch($this->getPatch() + 1);

@@ -59,12 +59,8 @@ class PlanRelease extends Step
     protected function generatePlan(OutputInterface $output) {
         $plan = new ReleasePlan();
 
-        // Build root release version
-        $from = $this->getVersion()->getPriorVersionFromTags(
-            $this->getProject()->getTags(),
-            $this->getProject()->getName()
-        );
-        $moduleRelease = new LibraryRelease($this->getProject(), $this->getVersion(), $from);
+        // Add the provided version as the root plan item
+        $moduleRelease = new LibraryRelease($this->getProject(), $this->getVersion());
         $plan->addRootItem($moduleRelease);
 
         // Recursively build child releases
@@ -119,14 +115,14 @@ class PlanRelease extends Step
 
         // Upgrade to self.version
         if ($constraint->isSelfVersion()) {
-            $candidate = $parentRelease->getVersion();
-            if (!array_key_exists($candidate->getValue(), $tags)) {
+            $candidateVersion = $parentRelease->getVersion();
+            if (!array_key_exists($candidateVersion->getValue(), $tags)) {
                 throw new Exception(
                     "Library " . $childModule->getName() . " cannot be upgraded to version "
-                    . $candidate->getValue() . " without a new release"
+                    . $candidateVersion->getValue() . " without a new release"
                 );
             }
-            return new LibraryRelease($childModule, $candidate);
+            return new LibraryRelease($childModule, $candidateVersion);
         }
 
         // Get all stable tags that match the given composer constraint
@@ -148,8 +144,8 @@ class PlanRelease extends Step
 
         // Upgrade to highest version
         $tags = Version::sort($candidates, 'descending');
-        $candidate = reset($tags);
-        return new LibraryRelease($childModule, $candidate);
+        $candidateVersion = reset($tags);
+        return new LibraryRelease($childModule, $candidateVersion);
     }
 
     /**
@@ -170,16 +166,15 @@ class PlanRelease extends Step
 
         // Upgrade to self.version
         if ($constraint->isSelfVersion()) {
-            $candidate = $parentRelease->getVersion();
+            $candidateVersion = $parentRelease->getVersion();
 
             // If this is already tagged, just upgrade without a new release
-            if (array_key_exists($candidate->getValue(), $tags)) {
-                return new LibraryRelease($childModule, $candidate);
+            if (array_key_exists($candidateVersion->getValue(), $tags)) {
+                return new LibraryRelease($childModule, $candidateVersion);
             }
 
-            // Get prior version to generate changelog from
-            $priorVersion = $candidate->getPriorVersionFromTags($tags, $childModule->getName());
-            return new LibraryRelease($childModule, $candidate, $priorVersion);
+            // Build release
+            return new LibraryRelease($childModule, $candidateVersion);
         }
 
         // Get stability to use for the new tag
@@ -210,8 +205,7 @@ class PlanRelease extends Step
         }
 
         // Report new tag
-        $from = $version->getPriorVersionFromTags($tags, $childModule->getName());
-        return new LibraryRelease($childModule, $version, $from);
+        return new LibraryRelease($childModule, $version);
     }
 
     /**

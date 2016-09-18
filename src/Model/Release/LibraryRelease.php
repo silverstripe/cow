@@ -45,24 +45,6 @@ class LibraryRelease
     /**
      * @return Version
      */
-    public function getFromVersion()
-    {
-        return $this->fromVersion;
-    }
-
-    /**
-     * @param Version $fromVersion
-     * @return $this
-     */
-    public function setFromVersion($fromVersion)
-    {
-        $this->fromVersion = $fromVersion;
-        return $this;
-    }
-
-    /**
-     * @return Version
-     */
     public function getVersion()
     {
         return $this->version;
@@ -79,14 +61,6 @@ class LibraryRelease
     }
 
     /**
-     * The previous version to generate a changelog from.
-     * This can be null if not generating a changelog.
-     *
-     * @var Version
-     */
-    protected $fromVersion;
-
-    /**
      * The version being released
      *
      * @var Version
@@ -98,15 +72,11 @@ class LibraryRelease
      *
      * @param Library $library
      * @param Version $version
-     * @param Version|null $from Optional "from" version if creating a new tag
      */
-    public function __construct(Library $library, Version $version, Version $from = null)
+    public function __construct(Library $library, Version $version)
     {
         $this->setLibrary($library);
         $this->setVersion($version);
-        if ($from) {
-            $this->setFromVersion($from);
-        }
     }
 
     /**
