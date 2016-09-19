@@ -8,7 +8,6 @@ use SilverStripe\Cow\Commands\Command;
 use SilverStripe\Cow\Model\Modules\Library;
 use SilverStripe\Cow\Model\Release\LibraryRelease;
 use SilverStripe\Cow\Model\Modules\Project;
-use SilverStripe\Cow\Model\Release\ReleasePlan;
 use SilverStripe\Cow\Model\Release\Version;
 use SilverStripe\Cow\Steps\Step;
 use Symfony\Component\Console\Input\InputInterface;
@@ -56,28 +55,24 @@ class PlanRelease extends Step
     /**
      * Generate a draft plan for the current project based on configuration and automatic best-guess
      * @param OutputInterface $output
-     * @return ReleasePlan
+     * @return LibraryRelease Root release node
      */
     protected function generatePlan(OutputInterface $output) {
-        $plan = new ReleasePlan();
-
         // Add the provided version as the root plan item
         $moduleRelease = new LibraryRelease($this->getProject(), $this->getVersion());
-        $plan->addRootItem($moduleRelease);
 
         // Recursively build child releases
-        $this->generateChildReleases($plan, $moduleRelease);
-        return $plan;
+        $this->generateChildReleases($moduleRelease);
+        return $moduleRelease;
     }
 
     /**
      * Recursively generate a plan for this parent recipe
      *
-     * @param ReleasePlan $plan In-progress plan
      * @param LibraryRelease $parent Parent release object
      * @throws Exception
      */
-    protected function generateChildReleases(ReleasePlan $plan, LibraryRelease $parent) {
+    protected function generateChildReleases(LibraryRelease $parent) {
         // Get children
         $childModules = $parent->getLibrary()->getChildren();
         foreach($childModules as $childModule) {
@@ -87,14 +82,14 @@ class PlanRelease extends Step
             } else {
                 $release = $this->proposeNewReleaseVersion($parent, $childModule);
             }
-            $plan->addChildItem($parent, $release);
+            $parent->addItem($release);
 
             // If this release tag doesn't match an existing tag, then recurse.
             // If the tag exists, then we are simply updating the dependency to
             // an existing tag, so there's no need to recursie.
             $tags = $childModule->getTags();
             if (!array_key_exists($release->getVersion()->getValue(), $tags)) {
-                $this->generateChildReleases($plan, $release);
+                $this->generateChildReleases($release);
             }
         }
     }
@@ -251,11 +246,12 @@ class PlanRelease extends Step
      *
      * @param OutputInterface $output
      * @param InputInterface $input
-     * @param ReleasePlan $plan
+     * @param LibraryRelease $rootLibraryRelease
+     * @return LibraryRelease
      */
-    protected function reviewPlan(OutputInterface $output, InputInterface $input, ReleasePlan $plan)
+    protected function reviewPlan(OutputInterface $output, InputInterface $input, LibraryRelease $rootLibraryRelease)
     {
-        $releaseLines = $this->getReleaseOptions($plan->getRootItem());
+        $releaseLines = $this->getReleaseOptions($rootLibraryRelease);
 
         // If not interactive, simply output read-only list of versions
         $message = "The below release plan has been generated for this project";
@@ -264,7 +260,7 @@ class PlanRelease extends Step
             foreach($releaseLines as $line) {
                 $this->log($output, $line);
             }
-            return $plan;
+            return $rootLibraryRelease;
         }
 
         // Prompt user with query to modify this plan
@@ -278,15 +274,15 @@ class PlanRelease extends Step
         );
         $selectedLibrary = $this->getQuestionHelper()->ask($input, $output, $question);
         if($selectedLibrary === 'continue') {
-            return $plan;
+            return $rootLibraryRelease;
         }
 
         // Modify selected dependency
-        $selectedRelease = $plan->getItemByLibrary($selectedLibrary);
+        $selectedRelease = $rootLibraryRelease->getItem($selectedLibrary);
         $this->reviewLibraryVersion($output, $input, $selectedRelease);
 
         // Recursively update plan
-        return $this->reviewPlan($output, $input, $plan);
+        return $this->reviewPlan($output, $input, $rootLibraryRelease);
     }
 
     /**
@@ -296,6 +292,7 @@ class PlanRelease extends Step
      * @param InputInterface $input
      * @param LibraryRelease $selectedVersion
      * @internal param ReleasePlan $plan
+     * @return LibraryRelease
      */
     protected function reviewLibraryVersion(
         OutputInterface $output,
@@ -311,8 +308,8 @@ class PlanRelease extends Step
         // If version is valid, update and return
         if (Version::parse($newVersionName)) {
             $newVersion = new Version($newVersionName);
-            $selectedVersion->setVersion($newVersion);
-            return;
+            $this->modifyLibraryReleaseVersion($selectedVersion, $newVersion);
+            return $selectedVersion;
         }
 
         // If error, repeat
@@ -354,12 +351,38 @@ class PlanRelease extends Step
         $options[$node->getLibrary()->getName()] = $formatting . $node->getLibrary()->getName() . $version;
 
         // Build child version options
-        foreach($node->getChildren() as $child) {
+        foreach($node->getItems() as $child) {
             $options = array_merge(
                 $options,
                 $this->getReleaseOptions($child, $depth ? $depth + 3 : 1)
             );
         }
         return $options;
+    }
+
+    /**
+     * Update selected version of a given library
+     *
+     * @param LibraryRelease $selectedVersion
+     * @param Version $newVersion New version
+     */
+    protected function modifyLibraryReleaseVersion(LibraryRelease $selectedVersion, $newVersion)
+    {
+        $wasNewRelease = $selectedVersion->getIsNewRelease();
+
+        // Replace tag
+        $selectedVersion->setVersion($newVersion);
+
+        // If the "create new release" tag changes, we need to re-generate all child dependencies
+        $isNewRelease = $selectedVersion->getIsNewRelease();
+        if ($wasNewRelease !== $isNewRelease) {
+            // Need to either clear, or regenerate all children
+            $selectedVersion->clearItems();
+
+            // Changing to require a new tag will populate children again from scratch
+            if ($isNewRelease) {
+                $this->generateChildReleases($selectedVersion);
+            }
+        }
     }
 }

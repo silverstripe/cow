@@ -15,7 +15,7 @@ class LibraryRelease
      *
      * @var LibraryRelease[]
      */
-    protected $childReleases = [];
+    protected $items = [];
 
     /**
      * The module being released
@@ -80,19 +80,67 @@ class LibraryRelease
     }
 
     /**
-     * Add release for child object
+     * Add or replace release for child object
      *
      * @param LibraryRelease $release
+     * @return $this
      */
-    public function addChildItem(LibraryRelease $release) {
-        $this->childReleases[] = $release;
+    public function addItem(LibraryRelease $release) {
+        $name = $release->getLibrary()->getName();
+        $this->items[$name] = $release;
+        return $this;
     }
 
     /**
+     * Remove an item by name
+     *
+     * @param string $name
+     * @return $this
+     */
+    public function removeItem($name) {
+        unset($this->items[$name]);
+        return $this;
+    }
+
+    /**
+     * Get child item for this library
+     *
+     * @param string $name Library name
+     * @return null|LibraryRelease
+     */
+    public function getItem($name) {
+        // Identity check
+        if ($this->getLibrary()->getName() === $name) {
+            return $this;
+        }
+
+        // Check children
+        foreach ($this->items as $child) {
+            if ($nested = $child->getItem($name)) {
+                return $nested;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Clear all child releases
+     *
+     * @return $this
+     */
+    public function clearItems() {
+        $this->items = [];
+        return $this;
+    }
+
+    /**
+     * Get direct child items
+     *
      * @return LibraryRelease[]
      */
-    public function getChildren() {
-        return $this->childReleases;
+    public function getItems() {
+        return $this->items;
     }
 
     /**

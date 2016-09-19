@@ -479,7 +479,6 @@ class Library
      */
     public function getChildConstraint($name, Version $thisVersion = null) {
         $data = $this->getComposerData();
-        $this->children = new LibraryList();
         if (isset($data['require'][$name])) {
             return new ComposerConstraint($data['require'][$name], $thisVersion);
         }
