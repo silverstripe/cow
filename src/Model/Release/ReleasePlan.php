@@ -66,4 +66,17 @@ class ReleasePlan
     public function getRootItem() {
         return $this->rootRelease;
     }
+
+    /**
+     * Find release by library name
+     *
+     * @param string $name
+     * @return LibraryRelease
+     */
+    public function getItemByLibrary($name) {
+        if (isset($this->items[$name])) {
+            return $this->items[$name];
+        }
+        throw new InvalidArgumentException("No version for module {$name} exists.");
+    }
 }

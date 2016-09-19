@@ -14,6 +14,7 @@ use SilverStripe\Cow\Steps\Step;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ChoiceQuestion;
+use Symfony\Component\Console\Question\Question;
 
 class PlanRelease extends Step
 {
@@ -254,23 +255,73 @@ class PlanRelease extends Step
      */
     protected function reviewPlan(OutputInterface $output, InputInterface $input, ReleasePlan $plan)
     {
+        $releaseLines = $this->getReleaseOptions($plan->getRootItem());
+
+        // If not interactive, simply output read-only list of versions
+        $message = "The below release plan has been generated for this project";
         if (!$input->isInteractive()) {
-            // todo
+            $this->log($output, $message);
+            foreach($releaseLines as $line) {
+                $this->log($output, $line);
+            }
+            return $plan;
         }
 
-        $options = array_merge(
-            ["continue" => "continue"],
-            $this->getReleaseOptions($plan->getRootItem())
-        );
-
-        $helper = $this->getQuestionHelper();
+        // Prompt user with query to modify this plan
         $question = new ChoiceQuestion(
-            "The below release plan has been generated for this project; Please confirm any manual changes below",
-            $options,
+            "{$message}; Please confirm any manual changes below:",
+            array_merge(
+                ["continue" => "continue"],
+                $releaseLines
+            ),
             "continue"
         );
-        $answer = $helper->ask($input, $output, $question);
-        // @todo
+        $selectedLibrary = $this->getQuestionHelper()->ask($input, $output, $question);
+        if($selectedLibrary === 'continue') {
+            return $plan;
+        }
+
+        // Modify selected dependency
+        $selectedRelease = $plan->getItemByLibrary($selectedLibrary);
+        $this->reviewLibraryVersion($output, $input, $selectedRelease);
+
+        // Recursively update plan
+        return $this->reviewPlan($output, $input, $plan);
+    }
+
+    /**
+     * Update the version of a selected library
+     *
+     * @param OutputInterface $output
+     * @param InputInterface $input
+     * @param LibraryRelease $selectedVersion
+     * @internal param ReleasePlan $plan
+     */
+    protected function reviewLibraryVersion(
+        OutputInterface $output,
+        InputInterface $input,
+        LibraryRelease $selectedVersion
+    ) {
+        $question = new Question(
+            "Please enter a new version to release for <info>" . $selectedVersion->getLibrary()->getName() . "</info>: ",
+            $selectedVersion->getVersion()
+        );
+        $newVersionName = $this->getQuestionHelper()->ask($input, $output, $question);
+
+        // If version is valid, update and return
+        if (Version::parse($newVersionName)) {
+            $newVersion = new Version($newVersionName);
+            $selectedVersion->setVersion($newVersion);
+            return;
+        }
+
+        // If error, repeat
+        $this->log(
+            $output,
+            "Invalid version {$newVersionName}; Please enter a tag in w.x.y(-[rc|alpha|beta][z]) format",
+            "error"
+        );
+        $this->reviewLibraryVersion($output, $input, $selectedVersion);
     }
 
     /**
@@ -282,13 +333,27 @@ class PlanRelease extends Step
      */
     protected function getReleaseOptions(LibraryRelease $node, $depth = 0) {
         $options = [];
+        // Format / indent this line
         $formatting = str_repeat(' ', $depth) . ($depth ? html_entity_decode('&#x2514;', ENT_NOQUOTES, 'UTF-8') . ' ' : '');
+
+        // Get version release information
         if ($node->getIsNewRelease()) {
-            $version = ' (<info>' . $node->getVersion()->getValue() . '</info> new tag)';
+            $version = ' (<info>' . $node->getVersion()->getValue() . '</info>) new tag';
+
+            // If releasing a new tag, show previous version
+            $tags = $node->getLibrary()->getTags();
+            $previous = $node->getVersion()->getPriorVersionFromTags($tags, $node->getLibrary()->getName());
+            if ($previous) {
+                $version .= ', prior version <comment>' . $previous->getValue() . '</comment>';
+            }
         } else {
-            $version = ' (<info>' . $node->getVersion()->getValue() . '</info> existing tag)';
+            $version = ' (<comment>' . $node->getVersion()->getValue() . '</comment> existing tag)';
         }
+
+        // Build string
         $options[$node->getLibrary()->getName()] = $formatting . $node->getLibrary()->getName() . $version;
+
+        // Build child version options
         foreach($node->getChildren() as $child) {
             $options = array_merge(
                 $options,
