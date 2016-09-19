@@ -36,6 +36,24 @@ class ComposerConstraintTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('99999.99999.99999', $constraint->getMaxVersion()->getValue());
     }
 
+    public function testParseDev() {
+        $constraint = new ComposerConstraint('4.1.x-dev');
+        $this->assertEquals('4.1.0-alpha1', $constraint->getMinVersion()->getValue());
+        $this->assertEquals('4.1.99999', $constraint->getMaxVersion()->getValue());
+
+        $constraint = new ComposerConstraint('4.x-dev');
+        $this->assertEquals('4.0.0-alpha1', $constraint->getMinVersion()->getValue());
+        $this->assertEquals('4.99999.99999', $constraint->getMaxVersion()->getValue());
+
+        $constraint = new ComposerConstraint('4.1.*-dev');
+        $this->assertEquals('4.1.0-alpha1', $constraint->getMinVersion()->getValue());
+        $this->assertEquals('4.1.99999', $constraint->getMaxVersion()->getValue());
+
+        $constraint = new ComposerConstraint('4.*-dev');
+        $this->assertEquals('4.0.0-alpha1', $constraint->getMinVersion()->getValue());
+        $this->assertEquals('4.99999.99999', $constraint->getMaxVersion()->getValue());
+    }
+
     public function testParseSelfVersion() {
         $constraint = new ComposerConstraint('self.version', new Version('4.1.1'));
         $this->assertEquals('4.1.1', $constraint->getMinVersion()->getValue());

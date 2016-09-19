@@ -15,7 +15,7 @@ class LibraryRelease
      *
      * @var LibraryRelease[]
      */
-    protected $childReleases;
+    protected $childReleases = [];
 
     /**
      * The module being released
@@ -86,5 +86,22 @@ class LibraryRelease
      */
     public function addChildItem(LibraryRelease $release) {
         $this->childReleases[] = $release;
+    }
+
+    /**
+     * @return LibraryRelease[]
+     */
+    public function getChildren() {
+        return $this->childReleases;
+    }
+
+    /**
+     * Is this a new release?
+     *
+     * @return bool True if a new tag will be created, false if using existing tag
+     */
+    public function getIsNewRelease() {
+        $tags = $this->getLibrary()->getTags();
+        return !array_key_exists($this->getVersion()->getValue(), $tags);
     }
 }

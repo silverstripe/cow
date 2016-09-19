@@ -19,8 +19,8 @@
   },
   "require": {
     "php": ">=5.5",
-    "symfony/console": "^2.7",
-    "symfony/process": "^2.7",
+    "symfony/console": "^2.8",
+    "symfony/process": "^2.8",
     "gitonomy/gitlib": "~1.0",
     "psr/log": "^1",
     "knplabs/github-api": "^2.0",

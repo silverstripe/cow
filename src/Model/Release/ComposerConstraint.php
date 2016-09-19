@@ -13,6 +13,7 @@ use InvalidArgumentException;
  * - ^0(.0(.0)?)?
  * - ~0(.0(.0)?)?
  * - 0(.0(.0)?)?
+ * - 0(.0).x-dev
  */
 class ComposerConstraint
 {
@@ -167,8 +168,27 @@ class ComposerConstraint
      */
     public static function parse($version)
     {
+        // Match dev constraint
         $valid = preg_match(
-            '/^(?<type>[~^])(?<major>\d+)(\.(?<minor>\d+)(\.(?<patch>\d+))?)?$/',
+            '/^(?<major>\\d+)(\\.(?<minor>\\d+))?\.[x\\*]\\-dev?$/',
+            $version,
+            $matches
+        );
+        if ($valid) {
+            return array_merge(
+                $matches,
+                [
+                    'type' => '~',
+                    'major' => $matches['major'],
+                    'minor' => isset($matches['minor']) ? $matches['minor'] : '0',
+                    'patch' => isset($matches['minor']) ? '0' : null,
+                ]
+            );
+        }
+
+        // Match semver constraint
+        $valid = preg_match(
+            '/^(?<type>[~^])(?<major>\d+)(\\.(?<minor>\d+)(\\.(?<patch>\\d+))?)?$/',
             $version,
             $matches
         );

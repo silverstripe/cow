@@ -481,7 +481,7 @@ class Library
         $data = $this->getComposerData();
         $this->children = new LibraryList();
         if (isset($data['require'][$name])) {
-            new ComposerConstraint($data['require'][$name], $thisVersion);
+            return new ComposerConstraint($data['require'][$name], $thisVersion);
         }
         throw new InvalidArgumentException("Library {$this->getName()} does not have child dependency {$name}");
     }
@@ -535,7 +535,7 @@ class Library
      */
     public function isStabilityInherited() {
         $cowData = $this->getCowData();
-        return isset($cowData['options']) && in_array('child-stability-inherit', $cowData['options']);
+        return !empty($cowData['child-stability-inherit']);
     }
 
     /**

@@ -13,6 +13,7 @@ use SilverStripe\Cow\Model\Release\Version;
 use SilverStripe\Cow\Steps\Step;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Question\ChoiceQuestion;
 
 class PlanRelease extends Step
 {
@@ -253,11 +254,47 @@ class PlanRelease extends Step
      */
     protected function reviewPlan(OutputInterface $output, InputInterface $input, ReleasePlan $plan)
     {
-        $this->log(
-            $output,
-            "The below release plan has been generated for this project; Please confirm any manual changes below"
+        if (!$input->isInteractive()) {
+            // todo
+        }
+
+        $options = array_merge(
+            ["continue" => "continue"],
+            $this->getReleaseOptions($plan->getRootItem())
         );
 
-        var_dump($plan);
+        $helper = $this->getQuestionHelper();
+        $question = new ChoiceQuestion(
+            "The below release plan has been generated for this project; Please confirm any manual changes below",
+            $options,
+            "continue"
+        );
+        $answer = $helper->ask($input, $output, $question);
+        // @todo
+    }
+
+    /**
+     * Build user-visible option selection list based on a prepared plan
+     *
+     * @param LibraryRelease $node
+     * @param int $depth
+     * @return array List of options
+     */
+    protected function getReleaseOptions(LibraryRelease $node, $depth = 0) {
+        $options = [];
+        $formatting = str_repeat(' ', $depth) . ($depth ? html_entity_decode('&#x2514;', ENT_NOQUOTES, 'UTF-8') . ' ' : '');
+        if ($node->getIsNewRelease()) {
+            $version = ' (<info>' . $node->getVersion()->getValue() . '</info> new tag)';
+        } else {
+            $version = ' (<info>' . $node->getVersion()->getValue() . '</info> existing tag)';
+        }
+        $options[$node->getLibrary()->getName()] = $formatting . $node->getLibrary()->getName() . $version;
+        foreach($node->getChildren() as $child) {
+            $options = array_merge(
+                $options,
+                $this->getReleaseOptions($child, $depth ? $depth + 3 : 1)
+            );
+        }
+        return $options;
     }
 }

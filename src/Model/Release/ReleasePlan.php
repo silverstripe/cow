@@ -57,4 +57,13 @@ class ReleasePlan
 
         $this->items[$name] = $release;
     }
+
+    /**
+     * Get the root item for this plan
+     *
+     * @return LibraryRelease
+     */
+    public function getRootItem() {
+        return $this->rootRelease;
+    }
 }
