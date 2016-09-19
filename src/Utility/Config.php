@@ -19,4 +19,22 @@ class Config
         }
         return $result;
     }
+
+    /**
+     * Save the given array to a json file
+     *
+     * @param string $path
+     * @param array $data
+     * @throws Exception
+     */
+    public static function saveToFile($path, $data) {
+        $content = json_encode($data, JSON_PRETTY_PRINT);
+        
+        // Make sure errors are reported
+        if (json_last_error()) {
+            throw new Exception(json_last_error_msg());
+        }
+
+        file_put_contents($path, $content);
+    }
 }

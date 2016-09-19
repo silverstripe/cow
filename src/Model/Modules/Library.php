@@ -8,6 +8,7 @@ use Gitonomy\Git\Repository;
 use InvalidArgumentException;
 use LogicException;
 use SilverStripe\Cow\Model\Release\ComposerConstraint;
+use SilverStripe\Cow\Model\Release\LibraryRelease;
 use SilverStripe\Cow\Model\Release\Version;
 use SilverStripe\Cow\Utility\Config;
 use Symfony\Component\Console\Logger\ConsoleLogger;
@@ -471,6 +472,26 @@ class Library
     }
 
     /**
+     * Find library in the tree by name.
+     * May return self, a direct child, or a nested child.
+     *
+     * @param string $name
+     * @return Library
+     */
+    public function getLibrary($name) {
+        if ($this->getName() === $name) {
+            return $this;
+        }
+
+        foreach($this->getAllChildren() as $child) {
+            if($child->getName() === $name) {
+                return $child;
+            }
+        }
+        return null;
+    }
+
+    /**
      * Given a child repo name, return the version constraint declared. E.g. `^4`, `~1.0.0` or `4.x-dev`
      *
      * @param string $name
@@ -586,4 +607,82 @@ class Library
 
         return null;
     }
+
+    /**
+     * Determine if this library has a cached release plan
+     *
+     * @return LibraryRelease|null The root release, or null if not cached
+     */
+    public function loadCachedPlan() {
+        // Check cached plan file
+        $path = $this->getDirectory() . '/.cow.plan.json';
+        if (!file_exists($path)) {
+            return null;
+        }
+        $serialisedPlan = Config::loadFromFile($path);
+        $result = $this->unserialisePlan($serialisedPlan);
+        return $result[$this->getName()];
+    }
+
+    /**
+     * Write the release plan to the standard cache location
+     *
+     * @param LibraryRelease $plan
+     */
+    public function saveCachedPlan(LibraryRelease $plan) {
+        $path = $this->getDirectory() . '/.cow.plan.json';
+        $data = $this->serialisePlan($plan);
+        Config::saveToFile($path, $data);
+    }
+
+    /**
+     * Unserialise a plan
+     *
+     * @param array $serialisedPlan Decoded json data
+     * @return LibraryRelease[]
+     * @throws Exception
+     */
+    protected function unserialisePlan($serialisedPlan) {
+        $releases = [];
+        foreach($serialisedPlan as $name => $data) {
+            // Unserialise this node
+            $library = $this->getLibrary($name);
+            if (!$library) {
+                throw new Exception("Missing library $name");
+            }
+            $version = new Version($data['Version']);
+            $libraryRelease = new LibraryRelease($library, $version);
+
+            // Merge with unserialised children
+            if (!empty($data['Items'])) {
+                $libraryRelease->addItems($this->unserialisePlan($data['Items']));
+            }
+            $releases[$name] = $libraryRelease;
+        }
+        return $releases;
+    }
+
+    /**
+     * Serialise a plan to json
+     *
+     * @param LibraryRelease $plan
+     * @return array Encoded json data
+     */
+    public function serialisePlan(LibraryRelease $plan) {
+        $content = [];
+        $name = $plan->getLibrary()->getName();
+        $content[$name] = [
+            'Version' => $plan->getVersion()->getValue(),
+            'Items' => []
+        ];
+        foreach($plan->getItems() as $item) {
+            $content[$name]['Items'] = array_merge(
+                $content[$name]['Items'],
+                $item->getLibrary()->serialisePlan($item)
+            );
+        }
+        return $content;
+    }
+
+
 }

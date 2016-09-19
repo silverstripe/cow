@@ -46,7 +46,7 @@ class PlanRelease extends Step
         $this->log($output, "Planning release for project {$name} version {$version}");
 
         // Build initial plan
-        $plan = $this->generatePlan($output);
+        $plan = $this->buildInitialPlan($output);
 
         // Review with author
         $plan = $this->reviewPlan($output, $input, $plan);
@@ -54,15 +54,27 @@ class PlanRelease extends Step
 
     /**
      * Generate a draft plan for the current project based on configuration and automatic best-guess
+     *
      * @param OutputInterface $output
      * @return LibraryRelease Root release node
      */
-    protected function generatePlan(OutputInterface $output) {
-        // Add the provided version as the root plan item
-        $moduleRelease = new LibraryRelease($this->getProject(), $this->getVersion());
+    protected function buildInitialPlan(OutputInterface $output) {
+        // Load cached value
+        $moduleRelease = $this->getProject()->loadCachedPlan();
+        if ($moduleRelease) {
+            $this->log($output, 'Loading cached release plan from prior session');
+            return $moduleRelease;
+        }
 
-        // Recursively build child releases
+        // Generate a suggested release
+        $this->log($output, 'Automatically building a suggested release plan');
+        $moduleRelease = new LibraryRelease($this->getProject(), $this->getVersion());
         $this->generateChildReleases($moduleRelease);
+
+        // Save for later use
+        $this->getProject()->saveCachedPlan($moduleRelease);
+
+        // Return
         return $moduleRelease;
     }
 
@@ -280,6 +292,9 @@ class PlanRelease extends Step
         // Modify selected dependency
         $selectedRelease = $rootLibraryRelease->getItem($selectedLibrary);
         $this->reviewLibraryVersion($output, $input, $selectedRelease);
+
+        // Cache modified plan
+        $this->getProject()->saveCachedPlan($rootLibraryRelease);
 
         // Recursively update plan
         return $this->reviewPlan($output, $input, $rootLibraryRelease);

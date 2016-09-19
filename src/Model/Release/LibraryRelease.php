@@ -92,6 +92,19 @@ class LibraryRelease
     }
 
     /**
+     * Add a list of items to this release
+     *
+     * @param LibraryRelease[] $releases
+     * @return $this
+     */
+    public function addItems($releases) {
+        foreach($releases as $release) {
+            $this->addItem($release);
+        }
+        return $this;
+    }
+
+    /**
      * Remove an item by name
      *
      * @param string $name
@@ -103,7 +116,8 @@ class LibraryRelease
     }
 
     /**
-     * Get child item for this library
+     * Find library in the tree by name.
+     * May return self, a direct child, or a nested child.
      *
      * @param string $name Library name
      * @return null|LibraryRelease
