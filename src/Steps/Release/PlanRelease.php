@@ -27,6 +27,31 @@ class PlanRelease extends Step
      */
     protected $version;
 
+    /**
+     * Generated release plan
+     *
+     * @var LibraryRelease
+     */
+    protected $releasePlan;
+
+    /**
+     * @return LibraryRelease
+     */
+    public function getReleasePlan()
+    {
+        return $this->releasePlan;
+    }
+
+    /**
+     * @param LibraryRelease $releasePlan
+     * @return PlanRelease
+     */
+    public function setReleasePlan($releasePlan)
+    {
+        $this->releasePlan = $releasePlan;
+        return $this;
+    }
+
     public function __construct(Command $command, Project $project, Version $version)
     {
         parent::__construct($command);
@@ -46,24 +71,24 @@ class PlanRelease extends Step
         $this->log($output, "Planning release for project {$name} version {$version}");
 
         // Build initial plan
-        $plan = $this->buildInitialPlan($output);
+        $this->buildInitialPlan($output);
 
         // Review with author
-        $plan = $this->reviewPlan($output, $input, $plan);
+        $this->reviewPlan($output, $input);
     }
 
     /**
      * Generate a draft plan for the current project based on configuration and automatic best-guess
      *
      * @param OutputInterface $output
-     * @return LibraryRelease Root release node
      */
     protected function buildInitialPlan(OutputInterface $output) {
         // Load cached value
         $moduleRelease = $this->getProject()->loadCachedPlan();
         if ($moduleRelease) {
             $this->log($output, 'Loading cached release plan from prior session');
-            return $moduleRelease;
+            $this->setReleasePlan($moduleRelease);
+            return;
         }
 
         // Generate a suggested release
@@ -71,11 +96,9 @@ class PlanRelease extends Step
         $moduleRelease = new LibraryRelease($this->getProject(), $this->getVersion());
         $this->generateChildReleases($moduleRelease);
 
-        // Save for later use
+        // Save plan
         $this->getProject()->saveCachedPlan($moduleRelease);
-
-        // Return
-        return $moduleRelease;
+        $this->setReleasePlan($moduleRelease);
     }
 
     /**
@@ -258,12 +281,11 @@ class PlanRelease extends Step
      *
      * @param OutputInterface $output
      * @param InputInterface $input
-     * @param LibraryRelease $rootLibraryRelease
-     * @return LibraryRelease
      */
-    protected function reviewPlan(OutputInterface $output, InputInterface $input, LibraryRelease $rootLibraryRelease)
+    protected function reviewPlan(OutputInterface $output, InputInterface $input)
     {
-        $releaseLines = $this->getReleaseOptions($rootLibraryRelease);
+        // Get user-descriptive output for plan
+        $releaseLines = $this->getReleaseOptions($this->getReleasePlan());
 
         // If not interactive, simply output read-only list of versions
         $message = "The below release plan has been generated for this project";
@@ -272,7 +294,7 @@ class PlanRelease extends Step
             foreach($releaseLines as $line) {
                 $this->log($output, $line);
             }
-            return $rootLibraryRelease;
+            return;
         }
 
         // Prompt user with query to modify this plan
@@ -285,19 +307,18 @@ class PlanRelease extends Step
             "continue"
         );
         $selectedLibrary = $this->getQuestionHelper()->ask($input, $output, $question);
+
+        // Break if plan is accepted
         if($selectedLibrary === 'continue') {
-            return $rootLibraryRelease;
+            return;
         }
 
         // Modify selected dependency
-        $selectedRelease = $rootLibraryRelease->getItem($selectedLibrary);
+        $selectedRelease = $this->getReleasePlan()->getItem($selectedLibrary);
         $this->reviewLibraryVersion($output, $input, $selectedRelease);
 
-        // Cache modified plan
-        $this->getProject()->saveCachedPlan($rootLibraryRelease);
-
         // Recursively update plan
-        return $this->reviewPlan($output, $input, $rootLibraryRelease);
+        $this->reviewPlan($output, $input);
     }
 
     /**
@@ -306,8 +327,6 @@ class PlanRelease extends Step
      * @param OutputInterface $output
      * @param InputInterface $input
      * @param LibraryRelease $selectedVersion
-     * @internal param ReleasePlan $plan
-     * @return LibraryRelease
      */
     protected function reviewLibraryVersion(
         OutputInterface $output,
@@ -324,7 +343,10 @@ class PlanRelease extends Step
         if (Version::parse($newVersionName)) {
             $newVersion = new Version($newVersionName);
             $this->modifyLibraryReleaseVersion($selectedVersion, $newVersion);
-            return $selectedVersion;
+
+            // Save modified plan to cache immediately
+            $this->getProject()->saveCachedPlan($this->getReleasePlan());
+            return;
         }
 
         // If error, repeat

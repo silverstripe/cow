@@ -2,7 +2,6 @@
 
 namespace SilverStripe\Cow\Commands\Release;
 
-use Exception;
 use SilverStripe\Cow\Commands\Command;
 use SilverStripe\Cow\Model\Modules\Project;
 use SilverStripe\Cow\Model\Release\Version;
@@ -53,6 +52,7 @@ class Release extends Command
         // Build and confirm release plan
         $buildPlan = new PlanRelease($this, $project, $version);
         $buildPlan->run($this->input, $this->output);
+        $releasePlan = $buildPlan->getReleasePlan();
 
         // Change to the correct temp branch (if given)
         /*
@@ -84,7 +84,7 @@ class Release extends Command
     /**
      * Get the version to release
      *
-     * @return \SilverStripe\Cow\Model\Versions\\SilverStripe\Cow\Model\\SilverStripe\Cow\Model\Release\Version
+     * @return Version
      */
     protected function getInputVersion()
     {
