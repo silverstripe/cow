@@ -7,6 +7,7 @@ use SilverStripe\Cow\Model\Modules\Project;
 use SilverStripe\Cow\Model\Release\Version;
 use SilverStripe\Cow\Steps\Release\CreateProject;
 use SilverStripe\Cow\Steps\Release\PlanRelease;
+use SilverStripe\Cow\Steps\Release\UpdateTranslations;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 use InvalidArgumentException;
@@ -22,8 +23,6 @@ class Release extends Command
 
     protected $description = 'Execute each release step in order to publish a new version';
 
-    const BRANCH_AUTO = 'auto';
-
     protected function configureOptions()
     {
         $this
@@ -31,9 +30,7 @@ class Release extends Command
             ->addArgument('recipe', InputArgument::OPTIONAL, 'Recipe to release', 'silverstripe/installer')
             ->addOption('from', 'f', InputOption::VALUE_REQUIRED, 'Version to generate changelog from')
             ->addOption('directory', 'd', InputOption::VALUE_REQUIRED, 'Optional directory to release project from')
-            ->addOption('security', 's', InputOption::VALUE_NONE, 'Update git remotes to point to security project')
-            ->addOption('branch', 'b', InputOption::VALUE_REQUIRED, 'Branch each module to this')
-            ->addOption('branch-auto', 'a', InputOption::VALUE_NONE, 'Automatically branch to major.minor.patch');
+            ->addOption('security', 's', InputOption::VALUE_NONE, 'Update git remotes to point to security project');
     }
 
     protected function fire()
@@ -42,7 +39,6 @@ class Release extends Command
         $version = $this->getInputVersion();
         $recipe = $this->getInputRecipe();
         $directory = $this->getInputDirectory();
-        $branch = $this->getInputBranch();
 
         // Make the directory
         $createProject = new CreateProject($this, $version, $recipe, $directory);
@@ -54,17 +50,11 @@ class Release extends Command
         $buildPlan->run($this->input, $this->output);
         $releasePlan = $buildPlan->getReleasePlan();
 
-        // Change to the correct temp branch (if given)
-        /*
-        $branch = new CreateBranch($this, $project, $branch);
-        $branch->run($this->input, $this->output);
-        */
-
-        /*
         // Update all translations
-        $translate = new UpdateTranslations($this, $project);
+        $translate = new UpdateTranslations($this, $project, $releasePlan);
         $translate->run($this->input, $this->output);
 
+        /*
         // Run tests
         $test = new RunTests($this, $project);
         $test->run($this->input, $this->output);
@@ -91,26 +81,6 @@ class Release extends Command
         // Version
         $value = $this->input->getArgument('version');
         return new Version($value);
-    }
-
-    /**
-     * Determine the branch name that should be used
-     *
-     * @return string|null
-     */
-    protected function getInputBranch()
-    {
-        $branch = $this->input->getOption('branch');
-        if ($branch) {
-            return $branch;
-        }
-
-        // If not explicitly specified, automatically select
-        if ($this->input->getOption('branch-auto')) {
-            $version = $this->getInputVersion();
-            return $version->getValueStable();
-        }
-        return null;
     }
 
     /**

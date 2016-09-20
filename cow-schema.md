@@ -9,7 +9,6 @@ Basic options are:
 * `changelog` location of changelog to build for this project.
 * `github-tagging` Instead of using annotated tags, use github API to push up release with change notes automatically generated.
 * `child-stability-inherit` If set to true, child modules will be released with the same stability (e.g. -alpha1) as the parent.
-* `use-unstable-branch` If set to true, temporary branches (e.g. 4.0.1) will be used/created for unstable releases.
 * `vendors` Declare list of child requirement library vendors that will be released. A vendor must be declared,
   otherwise no child dependencies will be released.
 * `exclude` Declares the list of requirements to not include. Requirements for these modules will be omitted,
@@ -30,7 +29,6 @@ Basic options are:
   "changelog": "framework/docs/en/04_Changelogs/{stability}/{version}.md",
   "github-tagging": true,
   "child-stability-inherit": true,
-  "use-unstable-branch": true,
   "dependency-constraint": "allow-patch",
   "vendors": [
     "silverstripe",
@@ -53,28 +51,10 @@ Module example. Changes are pushed up via github instead.
 }
 ```
 
-Framework example. If omitted, lang directories default to `lang`.
-
-```json
-{
-  "tagging": "normal",
-  "directories": {
-      "lang": "lang",
-      "jslang": [
-        "admin/client/lang",
-        "client/lang"
-      ]
-  }
-}
-```
-
 Default config
 
 ```json
 {
-  "tagging": "normal",
-  "directories": {
-    "lang": "lang"
-  }
+  "tagging": "normal"
 }
 ```

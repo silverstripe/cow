@@ -2,8 +2,9 @@
 
 namespace SilverStripe\Cow\Steps\Release;
 
+use Exception;
 use SilverStripe\Cow\Commands\Command;
-use SilverStripe\Cow\Model\Modules\LibraryList;
+use SilverStripe\Cow\Model\Modules\Library;
 use SilverStripe\Cow\Model\Modules\Module;
 use SilverStripe\Cow\Model\Modules\Project;
 use SilverStripe\Cow\Steps\Step;
@@ -72,13 +73,11 @@ abstract class ModuleStep extends Step
     /**
      * Get instances of all modules this step should run on
      *
-     * @return LibraryList
+     * @return Library[]
      */
     protected function getModules()
     {
-        return $this
-            ->getProject()
-            ->getFilteredModules($this->modules, $this->listIsExclusive);
+        throw new Exception("deprecated");
     }
 
     /**

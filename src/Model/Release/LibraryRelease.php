@@ -3,6 +3,8 @@
 
 namespace SilverStripe\Cow\Model\Release;
 
+use ArrayIterator;
+use Generator;
 use SilverStripe\Cow\Model\Modules\Library;
 
 /**
@@ -155,6 +157,21 @@ class LibraryRelease
      */
     public function getItems() {
         return $this->items;
+    }
+
+    /**
+     * Get recursive items
+     *
+     * @return Generator|LibraryRelease[]
+     */
+    public function getAllItems() {
+        $items = $this->getItems();
+        foreach ($items as $child) {
+            yield $child;
+            foreach($child->getAllItems() as $nested) {
+                yield $nested;
+            }
+        }
     }
 
     /**

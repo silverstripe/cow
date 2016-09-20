@@ -14,13 +14,13 @@ class Module extends Library
      */
     public function getLangDirectory()
     {
-        $config = $this->getCowData();
-        if (isset($config['directories']['lang'])) {
-            $dir = $config['directories']['lang'];
-        } else {
-            $dir = 'lang';
+        $sources = $this->getTransifexSources();
+        foreach($sources as $source) {
+            if (preg_match('#^(?<dir>.+)\\/(?<file>[^\\/]+)\\.yml$#', $source, $matches)) {
+                return $this->getDirectory() . '/' . $matches['dir'];
+            }
         }
-        return $this->getMainDirectory() . '/' . $dir;
+        return null;
     }
 
     /**
@@ -30,14 +30,36 @@ class Module extends Library
      */
     public function getJSLangDirectories()
     {
-        $config = $this->getCowData();
-        if (empty($config['directories']['jslang'])) {
+        $sources = $this->getTransifexSources();
+        $dirs = [];
+        foreach($sources as $source) {
+            // Strip out /src/ dir and trailing file.js
+            if (preg_match('#^(?<dir>.+)\\/src\\/(?<file>[^\\/]+)\\.js$#', $source, $matches)) {
+                $dirs[] = $this->getDirectory() . '/' . $matches['dir'];
+            }
+        }
+        return $dirs;
+    }
+
+    /**
+     * Get list of transifex source files. E.g. lang/en.yml
+     *
+     * @return string[]
+     */
+    public function getTransifexSources() {
+        if (!$this->isTranslatable()) {
             return [];
         }
-        $dir = (array)$config['directories']['jslang'];
-        return array_map(function($dir) {
-            return $this->getDirectory() . '/' . $dir;
-        }, $dir);
+
+        $path = $this->getDirectory() . '/.tx/config';
+        $content = file_get_contents($path);
+        $sources = [];
+        foreach(preg_split('~\R~u', $content) as $line) {
+            if (preg_match('#source_file\s=\s(?<path>\S+)#', $line, $matches)) {
+                $sources[] = $matches['path'];
+            }
+        }
+        return $sources;
     }
 
     /**
@@ -51,13 +73,27 @@ class Module extends Library
     }
 
     /**
+     * Get path of main directory (with sources, lang, etc) relative to BASE_DIR.
+     * This is necessary for i18nTextCollector
+     *
+     * @return string
+     */
+    public function getRelativeMainDirectory() {
+        $dir = $this->getMainDirectory();
+        $base = $this->getProject()->getDirectory();
+
+        // Remove base dir (plus /) from main directory
+        return substr($dir, strlen($base) + 1);
+    }
+
+    /**
      * Determine if this project has a .tx configured
      *
      * @return bool
      */
     public function isTranslatable()
     {
-        return $this->directory && realpath($this->directory . '/.tx/config');
+        return $this->getDirectory() && realpath($this->getDirectory() . '/.tx/config');
     }
 
 

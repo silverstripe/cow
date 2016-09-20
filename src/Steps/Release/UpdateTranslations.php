@@ -2,9 +2,12 @@
 
 namespace SilverStripe\Cow\Steps\Release;
 
+use Generator;
 use InvalidArgumentException;
 use SilverStripe\Cow\Commands\Command;
 use SilverStripe\Cow\Model\Modules\Module;
+use SilverStripe\Cow\Model\Modules\Project;
+use SilverStripe\Cow\Model\Release\LibraryRelease;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -24,7 +27,7 @@ use Symfony\Component\Console\Output\OutputInterface;
  *      `tx push -s`
  *  - Commit changes to source control (without push)
  */
-class UpdateTranslations extends ModuleStep
+class UpdateTranslations extends ReleaseStep
 {
     /**
      * Min tx client version
@@ -45,7 +48,7 @@ class UpdateTranslations extends ModuleStep
      *
      * @var bool
      */
-    protected $push;
+    protected $doPush;
 
     /**
      * Map of file paths to original JS master files.
@@ -61,21 +64,14 @@ class UpdateTranslations extends ModuleStep
     /**
      * Create a new translation step
      *
-     * @param Command $command
-     * @param string $directory Where to translate
-     * @param array $modules Optional list of modules to limit translation to
-     * @param bool $listIsExclusive If this list is exclusive. If false, this is inclusive
+     * @param Command $command Parent command
+     * @param Project $project Root project
+     * @param LibraryRelease $plan
      * @param bool $doPush Do git push at end
      */
-    public function __construct(
-        Command $command,
-        $directory,
-        $modules = array(),
-        $listIsExclusive = false,
-        $doPush = false
-    ) {
-        parent::__construct($command, $directory, $modules, $listIsExclusive);
-        $this->push = $doPush;
+    public function __construct(Command $command, Project $project, LibraryRelease $plan, $doPush = false) {
+        parent::__construct($command, $project, $plan);
+        $this->setDoPush($doPush);
     }
 
     public function getStepName()
@@ -85,7 +81,7 @@ class UpdateTranslations extends ModuleStep
 
     public function run(InputInterface $input, OutputInterface $output)
     {
-        $modules = $this->getModules();
+        $modules = iterator_to_array($this->getTranslatableModules(), false);
         $this->log($output, sprintf("Updating translations for %d module(s)", count($modules)));
         $this->checkVersion($output);
         $this->storeJavascript($output, $modules);
@@ -123,7 +119,7 @@ class UpdateTranslations extends ModuleStep
      * Backup local javascript masters
      *
      * @param OutputInterface $output
-     * @param \SilverStripe\Cow\Model\Modules\Module[] $modules
+     * @param Module[] $modules
      */
     protected function storeJavascript(OutputInterface $output, $modules)
     {
@@ -133,6 +129,7 @@ class UpdateTranslations extends ModuleStep
         foreach ($modules as $module) {
             $jsPath = $module->getJSLangDirectories();
             foreach ((array)$jsPath as $path) {
+                $this->log($output, "Backing up <info>$path</info>");
                 $masterPath = "{$path}/src/en.js";
                 if (file_exists($masterPath)) {
                     $masterJSON = json_decode(file_get_contents($masterPath), true);
@@ -227,7 +224,7 @@ class UpdateTranslations extends ModuleStep
         // Get code dirs for each module
         $dirs = array();
         foreach ($modules as $module) {
-            $dirs[] = basename($module->getMainDirectory());
+            $dirs[] = $module->getRelativeMainDirectory();
         }
 
         $sakeCommand = sprintf(
@@ -331,7 +328,7 @@ TMPL;
                 '(cd %s && tx push -s)',
                 $module->getDirectory()
             );
-            $moduleName = $module->getInstalledName();
+            $moduleName = $module->getName();
             $this->runCommand($output, $pushCommand, "Error pushing module {$moduleName} to origin");
         }
     }
@@ -361,31 +358,47 @@ TMPL;
             // Commit changes if any exist
             $status = $repo->run("status");
             if (stripos($status, 'Changes to be committed:')) {
-                $this->log($output, "Comitting changes for module " . $module->getInstalledName());
+                $this->log($output, "Comitting changes for module " . $module->getName());
                 $repo->run("commit", array("-m", "Update translations"));
             }
 
             // Do push if selected
-            if ($this->push) {
-                $this->log($output, "Pushing upstream for module " . $module->getInstalledName());
+            if ($this->doPush) {
+                $this->log($output, "Pushing upstream for module " . $module->getName());
                 $repo->run("push", array("origin"));
             }
         }
     }
 
     /**
-     * Get the list of module objects to translate
-     *
-     * @return \SilverStripe\Cow\Model\Modules\Module[]
+     * @return bool
      */
-    protected function getModules()
+    public function isDoPush()
     {
-        $modules = parent::getModules();
+        return $this->doPush;
+    }
 
-        // Get only modules with translations
-        return array_filter($modules, function (Module $module) {
-            // Automatically skip un-translateable modules
-            return $module->isTranslatable();
-        });
+    /**
+     * @param bool $doPush
+     * @return $this
+     */
+    public function setDoPush($doPush)
+    {
+        $this->doPush = $doPush;
+        return $this;
+    }
+
+    /**
+     * @return Module[]|Generator
+     */
+    public function getTranslatableModules() {
+        // Don't translate upgrade-only
+        foreach ($this->getNewReleases() as $release) {
+            // Only translate modules with .tx directories
+            $library = $release->getLibrary();
+            if ($library instanceof Module && $library->isTranslatable()) {
+                yield $library;
+            }
+        }
     }
 }

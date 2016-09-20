@@ -3,6 +3,7 @@
 namespace SilverStripe\Cow\Model\Modules;
 
 use Exception;
+use Generator;
 use Gitonomy\Git\Reference\Branch;
 use Gitonomy\Git\Repository;
 use InvalidArgumentException;
@@ -38,7 +39,7 @@ class Library
     /**
      * Direct child list
      *
-     * @var LibraryList
+     * @var Library[]
      */
     protected $children;
 
@@ -435,43 +436,45 @@ class Library
     /**
      * Gets all children, including recursive children
      *
-     * @return LibraryList
+     * @return Generator|Library[]
      */
     public function getAllChildren() {
-        $children = $this->getChildren();
-        $combined = $children;
-        foreach ($children as $child) {
-            $combined = $combined->merge($child->getAllChildren());
+        foreach ($this->getChildren() as $child) {
+            yield $child;
+            foreach ($child->getAllChildren() as $nested) {
+                yield $nested;
+            }
         }
-        return $combined;
     }
 
     /**
      * Gets direct child dependencies
      *
-     * @return LibraryList
+     * @return Library[]
      */
     public function getChildren() {
-        if ($this->children) {
+        if (isset($this->children)) {
             return $this->children;
         }
 
         $data = $this->getComposerData();
-        $this->children = new LibraryList();
+        $this->children = [];
         if (empty($data['require'])) {
             return $this->children;
         }
 
         // Check logical rules to pull out any direct dependencies
         foreach ($data['require'] as $name => $version) {
-            if ($this->isChildLibrary($name)) {
-                $path = $this->getProject()->findModulePath($name);
-                if (empty($path)) {
-                    throw new LogicException("Required dependency $name is not installed");
-                }
-                $childLibrary = $this->createChildLibrary($path);
-                $this->children->add($childLibrary);
+            // Skip non-child libraries
+            if (!$this->isChildLibrary($name)) {
+                continue;
             }
+            $path = $this->getProject()->findModulePath($name);
+            if (empty($path)) {
+                throw new LogicException("Required dependency $name is not installed");
+            }
+            $childLibrary = $this->createChildLibrary($path);
+            $this->children[] = $childLibrary;
         }
 
         return $this->children;

@@ -33,27 +33,6 @@ class Project extends Module
     }
 
     /**
-     * Return list of installed modules in this project.
-     *
-     * Note; `installer` always refers to project root.
-     * Themes are named `themes/<themename>`.
-     * Vendor modules / recipes in vendor/<vendor>/<name> are just called `<name>`
-     *
-     * See {@see i18nTextCollector::getModules} in framework for mirrored logic.
-     *
-     * @param array $filter Optional list of modules to filter
-     * @param bool $listIsExclusive Set to true if this list is exclusive
-     * Ignored if $listIsExclusive is set to true and $filter contains modules.
-     * @return LibraryList
-     */
-    public function getFilteredModules($filter = array(), $listIsExclusive = false)
-    {
-        return $this
-            ->getInstalledLibraries()
-            ->filter($filter, $listIsExclusive);
-    }
-
-    /**
      * Cache of module paths
      */
     protected $modulePaths = null;

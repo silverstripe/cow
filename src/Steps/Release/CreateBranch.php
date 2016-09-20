@@ -8,31 +8,16 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
- * Branch each module to a new temp branch (unless it's already on that branch)
+ * Branch all releasable libraries to a branch
  */
-class CreateBranch extends ModuleStep
+class CreateBranch extends ReleaseStep
 {
     /**
      * Branch name
      *
-     * @var string|null
+     * @var string
      */
     protected $branch;
-
-    /**
-     * Create branch step
-     *
-     * @param Command $command
-     * @param Project $project
-     * @param string|null $branch Branch name, if necessary
-     * @param array $modules Optional list of modules to limit to
-     * @param bool $listIsExclusive If this list is exclusive. If false, this is inclusive
-     */
-    public function __construct(Command $command, $project, $branch, $modules = array(), $listIsExclusive = false)
-    {
-        parent::__construct($command, $project, $modules, $listIsExclusive);
-        $this->branch = $branch;
-    }
 
     /**
      * @return string
@@ -52,6 +37,18 @@ class CreateBranch extends ModuleStep
         return $this;
     }
 
+    /**
+     * CreateBranch constructor.
+     * @param Command $command
+     * @param Project $project
+     * @param string $branch
+     */
+    public function __construct(Command $command, Project $project, $branch)
+    {
+        parent::__construct($command, $project);
+        $this->setBranch($branch);
+    }
+
     public function getStepName()
     {
         return 'branch';
@@ -59,22 +56,24 @@ class CreateBranch extends ModuleStep
 
     public function run(InputInterface $input, OutputInterface $output)
     {
+        // Branch all modules
         $branch = $this->getBranch();
-        if (empty($branch)) {
-            $this->log($output, "Skipping branch step");
-            return;
-        }
-
         $this->log($output, "Branching all modules to <info>{$branch}</info>");
-        foreach ($this->getModules() as $module) {
-            $thisBranch = $module->getBranch();
-            if ($thisBranch != $branch) {
-                $this->log(
-                    $output,
-                    "Branching module ".$module->getInstalledName()." from <info>{$thisBranch}</info> to <info>{$branch}</info>"
-                );
-                $module->checkout($output, $branch, 'origin', true);
+        foreach ($this->getProject()->getAllChildren() as $library) {
+            // Skip upgrade-only libraries
+            if ($library->isUpgradeOnly()) {
+                continue;
             }
+            // Skip libraries already on that branch
+            $thisBranch = $library->getBranch();
+            if ($thisBranch === $branch) {
+                continue;
+            }
+            $this->log(
+                $output,
+                "Branching module ".$library->getName()." from <info>{$thisBranch}</info> to <info>{$branch}</info>"
+            );
+            $library->checkout($output, $branch, 'origin', true);
         }
         $this->log($output, 'Branching complete');
     }
