@@ -341,6 +341,21 @@ class PlanRelease extends Step
 
         // If version is valid, update and return
         if (Version::parse($newVersionName)) {
+            // Warn if upgrade-only and selected version isn't an existing tag
+            if ($selectedVersion->getLibrary()->isUpgradeOnly()) {
+                $tags = $selectedVersion->getLibrary()->getTags();
+                if (!array_key_exists($newVersionName, $tags)) {
+                    $this->log(
+                        $output,
+                        "This library is marked as upgrade-only; $newVersionName is not an existing tag",
+                        'error'
+                    );
+                    $this->reviewLibraryVersion($output, $input, $selectedVersion);
+                    return;
+                }
+            }
+
+            // Update release version
             $newVersion = new Version($newVersionName);
             $this->modifyLibraryReleaseVersion($selectedVersion, $newVersion);
 

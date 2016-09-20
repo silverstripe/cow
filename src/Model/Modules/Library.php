@@ -23,7 +23,7 @@ class Library
     /**
      * Parent project (installer module)
      *
-     * @var Project
+     * @var Library
      */
     protected $parent;
 
@@ -42,7 +42,13 @@ class Library
      */
     protected $children;
 
-    public function __construct($directory, Project $parent = null)
+    /**
+     * Create new library
+     *
+     * @param string $directory
+     * @param Library|null $parent Parent library
+     */
+    public function __construct($directory, Library $parent = null)
     {
         $this->directory = realpath($directory);
         $this->parent = $parent;
@@ -519,6 +525,11 @@ class Library
             return false;
         }
 
+        // Upgrade-only is considered a child library
+        if ($this->isChildUpgradeOnly($name)) {
+            return true;
+        }
+
         // Validate vs vendors. There must be at least one matching vendor.
         $cowData = $this->getCowData();
         if (empty($cowData['vendors'])) {
@@ -549,6 +560,16 @@ class Library
     }
 
     /**
+     * Is this module restricted to upgrade only?
+     *
+     * @return bool
+     */
+    public function isUpgradeOnly() {
+        $parent = $this->getParent();
+        return $parent && $parent->isChildUpgradeOnly($this->getName());
+    }
+
+    /**
      * Do child releases inherit stability?
      *
      * @return bool
@@ -568,9 +589,9 @@ class Library
     }
 
     /**
-     * Get parent project
+     * Get parent library
      *
-     * @return Project
+     * @return Library
      */
     public function getParent() {
         return $this->parent;
