@@ -79,6 +79,9 @@ class CreateChangelog extends ReleaseStep
      * @param LibraryRelease $release
      */
     protected function generateChangelog(OutputInterface $output, LibraryRelease $release) {
+        // Determine if this library has a changelog configured
+        throw new Exception("todo");
+
         // Get from version
         $fromVersion = $release->getPriorVersion();
         if (!$fromVersion) {
