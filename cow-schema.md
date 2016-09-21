@@ -39,6 +39,11 @@ Basic options are:
   ],
   "upgrade-only": [
     "silverstripe/some-module"
+  ],
+  "tests": [
+    "vendor/bin/phpunit framework/admin/tests",
+    "vendor/bin/phpunit framework/tests",
+    "vendor/bin/phpunit cms/tests"
   ]
 }
 ```

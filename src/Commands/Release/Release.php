@@ -7,6 +7,7 @@ use SilverStripe\Cow\Model\Modules\Project;
 use SilverStripe\Cow\Model\Release\Version;
 use SilverStripe\Cow\Steps\Release\CreateProject;
 use SilverStripe\Cow\Steps\Release\PlanRelease;
+use SilverStripe\Cow\Steps\Release\RunTests;
 use SilverStripe\Cow\Steps\Release\UpdateTranslations;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
@@ -50,11 +51,11 @@ class Release extends Command
         $translate = new UpdateTranslations($this, $project, $releasePlan);
         $translate->run($this->input, $this->output);
 
-        /*
         // Run tests
         $test = new RunTests($this, $project);
         $test->run($this->input, $this->output);
 
+        /**
         // Generate changelog
         $changelogs = new CreateChangelog($this, $project, $version, $fromVersion);
         $changelogs->run($this->input, $this->output);

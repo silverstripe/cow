@@ -381,6 +381,17 @@ class Library
     }
 
     /**
+     * @return array List of test commands
+     */
+    public function getTests() {
+        $data = $this->getCowData();
+        if (isset($data['tests'])) {
+            return $data['tests'];
+        }
+        return [];
+    }
+
+    /**
      * Gets cow config
      *
      * @array

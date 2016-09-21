@@ -18,11 +18,10 @@ class Test extends Release
     protected function fire()
     {
         // Get arguments
-        $version = $this->getInputVersion();
-        $directory = $this->getInputDirectory($version);
+        $project = $this->getProject();
 
         // Steps
-        $step = new RunTests($this, $directory);
+        $step = new RunTests($this, $project);
         $step->run($this->input, $this->output);
     }
 }
