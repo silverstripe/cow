@@ -5,6 +5,7 @@ namespace SilverStripe\Cow\Commands\Release;
 use SilverStripe\Cow\Commands\Command;
 use SilverStripe\Cow\Model\Modules\Project;
 use SilverStripe\Cow\Model\Release\Version;
+use SilverStripe\Cow\Steps\Release\CreateChangelog;
 use SilverStripe\Cow\Steps\Release\CreateProject;
 use SilverStripe\Cow\Steps\Release\PlanRelease;
 use SilverStripe\Cow\Steps\Release\RunTests;
@@ -55,11 +56,11 @@ class Release extends Command
         $test = new RunTests($this, $project);
         $test->run($this->input, $this->output);
 
-        /**
         // Generate changelog
-        $changelogs = new CreateChangelog($this, $project, $version, $fromVersion);
+        $changelogs = new CreateChangelog($this, $project, $releasePlan);
         $changelogs->run($this->input, $this->output);
 
+        /*
         // Output completion
         $this->output->writeln("<info>Success!</info> Release has been updated.");
         $this->output->writeln(

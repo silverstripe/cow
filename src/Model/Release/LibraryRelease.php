@@ -183,4 +183,14 @@ class LibraryRelease
         $tags = $this->getLibrary()->getTags();
         return !array_key_exists($this->getVersion()->getValue(), $tags);
     }
+
+    /**
+     * Determine "from" version for this version
+     *
+     * @return Version
+     */
+    public function getPriorVersion() {
+        $tags = $this->getLibrary()->getTags();
+        return $this->getVersion()->getPriorVersionFromTags($tags, $this->getLibrary()->getName());
+    }
 }

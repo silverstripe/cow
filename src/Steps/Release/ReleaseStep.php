@@ -1,11 +1,8 @@
 <?php
 
-
 namespace SilverStripe\Cow\Steps\Release;
 
-
 use Generator;
-use RecursiveIteratorIterator;
 use SilverStripe\Cow\Commands\Command;
 use SilverStripe\Cow\Model\Modules\Project;
 use SilverStripe\Cow\Model\Release\LibraryRelease;

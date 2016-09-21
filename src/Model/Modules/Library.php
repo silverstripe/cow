@@ -719,5 +719,16 @@ class Library
         return $content;
     }
 
+    /**
+     * Generates a history release plan from a given prior version
+     *
+     * @param Version $fromVersion
+     * @return LibraryRelease The historic release version
+     */
+    public function getReleasePlanFromVersion($fromVersion)
+    {
+        throw new Exception("Not implemented");
+    }
+
 
 }
