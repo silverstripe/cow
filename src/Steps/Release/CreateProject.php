@@ -25,7 +25,7 @@ class CreateProject extends Step
     protected $recipe = null;
 
     /**
-     * @var \SilverStripe\Cow\Model\Release\Version
+     * @var Version
      */
     protected $version;
 
@@ -37,7 +37,7 @@ class CreateProject extends Step
     /**
      *
      * @param Command $command
-     * @param \SilverStripe\Cow\Model\Release\Version $version
+     * @param Version $version
      * @param string $recipe
      * @param string $directory
      */
@@ -113,12 +113,8 @@ class CreateProject extends Step
     {
         $this->log($output, 'Determining best version to install');
 
-        // Determine best version to install
+        // Find all versions for the given recipe
         $available = Composer::getLibraryVersions($this->getCommandRunner($output), $this->getRecipe());
-
-        // The below will fail if the release version doesn't have a valid prior version
-        // Better to trigger this error now rather than when generating the changelog.
-        $this->getVersion()->getPriorVersionFromTags($available, $this->getRecipe());
 
         // Choose based on available and preference
         $versions = $this->getVersion()->getComposerVersions();

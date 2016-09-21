@@ -2,6 +2,7 @@
 
 namespace SilverStripe\Cow\Steps\Release;
 
+use Exception;
 use Generator;
 use InvalidArgumentException;
 use SilverStripe\Cow\Commands\Command;
@@ -34,7 +35,7 @@ class UpdateTranslations extends ReleaseStep
 
      * @var string
      */
-    protected $txVersion = '0.11';
+    protected $txVersion = '0.12';
 
     /**
      * Min % difference required for tx updates
@@ -129,11 +130,10 @@ class UpdateTranslations extends ReleaseStep
         foreach ($modules as $module) {
             $jsPath = $module->getJSLangDirectories();
             foreach ((array)$jsPath as $path) {
-                $this->log($output, "Backing up <info>$path</info>");
                 $masterPath = "{$path}/src/en.js";
+                $this->log($output, "Backing up <info>$masterPath</info>");
                 if (file_exists($masterPath)) {
-                    $masterJSON = json_decode(file_get_contents($masterPath), true);
-                    $this->checkJsonDecode($masterPath);
+                    $masterJSON = $this->decodeJSONFile($masterPath);
                     $this->originalJSMasters[$masterPath] = $masterJSON;
                 }
             }
@@ -151,10 +151,9 @@ class UpdateTranslations extends ReleaseStep
     {
         if (json_last_error()) {
             $message = json_last_error_msg();
-            throw new \Exception("Error json decoding file {$path}: {$message}");
+            throw new Exception("Error json decoding file {$path}: {$message}");
         }
     }
-
 
     /**
      * Merge back master files with any local contents
@@ -170,7 +169,7 @@ class UpdateTranslations extends ReleaseStep
         $this->log($output, "Merging local javascript masters");
         foreach ($this->originalJSMasters as $path => $contentJSON) {
             if (file_exists($path)) {
-                $masterJSON = json_decode(file_get_contents($path), true);
+                $masterJSON = $this->decodeJSONFile($path);
                 $contentJSON = array_merge($masterJSON, $contentJSON);
             }
             // Re-order values
@@ -400,5 +399,18 @@ TMPL;
                 yield $library;
             }
         }
+    }
+
+    /**
+     * Decode json file
+     *
+     * @param string $path
+     * @return array
+     */
+    protected function decodeJSONFile($path)
+    {
+        $masterJSON = json_decode(file_get_contents($path), true);
+        $this->checkJsonDecode($path);
+        return $masterJSON;
     }
 }

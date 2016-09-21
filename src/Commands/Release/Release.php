@@ -14,8 +14,6 @@ use InvalidArgumentException;
 
 /**
  * Execute each release step in order to publish a new version
- *
- * @author dmooyman
  */
 class Release extends Command
 {
@@ -28,9 +26,7 @@ class Release extends Command
         $this
             ->addArgument('version', InputArgument::REQUIRED, 'Exact version tag to release this project as')
             ->addArgument('recipe', InputArgument::OPTIONAL, 'Recipe to release', 'silverstripe/installer')
-            ->addOption('from', 'f', InputOption::VALUE_REQUIRED, 'Version to generate changelog from')
-            ->addOption('directory', 'd', InputOption::VALUE_REQUIRED, 'Optional directory to release project from')
-            ->addOption('security', 's', InputOption::VALUE_NONE, 'Update git remotes to point to security project');
+            ->addOption('directory', 'd', InputOption::VALUE_REQUIRED, 'Optional directory to release project from');
     }
 
     protected function fire()
@@ -133,21 +129,6 @@ class Release extends Command
     }
 
     /**
-     * Determine if the release selected is a security one
-     *
-     * @return bool
-     * @throws InvalidArgumentException
-     */
-    protected function getInputSecurity()
-    {
-        $security = $this->input->getOption('security');
-        if ($security) {
-            throw new InvalidArgumentException('--security flag not yet implemented');
-        }
-        return (bool)$security;
-    }
-
-    /**
      * Get installed project
      *
      * @return Project
@@ -157,6 +138,5 @@ class Release extends Command
         $directory = $this->getInputDirectory();
         return new Project($directory);
     }
-
 
 }
