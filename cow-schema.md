@@ -7,7 +7,10 @@ Basic options are:
 * `github-slug` is used for making github-api calls. Will be guessed from git remote if omitted.
 * `commit-link` will be used to generate changelog links to commits. Can be guessed from github-slug for github projects.
 * `changelog` location of changelog to build for this project.
-* `github-tagging` Instead of using annotated tags, use github API to push up release with change notes automatically generated.
+* `tagging` Controls tagging types. One of the below
+   - `normal` (default). Tags will be pushed up via `git push`
+   - `github` Tags will be pushed up via github release API (v3)
+   - `github-changelog` Same as `github`, but will include markdown changelogs
 * `child-stability-inherit` If set to true, child modules will be released with the same stability (e.g. -alpha1) as the parent.
 * `vendors` Declare list of child requirement library vendors that will be released. A vendor must be declared,
   otherwise no child dependencies will be released.
@@ -27,7 +30,7 @@ Basic options are:
   "github-slug": "silverstripe/silverstripe-installer",
   "commit-link": "https://github.com/silverstripe/silverstripe-installer/commit/{sha}",
   "changelog": "framework/docs/en/04_Changelogs/{stability}/{version}.md",
-  "github-tagging": true,
+  "tagging": "normal",
   "child-stability-inherit": true,
   "dependency-constraint": "allow-patch",
   "vendors": [
@@ -45,21 +48,5 @@ Basic options are:
     "vendor/bin/phpunit framework/tests",
     "vendor/bin/phpunit cms/tests"
   ]
-}
-```
-
-Module example. Changes are pushed up via github instead. 
-
-```json
-{
-  "tagging": "github"
-}
-```
-
-Default config
-
-```json
-{
-  "tagging": "normal"
 }
 ```

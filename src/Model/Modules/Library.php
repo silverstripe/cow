@@ -20,6 +20,20 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class Library
 {
+    /**
+     * Tag with normal tag and push with git
+     */
+    const TAGGING_NORMAL = 'normal';
+
+    /**
+     * Push via github api
+     */
+    const TAGGING_GITHUB = 'github';
+
+    /**
+     * Push via github API with changelog
+     */
+    const TAGGING_GITHUB_CHANGELOG = 'github-changelog';
 
     /**
      * Parent project (installer module)
@@ -717,6 +731,33 @@ class Library
             );
         }
         return $content;
+    }
+
+    /**
+     * Check if this module should have a changelog
+     *
+     * @return bool
+     */
+    public function hasChangelog() {
+        $cowData = $this->getCowData();
+        if (!empty($cowData['changelog'])) {
+            return true;
+        }
+        if (empty($cowData['tagging'])) {
+
+        }
+    }
+
+    /**
+     * Get tagging type. Defaults to "normal"
+     *
+     * @return string
+     */
+    public function getTaggingType() {
+        $data = $this->getCowData();
+        if (empty($data['tagging'])) {
+            return
+        }
     }
 
     /**

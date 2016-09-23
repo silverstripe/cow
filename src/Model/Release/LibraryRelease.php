@@ -3,7 +3,6 @@
 
 namespace SilverStripe\Cow\Model\Release;
 
-use ArrayIterator;
 use Generator;
 use SilverStripe\Cow\Model\Modules\Library;
 
