@@ -26,6 +26,13 @@ class LibraryRelease
     protected $library;
 
     /**
+     * Raw markdown content of cached changelog for this release (to be pushed to github)
+     *
+     * @var string
+     */
+    protected $changelog;
+
+    /**
      * @return Library
      */
     public function getLibrary()
@@ -191,5 +198,23 @@ class LibraryRelease
     public function getPriorVersion() {
         $tags = $this->getLibrary()->getTags();
         return $this->getVersion()->getPriorVersionFromTags($tags, $this->getLibrary()->getName());
+    }
+
+    /**
+     * @return string
+     */
+    public function getChangelog()
+    {
+        return $this->changelog;
+    }
+
+    /**
+     * @param string $changelog
+     * @return $this
+     */
+    public function setChangelog($changelog)
+    {
+        $this->changelog = $changelog;
+        return $this;
     }
 }

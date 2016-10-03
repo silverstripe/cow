@@ -3,11 +3,9 @@
 namespace SilverStripe\Cow\Steps\Release;
 
 use Exception;
-use SilverStripe\Cow\Commands\Command;
 use SilverStripe\Cow\Model\Changelog\Changelog;
 use SilverStripe\Cow\Model\Changelog\ChangelogLibrary;
 use SilverStripe\Cow\Model\Modules\Library;
-use SilverStripe\Cow\Model\Modules\Project;
 use SilverStripe\Cow\Model\Release\ComposerConstraint;
 use SilverStripe\Cow\Model\Release\LibraryRelease;
 use SilverStripe\Cow\Model\Release\Version;
@@ -33,20 +31,7 @@ class CreateChangelog extends ReleaseStep
         // Generate changelogs for each element in this plan
         $this->recursiveGenerateChangelog($output, $this->getReleasePlan());
 
-        /*
-        // Generate changelog content
-        $changelog = new Changelog();
-        $content = $changelog->getMarkdown($output, Changelog::FORMAT_GROUPED);
-
-        // Now we need to merge this content with the file, or otherwise create it
-        $path = $this->getChangelogPath();
-        $this->writeChangelog($output, $content, $path);
-
-        // Now commit to git (but don't push!)
-        $this->commitChanges($output, $path);
-
-        $this->log($output, "Changelog successfully saved!");
-        */
+        $this->log($output, "All changelog generation complete!");
     }
 
     /**
@@ -118,12 +103,46 @@ class CreateChangelog extends ReleaseStep
         $changelog = new Changelog($changelogLibrary);
         $content = $changelog->getMarkdown($output, $release->getLibrary()->getChangelogFormat());
 
-        echo $content;
+        // Store this changelog
+        $this->storeChangelog($output, $changelogLibrary, $content);
+    }
 
-        // This needs to be cached somewhere for github-tagging, or written to filesystem
+    /**
+     * @param OutputInterface $output
+     * @param ChangelogLibrary $changelogLibrary Changelog details
+     * @param string $content content to save
+     */
+    protected function storeChangelog(OutputInterface $output, ChangelogLibrary $changelogLibrary, $content) {
+        // Determine saving mechanism
+        $version = $changelogLibrary->getRelease()->getVersion();
+        $library = $changelogLibrary->getRelease()->getLibrary();
+        $changelogHolder = $library->getChangelogHolder();
 
-        // Build changelog from all items in $release that has a "from" in $priorRelease
-        throw new Exception("Not implemented");
+        // Store in local path
+        $path = $library->getChangelogPath($version);
+        if ($path) {
+            // Generate header
+            $fullPath = $changelogHolder->getDirectory() . '/' . $path;
+            $existingContent = file_exists($fullPath) ? file_get_contents($fullPath) : null;
+            $header = $this->getFileHeader($output, $version, $existingContent);
+
+            // Write and commit changes
+            $this->log($output, "Writing changelog to <info>{$fullPath}</info>");
+            file_put_contents($fullPath, $header.$content);
+            $this->commitChanges($output, $changelogHolder, $version, $fullPath);
+        }
+
+        // Store in yml to later push to git
+        if ($library->getTaggingType() === Library::TAGGING_GITHUB_CHANGELOG) {
+            // Generate header
+            $existingContent = $changelogLibrary->getRelease()->getChangelog();
+            $header = $this->getFileHeader($output, $version, $existingContent);
+
+            // Write and commit changes to .cow.plan.json
+            $this->log($output, "Caching changelog to push to github");
+            $changelogLibrary->getRelease()->setChangelog($header.$content);
+            $this->getProject()->saveCachedPlan($this->getReleasePlan());
+        }
     }
 
     /**
@@ -176,80 +195,29 @@ class CreateChangelog extends ReleaseStep
         return $historicRelease;
     }
 
-    /**
-     * Get full path to this changelog
-     *
-     * @return string
-     */
-    protected function getChangelogPath()
-    {
-        $folder = $this->getChangelogFolder();
-
-        // Suffix for release
-        $suffix = $this->version->getStability();
-        if ($suffix) {
-            $folder .= DIRECTORY_SEPARATOR . $suffix;
-        }
-
-        return $folder . DIRECTORY_SEPARATOR . $this->version->getValue() . ".md";
-    }
-
-    /**
-     * Find best changelog folder for this repo
-     *
-     * @return string
-     * @throws Exception
-     */
-    protected function getChangelogFolder()
-    {
-        $root = $this->getProject()->getDirectory();
-
-        foreach ($this->paths as $path) {
-            $directory = realpath($root . DIRECTORY_SEPARATOR . $path);
-            if (is_dir($directory)) {
-                return $directory;
-            }
-        }
-
-        throw new Exception("Could not find changelog folder in project {$root}");
-    }
-
-    /**
-     * Save output to disk
-     *
-     * @param OutputInterface $output
-     * @param string $content
-     * @param string $path
-     */
-    protected function writeChangelog(OutputInterface $output, $content, $path)
-    {
-        $header = $this->getFileHeader($output, $path);
-        file_put_contents($path, $header.$content);
-    }
 
     /**
      * Get header component to put before the changelog content
      *
      * @param OutputInterface $output
-     * @param string $path File path to check for existing header
+     * @param Version $version
+     * @param string $content Existing changelog markdown
      * @return string
      */
-    protected function getFileHeader(OutputInterface $output, $path)
+    protected function getFileHeader(OutputInterface $output, Version $version, $content)
     {
         // Generate new header if no file exists
-        if (!file_exists($path)) {
-            $this->log($output, "Writing changelog to <info>$path</info>");
-            return "# " . $this->version->getValue() . "\n\n" . $this->autogeneratedDelimeter;
+        if (empty($content)) {
+            return "# " . $version->getValue() . "\n\n" . $this->autogeneratedDelimeter;
         }
 
         // Given an existing file, attempt to regenerate autogenerated component
-        $this->log($output, "<info>$path</info> already exists; Merging changes");
-        $content = file_get_contents($path);
+        $this->log($output, "Merging changes with existing changelog");
         $position = stripos($content, $this->autogeneratedDelimeter);
         if ($position === false) {
             $this->log(
                 $output,
-                "Warning: autogeneration delimiter could not be found in this file. Content will be appended instead",
+                "Warning: autogeneration delimiter could not be found. Content will be appended instead",
                 "error"
             );
         } else {
@@ -267,23 +235,15 @@ class CreateChangelog extends ReleaseStep
      * Commit changes to git
      *
      * @param OutputInterface $output
+     * @param Library $library
+     * @param Version $version
      * @param string $path
-     * @throws Exception
      */
-    public function commitChanges(OutputInterface $output, $path)
+    public function commitChanges(OutputInterface $output, Library $library, Version $version, $path)
     {
-        $this->log($output, 'Committing changes to git');
-
-        // Get framework to commit to
-        $framework = $this->getProject()->getModule('framework');
-        if (!$framework) {
-            throw new Exception("Could not find module framework in project " . $this->getProject()->getDirectory());
-        }
-        $repo = $framework->getRepository();
-
-        // Write changes to git
+        $repo = $library->getRepository();
+        $versionName = $version->getValue();
         $repo->run("add", array($path));
-        $version = $this->version->getValue();
-        $repo->run("commit", array("-m", "Added {$version} changelog"));
+        $repo->run("commit", array("-m", "Added {$versionName} changelog"));
     }
 }

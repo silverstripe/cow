@@ -9,6 +9,7 @@ use Gitonomy\Git\Repository;
 use InvalidArgumentException;
 use LogicException;
 use SilverStripe\Cow\Model\Changelog\Changelog;
+use SilverStripe\Cow\Model\Changelog\ChangelogLibrary;
 use SilverStripe\Cow\Model\Release\ComposerConstraint;
 use SilverStripe\Cow\Model\Release\LibraryRelease;
 use SilverStripe\Cow\Model\Release\Version;
@@ -744,6 +745,11 @@ class Library
             $version = new Version($data['Version']);
             $libraryRelease = new LibraryRelease($library, $version);
 
+            // Restore cached changelog
+            if(!empty($data['Changelog'])) {
+                $libraryRelease->setChangelog($data['Changelog']);
+            }
+
             // Merge with unserialised children
             if (!empty($data['Items'])) {
                 $libraryRelease->addItems($this->unserialisePlan($data['Items']));
@@ -764,6 +770,7 @@ class Library
         $name = $plan->getLibrary()->getName();
         $content[$name] = [
             'Version' => $plan->getVersion()->getValue(),
+            'Changelog' => $plan->getChangelog(),
             'Items' => []
         ];
         foreach($plan->getItems() as $item) {
@@ -796,6 +803,34 @@ class Library
     }
 
     /**
+     * Get changelog path
+     *
+     * @param Version $version
+     * @return string
+     */
+    public function getChangelogPath(Version $version) {
+        $cowData = $this->getCowData();
+
+        // If generating via markdown committed to source control
+        if (empty($cowData['changelog'])) {
+            return null;
+        }
+
+        $path = Format::formatString($cowData['changelog'], [
+            'stability' => $version->getStability(),
+            'stabilityVersion' => $version->getStabilityVersion(),
+            'major' => $version->getMajor(),
+            'minor' => $version->getMinor(),
+            'patch' => $version->getPatch(),
+            'version' => $version->getValue(),
+            'versionStable' => $version->getValueStable(),
+        ]);
+        // Collapse duplicate //
+        return str_replace('//', '/', $path);
+
+    }
+
+    /**
      * Get Changelog format type
      *
      * @return string one of FORMAT_GROUPED or FORMAT_FLAT
@@ -815,6 +850,26 @@ class Library
             default:
                 throw new Exception("Invalid changelog format type " . $data['changelog-type']);
         }
+    }
+
+    /**
+     * Find library to holde the changelog for this library. Defaults to self.
+     *
+     * @return Library
+     */
+    public function getChangelogHolder() {
+        $data = $this->getCowData();
+        if (empty($data['changelog-holder'])) {
+            return $this;
+        }
+
+        $library = $this->getLibrary($data['changelog-holder']);
+        if (empty($library)) {
+            throw new LogicException(
+                "changelog-holder library " . $data['changelog-holder'] . " is not a valid library"
+            );
+        }
+        return $library;
     }
 
     /**
