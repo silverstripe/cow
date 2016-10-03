@@ -210,7 +210,7 @@ class PlanRelease extends Step
         }
 
         // Get stability to use for the new tag
-        $useSameStability = $parentRelease->getLibrary()->isStabilityInherited();
+        $useSameStability = $parentRelease->getLibrary()->isStabilityInherited($childModule);
         if($useSameStability) {
             $stability = $parentRelease->getVersion()->getStability();
             $stabilityVersion = $parentRelease->getVersion()->getStabilityVersion();

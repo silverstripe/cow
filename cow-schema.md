@@ -15,6 +15,7 @@ Basic options are:
    - `github` Tags will be pushed up via github release API (v3)
    - `github-changelog` Same as `github`, but will include markdown changelogs
 * `child-stability-inherit` If set to true, child modules will be released with the same stability (e.g. -alpha1) as the parent.
+  This can also be set to an array of modules to limit child stability inheritance to.
 * `vendors` Declare list of child requirement library vendors that will be released. A vendor must be declared,
   otherwise no child dependencies will be released.
 * `exclude` Declares the list of requirements to not include. Requirements for these modules will be omitted,

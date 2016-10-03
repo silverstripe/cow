@@ -641,13 +641,23 @@ class Library
     }
 
     /**
-     * Do child releases inherit stability?
+     * Do child releases inherit stability for the given library?
      *
+     * @param Library $childLibrary Library to test for stability inheritance for
      * @return bool
      */
-    public function isStabilityInherited() {
+    public function isStabilityInherited(Library $childLibrary) {
         $cowData = $this->getCowData();
-        return !empty($cowData['child-stability-inherit']);
+        if (empty($cowData['child-stability-inherit'])) {
+            return false;
+        }
+
+        // Check if only some modules inherit stability
+        if (is_array($cowData['child-stability-inherit'])) {
+            return in_array($childLibrary->getName(), $cowData['child-stability-inherit']);
+        }
+
+        return true;
     }
 
     /**
