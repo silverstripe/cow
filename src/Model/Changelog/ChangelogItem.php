@@ -1,10 +1,10 @@
 <?php
 
-namespace SilverStripe\Cow\Model;
+namespace SilverStripe\Cow\Model\Changelog;
 
 use DateTime;
 use Gitonomy\Git\Commit;
-use SilverStripe\Cow\Model\Modules\Module;
+use SilverStripe\Cow\Utility\Format;
 
 /**
  * Represents a line-item in a changelog
@@ -12,9 +12,29 @@ use SilverStripe\Cow\Model\Modules\Module;
 class ChangelogItem
 {
     /**
-     * @var Module
+     * Changelog library reference this item belongs to
+     *
+     * @var ChangelogLibrary
      */
-    protected $module;
+    protected $changelogLibrary;
+
+    /**
+     * @return ChangelogLibrary
+     */
+    public function getChangelogLibrary()
+    {
+        return $this->changelogLibrary;
+    }
+
+    /**
+     * @param ChangelogLibrary $changelogLibrary
+     * @return $this
+     */
+    public function setChangelogLibrary($changelogLibrary)
+    {
+        $this->changelogLibrary = $changelogLibrary;
+        return $this;
+    }
 
     /**
      * @var Commit
@@ -77,13 +97,13 @@ class ChangelogItem
     /**
      * Create a changelog item
      *
-     * @param Module $module
+     * @param ChangelogLibrary $changelogLibrary
      * @param Commit $commit
      */
-    public function __construct(Module $module, Commit $commit)
+    public function __construct(ChangelogLibrary $changelogLibrary, Commit $commit)
     {
-        $this->module = $module;
-        $this->commit = $commit;
+        $this->setChangelogLibrary($changelogLibrary);
+        $this->setCommit($commit);
     }
 
     /**
@@ -94,6 +114,16 @@ class ChangelogItem
     public function getCommit()
     {
         return $this->commit;
+    }
+
+    /**
+     *
+     * @param Commit $commit
+     * @return $this
+     */
+    public function setCommit(Commit $commit) {
+        $this->commit = $commit;
+        return $this;
     }
 
     /**
@@ -119,6 +149,7 @@ class ChangelogItem
      */
     public function getDate()
     {
+        // Ignore linting error; invalid phpdoc in gitlib
         return $this->getCommit()->getAuthorDate();
     }
 
@@ -214,9 +245,9 @@ class ChangelogItem
      */
     public function getLink()
     {
-        $base = $this->module->getLink();
+        $library = $this->getChangelogLibrary()->getRelease()->getLibrary();
         $sha = $this->getCommit()->getHash();
-        return "{$base}commit/{$sha}";
+        return $library->getCommitLink($sha);
     }
 
     /**
@@ -253,7 +284,7 @@ class ChangelogItem
         if (!isset($format)) {
             $format = ' * {date} [{shortHash}]({link}) {shortMessage} ({author})';
         }
-        $content = $this->formatString($format, [
+        $content = Format::formatString($format, [
             'type' => $this->getType(),
             'link' => $this->getLink(),
             'shortHash' => $this->getShortHash(),
@@ -269,28 +300,12 @@ class ChangelogItem
             if (!isset($securityFormat)) {
                 $securityFormat = ' - See [{cve}]({cveURL})';
             }
-            $content .= $this->formatString($securityFormat, [
+            $content .= Format::formatString($securityFormat, [
                 'cve' => $cve,
                 'cveURL' => $this->cveURL . $cve
             ]);
         }
 
         return $content . "\n";
-    }
-
-    /**
-     * Format a string with named args
-     *
-     * @param string $format
-     * @param array $arguments Arguments
-     * @return string
-     */
-    protected function formatString($format, $arguments)
-    {
-        $result = $format;
-        foreach ($arguments as $name => $value) {
-            $result = str_replace('{'.$name.'}', $value, $result);
-        }
-        return $result;
     }
 }

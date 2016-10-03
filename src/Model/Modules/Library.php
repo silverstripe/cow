@@ -8,10 +8,12 @@ use Gitonomy\Git\Reference\Branch;
 use Gitonomy\Git\Repository;
 use InvalidArgumentException;
 use LogicException;
+use SilverStripe\Cow\Model\Changelog\Changelog;
 use SilverStripe\Cow\Model\Release\ComposerConstraint;
 use SilverStripe\Cow\Model\Release\LibraryRelease;
 use SilverStripe\Cow\Model\Release\Version;
 use SilverStripe\Cow\Utility\Config;
+use SilverStripe\Cow\Utility\Format;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -395,6 +397,20 @@ class Library
     }
 
     /**
+     * Get historic composer.json content from git
+     *
+     * @param string $ref Git ref (tag / branch / SHA)
+     * @return array|null
+     */
+    public function getHistoryComposerData($ref) {
+        $content = $this->getRepository()->run('show', ["{$ref}:composer.json"]);
+        if ($content) {
+            return Config::parseContent($content);
+        }
+        return null;
+    }
+
+    /**
      * @return array List of test commands
      */
     public function getTests() {
@@ -435,24 +451,50 @@ class Library
      */
     public function getLink()
     {
+
+        return null;
+    }
+
+    /**
+     * Get web-accessible link to the given commit
+     *
+     * @param string $sha
+     * @return null|string
+     */
+    public function getCommitLink($sha)
+    {
+        $format = $this->getCommitLinkFormat();
+        if ($format) {
+            return Format::formatString($format, ['sha' => $sha]);
+        }
+        return null;
+    }
+
+    /**
+     * Get link for commit format
+     *
+     * @return string
+     */
+    protected function getCommitLinkFormat() {
         $data = $this->getCowData();
-        if (isset($data['link'])) {
-            return $data['link'];
+        if (isset($data['commit-link'])) {
+            return $data['commit-link'];
         }
 
+        // Get from hithub slug
+        if ($name = $this->getGithubSlug()) {
+            return "https://github.com/{$name}/commit/{sha}";
+        }
+
+        // Fallback to checking remotes. E.g. gitlab remotes
         $remotes = $this->getRemotes();
         foreach ($remotes as $name => $remote) {
             if (preg_match('/^http(s)?:/', $remote)) {
                 // Remove trailing .git
                 $remote = preg_replace('/\\.git$/', '', $remote);
-                $remote = rtrim($remote, '/') . '/';
+                $remote = rtrim($remote, '/') . '/commit/{sha}';
                 return $remote;
             }
-        }
-
-        // Fallback to looking for github slug
-        if ($name = $this->getGithubSlug()) {
-            return "https://github.com/{$name}/";
         }
 
         return null;
@@ -740,11 +782,38 @@ class Library
      */
     public function hasChangelog() {
         $cowData = $this->getCowData();
+
+        // If generating via markdown committed to source control
         if (!empty($cowData['changelog'])) {
             return true;
         }
-        if (empty($cowData['tagging'])) {
 
+        // Can also be pushed via githb API
+        if ($this->getTaggingType() === static::TAGGING_GITHUB_CHANGELOG) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Get Changelog format type
+     *
+     * @return string one of FORMAT_GROUPED or FORMAT_FLAT
+     * @throws Exception
+     */
+    public function getChangelogFormat() {
+        $data = $this->getCowData();
+        // Default tagging
+        if (empty($data['changelog-type'])) {
+            return Changelog::FORMAT_GROUPED;
+        }
+        // Validate tagging type
+        switch ($data['changelog-type']) {
+            case Changelog::FORMAT_GROUPED:
+            case Changelog::FORMAT_FLAT:
+                return $data['changelog-type'];
+            default:
+                throw new Exception("Invalid changelog format type " . $data['changelog-type']);
         }
     }
 
@@ -752,24 +821,22 @@ class Library
      * Get tagging type. Defaults to "normal"
      *
      * @return string
+     * @throws Exception
      */
     public function getTaggingType() {
         $data = $this->getCowData();
+        // Default tagging
         if (empty($data['tagging'])) {
-            return
+            return static::TAGGING_NORMAL;
+        }
+        // Validate tagging type
+        switch ($data['tagging']) {
+            case self::TAGGING_NORMAL:
+            case self::TAGGING_GITHUB:
+            case self::TAGGING_GITHUB_CHANGELOG:
+                return $data['tagging'];
+            default:
+                throw new Exception("Invalid tagging type " . $data['tagging']);
         }
     }
-
-    /**
-     * Generates a history release plan from a given prior version
-     *
-     * @param Version $fromVersion
-     * @return LibraryRelease The historic release version
-     */
-    public function getReleasePlanFromVersion($fromVersion)
-    {
-        throw new Exception("Not implemented");
-    }
-
-
 }

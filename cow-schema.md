@@ -7,6 +7,8 @@ Basic options are:
 * `github-slug` is used for making github-api calls. Will be guessed from git remote if omitted.
 * `commit-link` will be used to generate changelog links to commits. Can be guessed from github-slug for github projects.
 * `changelog` location of changelog to build for this project.
+* `changelog-format` Either 'flat' (single list of items) or 'grouped' (grouped by standard groups).\
+  Defaults to 'grouped' if left out.
 * `tagging` Controls tagging types. One of the below
    - `normal` (default). Tags will be pushed up via `git push`
    - `github` Tags will be pushed up via github release API (v3)
@@ -30,6 +32,7 @@ Basic options are:
   "github-slug": "silverstripe/silverstripe-installer",
   "commit-link": "https://github.com/silverstripe/silverstripe-installer/commit/{sha}",
   "changelog": "framework/docs/en/04_Changelogs/{stability}/{version}.md",
+  "changelog-type": "grouped",
   "tagging": "normal",
   "child-stability-inherit": true,
   "dependency-constraint": "allow-patch",

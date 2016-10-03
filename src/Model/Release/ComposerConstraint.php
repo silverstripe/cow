@@ -220,19 +220,6 @@ class ComposerConstraint
     }
 
     /**
-     * Determine if this constraint matches a given version.
-     * Note: Only works with stable tags.
-     *
-     * @param string $version
-     * @return bool
-     */
-    public function matches($version) {
-        if (!Version::parse($version)) {
-            return false;
-        }
-    }
-
-    /**
      * @return boolean
      */
     public function isSelfVersion()

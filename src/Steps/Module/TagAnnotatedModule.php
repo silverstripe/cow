@@ -6,7 +6,7 @@ use Github\Api\Repo;
 use Github\Client as GithubClient;
 use Http\Adapter\Guzzle6\Client as GuzzleClient;
 use SilverStripe\Cow\Commands\Command;
-use SilverStripe\Cow\Model\Changelog;
+use SilverStripe\Cow\Model\Changelog\Changelog;
 use SilverStripe\Cow\Model\Modules\Module;
 use SilverStripe\Cow\Model\Modules\Project;
 use SilverStripe\Cow\Model\Release\Version;

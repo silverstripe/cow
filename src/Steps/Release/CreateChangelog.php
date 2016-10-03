@@ -4,9 +4,11 @@ namespace SilverStripe\Cow\Steps\Release;
 
 use Exception;
 use SilverStripe\Cow\Commands\Command;
-use SilverStripe\Cow\Model\Changelog;
+use SilverStripe\Cow\Model\Changelog\Changelog;
+use SilverStripe\Cow\Model\Changelog\ChangelogLibrary;
 use SilverStripe\Cow\Model\Modules\Library;
 use SilverStripe\Cow\Model\Modules\Project;
+use SilverStripe\Cow\Model\Release\ComposerConstraint;
 use SilverStripe\Cow\Model\Release\LibraryRelease;
 use SilverStripe\Cow\Model\Release\Version;
 use Symfony\Component\Console\Input\InputInterface;
@@ -77,10 +79,17 @@ class CreateChangelog extends ReleaseStep
      *
      * @param OutputInterface $output
      * @param LibraryRelease $release
+     * @throws Exception
      */
     protected function generateChangelog(OutputInterface $output, LibraryRelease $release) {
         // Determine if this library has a changelog configured
-        throw new Exception("todo");
+        if (!$release->getLibrary()->hasChangelog()) {
+            $this->log(
+                $output,
+                'Library <info>' . $release->getLibrary()->getName() . '</info> has no changelog configured.'
+            );
+            return;
+        }
 
         // Get from version
         $fromVersion = $release->getPriorVersion();
@@ -93,13 +102,78 @@ class CreateChangelog extends ReleaseStep
             return;
         }
 
+        $this->log(
+            $output,
+            "Generating changelog for library <info>" . $release->getLibrary()->getName() . '</info>'
+            . ' (<comment>' . $fromVersion->getValue() . '</comment> to '
+            . '<info>' . $release->getVersion()->getValue() . '</info>)'
+        );
+
         // Given a from version for this release, determine the "from" version for all child dependencies.
         // This does a deep search through composer dependencies and recursively checks out old versions
         // of composer.json to determine historic version information
-        $priorRelease = $release->getLibrary()->getReleasePlanFromVersion($fromVersion);
+        $changelogLibrary = $this->getChangelogLibrary($release, $fromVersion);
+
+        // Generate markedown from plan
+        $changelog = new Changelog($changelogLibrary);
+        $content = $changelog->getMarkdown($output, $release->getLibrary()->getChangelogFormat());
+
+        echo $content;
+
+        // This needs to be cached somewhere for github-tagging, or written to filesystem
 
         // Build changelog from all items in $release that has a "from" in $priorRelease
         throw new Exception("Not implemented");
+    }
+
+    /**
+     * Determine historic release plan from a past composer constraint
+     *
+     * @param LibraryRelease $newRelease
+     * @param Version $historicVersion
+     * @return ChangelogLibrary Changelog information for a library
+     */
+    protected function getChangelogLibrary(LibraryRelease $newRelease, Version $historicVersion) {
+        // Build root release node
+        $historicRelease = new ChangelogLibrary($newRelease, $historicVersion);
+
+        // Check all dependencies from this past commit
+        $pastComposer = null;
+        foreach ($newRelease->getItems() as $childNewRelease) {
+            // Lazy-load historic composer content as needed
+            if (!isset($pastComposer)) {
+                $pastComposer = $newRelease->getLibrary()->getHistoryComposerData($historicVersion);
+            }
+
+            // Check if this release has a historic tag.
+            $childReleaseName = $childNewRelease->getLibrary()->getName();
+            if (empty($pastComposer['require'][$childReleaseName])) {
+                continue;
+            }
+            $historicConstraintName = $pastComposer['require'][$childReleaseName];
+
+            // Get oldest existing tag that matches the given constraint as the "from" for changelog purposes.
+            $historicConstraint = new ComposerConstraint($historicConstraintName, $historicVersion);
+            $childVersions = $historicConstraint->filterVersions($childNewRelease->getLibrary()->getTags());
+            $childVersions = Version::sort($childVersions, Version::ASC);
+            if (empty($childVersions)) {
+                throw new \LogicException(
+                    "No historic version for library {$childReleaseName} matches constraint {$historicConstraintName}"
+                );
+            }
+
+            // Check if to == from version
+            $childHistoricVersion = reset($childVersions);
+            if ($childHistoricVersion->getValue() === $childNewRelease->getVersion()->getValue()) {
+                continue;
+            }
+
+            // Recursively generate historic tree
+            $childChangelog = $this->getChangelogLibrary($childNewRelease, $childHistoricVersion);
+            $historicRelease->addItem($childChangelog);
+        }
+
+        return $historicRelease;
     }
 
     /**

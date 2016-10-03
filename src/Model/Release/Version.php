@@ -10,6 +10,10 @@ use LogicException;
  */
 class Version
 {
+    const ASC = 'ascending';
+
+    const DESC = 'descending';
+
     /**
      * @var int
      */
@@ -370,15 +374,15 @@ class Version
      * Sort a list of tags, by default newest first
      *
      * @param Version[] $tags
-     * @param string $dir 'ascending' or 'descending'
+     * @param string $dir ASC or DESC constant values.
      * @return Version[]
      */
-    public static function sort($tags, $dir = 'descending') {
+    public static function sort($tags, $dir = self::DESC) {
         uasort($tags, function(Version $left, Version $right) use ($dir) {
             switch($dir) {
-                case 'ascending':
+                case self::ASC:
                     return $left->compareTo($right);
-                case 'descending':
+                case self::DESC:
                     return $right->compareTo($left);
                 default:
                     throw new InvalidArgumentException("Invalid dir $dir");
