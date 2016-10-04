@@ -33,13 +33,18 @@ class Composer
      * @param string $recipe
      * @param string $directory
      * @param string $version
+     * @param string $repository Optional custom repository
      */
-    public static function createProject(CommandRunner $runner, $recipe, $directory, $version)
+    public static function createProject(CommandRunner $runner, $recipe, $directory, $version, $repository)
     {
         $command = [
             "composer", "create-project", "--prefer-source", "--keep-vcs",
             $recipe, $directory, $version
         ];
+        if ($repository) {
+            $command[] = '--repository';
+            $command[] = $repository;
+        }
         $runner->runCommand($command, "Could not create project with version {$version}");
     }
 }

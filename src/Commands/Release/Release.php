@@ -28,6 +28,7 @@ class Release extends Command
         $this
             ->addArgument('version', InputArgument::REQUIRED, 'Exact version tag to release this project as')
             ->addArgument('recipe', InputArgument::OPTIONAL, 'Recipe to release', 'silverstripe/installer')
+            ->addOption('repository', "r", InputOption::VALUE_REQUIRED, "Custom repository url")
             ->addOption('directory', 'd', InputOption::VALUE_REQUIRED, 'Optional directory to release project from');
     }
 
@@ -37,9 +38,10 @@ class Release extends Command
         $version = $this->getInputVersion();
         $recipe = $this->getInputRecipe();
         $directory = $this->getInputDirectory();
+        $repository = $this->getInputRepository();
 
         // Make the directory
-        $createProject = new CreateProject($this, $version, $recipe, $directory);
+        $createProject = new CreateProject($this, $version, $recipe, $directory, $repository);
         $createProject->run($this->input, $this->output);
         $project = $this->getProject();
 
@@ -60,13 +62,11 @@ class Release extends Command
         $changelogs = new CreateChangelog($this, $project, $releasePlan);
         $changelogs->run($this->input, $this->output);
 
-        /*
         // Output completion
         $this->output->writeln("<info>Success!</info> Release has been updated.");
         $this->output->writeln(
             "Please check the changes made by this command, and run <info>cow release:publish</info>"
         );
-        */
     }
 
     /**
@@ -93,6 +93,15 @@ class Release extends Command
             $directory = $this->pickDirectory();
         }
         return $directory;
+    }
+
+    /**
+     * Get custom repository
+     *
+     * @return string
+     */
+    protected function getInputRepository() {
+        return $this->input->getOption('repository');
     }
 
     /**

@@ -25,11 +25,10 @@ not only the commands available but each of the steps each command contains.
 
 It is normally recommended that you run with `-vvv` verbose flag so that errors can be viewed during release.
 
-For example, this is what I would run to release `3.1.14-rc1`, assuming there wasn't a 3.1.14 branch and I wanted
-to create one for the RC release.
+For example, this is what I would run to release `3.1.14-rc1`.
 
 ```
-cow release 3.1.14-rc1 -vvv --from=3.1.13 --branch-auto
+cow release 3.1.14-rc1 -vvv
 ```
 
 And once I've checked that all is fine, and am 100% sure that this code is ready to go.
@@ -41,19 +40,16 @@ cow release:publish 3.1.14-rc1 -vvv
 ## Release
 
 `cow release <version> <recipe>` will perform the first part of the release tasks.
-<version> is mandatory and must be the exact tag name to release.
-<recipe> will allow you to release a recipe other than 'silverstripe/installer'
+
+* `<version>` is mandatory and must be the exact tag name to release.
+* `<recipe>` will allow you to release a recipe other than 'silverstripe/installer'
 
 This command has these options:
 
 * `-vvv` to ensure all underlying commands are echoed
-* `--from <fromversion>` when generating a changelog, it can be necessary at times to specify the last released version.
-  cow will try to guess, but sometimes (e.g. when releasing 3.2.0) it's not clear where the changelog should start.
 * `--directory <directory>` to specify the folder to create or look for this project in. If you don't specify this,
 it will install to the path specified by `./release-<version>` in the current directory.
-* `--branch <branch>` or just `--branch-auto` will automatically branch each module to a temp branch for this release.
-  If omitted, no branching is performed. `--branch-auto` can be used to just default to the major.minor.patch
-  version of the release. It's advisable to specify this, but not always necessary, when doing pre-releases.
+* `--repository <repository>` will allow a custom composer package url to be specified. E.g. `http://packages.cwp.govt.nz`
 
 `release` actually has several sub-commands which can be run independently. These are as below:
 

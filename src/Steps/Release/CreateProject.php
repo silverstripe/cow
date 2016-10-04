@@ -35,20 +35,28 @@ class CreateProject extends Step
     protected $directory;
 
     /**
+     * Custom composer repository
+     *
+     * @var string
+     */
+    protected $repository;
+
+    /**
      *
      * @param Command $command
      * @param Version $version
      * @param string $recipe
      * @param string $directory
+     * @param string $repository
      */
-    public function __construct(Command $command, Version $version, $recipe, $directory = '.')
+    public function __construct(Command $command, Version $version, $recipe, $directory = '.', $repository = null)
     {
         parent::__construct($command);
         $this->setRecipe($recipe);
         $this->setVersion($version);
         $this->setDirectory($directory ?: '.');
+        $this->setRepository($repository);
     }
-
 
     /**
      * Create a new project
@@ -98,7 +106,8 @@ class CreateProject extends Step
             $this->getCommandRunner($output),
             $this->getRecipe(),
             $this->getDirectory(),
-            $installVersion
+            $installVersion,
+            $this->getRepository()
         );
     }
 
@@ -184,5 +193,25 @@ class CreateProject extends Step
     public function getVersion()
     {
         return $this->version;
+    }
+
+    /**
+     * Get custom composer repository
+     *
+     * @return string
+     */
+    public function getRepository()
+    {
+        return $this->repository;
+    }
+
+    /**
+     * @param string $repository
+     * @return $this
+     */
+    protected function setRepository($repository)
+    {
+        $this->repository = $repository;
+        return $this;
     }
 }
