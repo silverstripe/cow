@@ -103,14 +103,17 @@ class ComposerConstraint
      * ComposerConstraint constructor.
      * @param string $constraint
      * @param Version $parentVersion
+     * @param string $name Name of dependency
      */
-    public function __construct($constraint, $parentVersion = null)
+    public function __construct($constraint, $parentVersion = null, $name = null)
     {
         $this->value = $constraint;
 
         if ($constraint === 'self.version') {
              if (!$parentVersion instanceof Version) {
-                throw new InvalidArgumentException("self.version given with missing parent version");
+                throw new InvalidArgumentException(
+                    "$name dependency self.version given with missing parent version"
+                );
             }
 
             $this->isSelfVersion = true;
@@ -130,25 +133,32 @@ class ComposerConstraint
         $parsed = static::parse($constraint);
         if (!$parsed) {
             throw new InvalidArgumentException(
-                "Composer constraint {$constraint} is not semver-compatible. E.g. ^4.0, self.version, or a fixed version"
+                "Composer constraint {$constraint} for {$name} is not semver-compatible. "
+                . "E.g. ^4.0, self.version, or a fixed version"
             );
         }
 
         // From version ignores modifier, includes alpha1 tag. :)
-        $from = sprintf("%d.%d.%d-alpha1",
+        if (empty($parsed['stability'])) {
+            $fromStability = '';
+        } else {
+            $fromStabilityVersion = isset($parsed['stabilityVersion']) ? $parsed['stabilityVersion'] : '';
+            $fromStability = '-' . $parsed['stability'] . $fromStabilityVersion;
+        }
+        $from = sprintf("%d.%d.%d%s",
             $parsed['major'],
             isset($parsed['minor']) ? $parsed['minor'] : '0',
-            isset($parsed['patch']) ? $parsed['patch'] : '0'
+            isset($parsed['patch']) ? $parsed['patch'] : '0',
+            $fromStability
         );
-
 
         // Semver to
         if ($parsed['type'] === '^') {
             $to = $parsed['major'] . '.99999.99999';
-        } elseif (isset($parsed['patch'])) {
+        } elseif (isset($parsed['patch']) && strlen($parsed['patch'])) {
             // ~x.y.z
             $to = $parsed['major'] . '.' . $parsed['minor'] . '.99999';
-        } elseif (isset($parsed['minor'])) {
+        } elseif (isset($parsed['minor']) && strlen($parsed['minor'])) {
             // ~x.y
             $to = $parsed['major'] . '.99999.99999';
         } else {
@@ -175,27 +185,38 @@ class ComposerConstraint
             $matches
         );
         if ($valid) {
-            return array_merge(
-                $matches,
-                [
-                    'type' => '~',
-                    'major' => $matches['major'],
-                    'minor' => isset($matches['minor']) ? $matches['minor'] : '0',
-                    'patch' => isset($matches['minor']) ? '0' : null,
-                ]
-            );
+            return [
+                'type' => '~',
+                'major' => $matches['major'],
+                'minor' => isset($matches['minor']) ? $matches['minor'] : '0',
+                'patch' => isset($matches['minor']) ? '0' : null,
+                'stability' => 'alpha', // treat x-dev dependencies as matching min-alpha1 stability (lowest)
+                'stabilityVersion' => '1',
+            ];
         }
 
         // Match semver constraint
         $valid = preg_match(
-            '/^(?<type>[~^])(?<major>\d+)(\\.(?<minor>\d+)(\\.(?<patch>\\d+))?)?$/',
+            '/^(?<type>[~^])(?<major>\d+)(\\.(?<minor>\d+)(\\.(?<patch>\\d+))?)?(@(?<stability>rc|alpha|beta|stable)(?<stabilityVersion>\d+)?)?$/',
             $version,
             $matches
         );
         if (!$valid) {
             return false;
         }
-        return $matches;
+
+        // Parse @stability min constraint
+        $stability = isset($matches['stability']) ? $matches['stability'] : 'alpha';
+        if ($stability === 'stable') {
+            $stability = '';
+        }
+        $stabilityVersion = ($stability && isset($matches['stabilityVersion']))
+            ? $matches['stabilityVersion']
+            : '1';
+        return array_merge($matches, [
+            'stability' => $stability,
+            'stabilityVersion' => $stabilityVersion,
+        ]);
     }
 
     /**

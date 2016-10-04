@@ -172,7 +172,7 @@ class CreateChangelog extends ReleaseStep
             $historicConstraintName = $pastComposer['require'][$childReleaseName];
 
             // Get oldest existing tag that matches the given constraint as the "from" for changelog purposes.
-            $historicConstraint = new ComposerConstraint($historicConstraintName, $historicVersion);
+            $historicConstraint = new ComposerConstraint($historicConstraintName, $historicVersion, $childReleaseName);
             $childVersions = $historicConstraint->filterVersions($childNewRelease->getLibrary()->getTags());
             $childVersions = Version::sort($childVersions, Version::ASC);
             if (empty($childVersions)) {
