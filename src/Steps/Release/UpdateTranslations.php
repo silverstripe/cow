@@ -189,9 +189,12 @@ class UpdateTranslations extends ReleaseStep
      */
     protected function pullSource(OutputInterface $output, $modules)
     {
-        $this->log($output, "Pulling sources from transifex (min %{$this->txMinimumPerc} delta)");
-
         foreach ($modules as $module) {
+            $name = $module->getName();
+            $this->log(
+                $output,
+                "Pulling sources from transifex for <info>{$name}</info> (min %{$this->txMinimumPerc} delta)"
+            );
             // Set mtime to a year ago so that transifex will see these as obsolete
             $touchCommand = sprintf(
                 'find %s -type f \( -name "*.yml" \) -exec touch -t %s {} \;',
