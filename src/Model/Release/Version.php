@@ -50,8 +50,9 @@ class Version
      */
     public static function parse($version)
     {
+        // Note: Ignore leading 'v'
         $valid = preg_match(
-            '/^(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)(\-(?<stability>rc|alpha|beta)(?<stabilityVersion>\d+)?)?$/',
+            '/^(v?)(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)(\-(?<stability>rc|alpha|beta)(?<stabilityVersion>\d+)?)?$/',
             $version,
             $matches
         );

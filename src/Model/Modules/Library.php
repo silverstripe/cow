@@ -271,7 +271,8 @@ class Library
         foreach($tags as $tag) {
             // Skip invalid tags
             if (Version::parse($tag)) {
-                $this->tags[$tag] = new Version($tag);
+                $version = new Version($tag);
+                $this->tags[$version->getValue()] = $version;
             }
         }
         return $this->tags;
@@ -578,7 +579,7 @@ class Library
     public function getChildConstraint($name, Version $thisVersion = null) {
         $data = $this->getComposerData();
         if (isset($data['require'][$name])) {
-            return new ComposerConstraint($data['require'][$name], $thisVersion);
+            return new ComposerConstraint($data['require'][$name], $thisVersion, $name);
         }
         throw new InvalidArgumentException("Library {$this->getName()} does not have child dependency {$name}");
     }

@@ -21,6 +21,13 @@ class VersionTest extends PHPUnit_Framework_TestCase
         $this->assertVersionLessThan('4.1.1-beta2', '4.1.1-rc2');
     }
 
+    public function testParse() {
+        $version = new Version("v1.1.1");
+        $this->assertEquals("1.1.1", $version->getValue());
+        $version = new Version("v1.1.1-alpha1");
+        $this->assertEquals("1.1.1-alpha1", $version->getValue());
+    }
+
     public function assertVersionLessThan($left, $right) {
         $leftVersion = new Version($left);
         $rightVersion = new Version($right);
