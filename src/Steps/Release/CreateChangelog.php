@@ -43,10 +43,6 @@ class CreateChangelog extends ReleaseStep
     protected function recursiveGenerateChangelog(OutputInterface $output, LibraryRelease $release) {
         // Don't generate changelogs for non-release upgrades (e.g. bump to existing tag)
         if (!$release->getIsNewRelease()) {
-            $this->log(
-                $output,
-                'No changelog for library <info>' . $release->getLibrary()->getName() . '</info> (upgrade, no release)'
-            );
             return;
         }
 
@@ -69,10 +65,6 @@ class CreateChangelog extends ReleaseStep
     protected function generateChangelog(OutputInterface $output, LibraryRelease $release) {
         // Determine if this library has a changelog configured
         if (!$release->getLibrary()->hasChangelog()) {
-            $this->log(
-                $output,
-                'Library <info>' . $release->getLibrary()->getName() . '</info> has no changelog configured.'
-            );
             return;
         }
 
@@ -98,6 +90,8 @@ class CreateChangelog extends ReleaseStep
         // This does a deep search through composer dependencies and recursively checks out old versions
         // of composer.json to determine historic version information
         $changelogLibrary = $this->getChangelogLibrary($release, $fromVersion);
+        $count = $changelogLibrary->count();
+        $this->log($output, "Found changes in <info>{$count}</info> modules");
 
         // Generate markedown from plan
         $changelog = new Changelog($changelogLibrary);
@@ -244,6 +238,9 @@ class CreateChangelog extends ReleaseStep
         $repo = $library->getRepository();
         $versionName = $version->getValue();
         $repo->run("add", array($path));
-        $repo->run("commit", array("-m", "Added {$versionName} changelog"));
+        $status = $repo->run("status");
+        if (stripos($status, 'Changes to be committed:')) {
+            $repo->run("commit", array("-m", "Added {$versionName} changelog"));
+        }
     }
 }

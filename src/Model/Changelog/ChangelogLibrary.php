@@ -123,4 +123,17 @@ class ChangelogLibrary
         }
     }
 
+    /**
+     * Count number of changelog modules (including root)
+     *
+     * @return int
+     */
+    public function count() {
+        $count = 1;
+        foreach ($this->getItems() as $item) {
+            $count += $item->count();
+        }
+        return $count;
+    }
+
 }

@@ -9,7 +9,6 @@ use Gitonomy\Git\Repository;
 use InvalidArgumentException;
 use LogicException;
 use SilverStripe\Cow\Model\Changelog\Changelog;
-use SilverStripe\Cow\Model\Changelog\ChangelogLibrary;
 use SilverStripe\Cow\Model\Release\ComposerConstraint;
 use SilverStripe\Cow\Model\Release\LibraryRelease;
 use SilverStripe\Cow\Model\Release\Version;
