@@ -2,6 +2,7 @@
 
 namespace SilverStripe\Cow\Commands\Release;
 
+use SilverStripe\Cow\Steps\Release\PlanRelease;
 use SilverStripe\Cow\Steps\Release\UpdateTranslations;
 
 /**
@@ -18,11 +19,16 @@ class Translate extends Release
     protected function fire()
     {
         // Get arguments
-        $directory = $this->getInputDirectory();
-        $modules = $this->getReleaseModules();
+        $version = $this->getInputVersion();
+        $project = $this->getProject();
 
-        // Steps
-        $step = new UpdateTranslations($this, $directory, $modules);
-        $step->run($this->input, $this->output);
+        // Build and confirm release plan
+        $buildPlan = new PlanRelease($this, $project, $version);
+        $buildPlan->run($this->input, $this->output);
+        $releasePlan = $buildPlan->getReleasePlan();
+
+        // Update all translations
+        $translate = new UpdateTranslations($this, $project, $releasePlan);
+        $translate->run($this->input, $this->output);
     }
 }
