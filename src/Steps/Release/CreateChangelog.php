@@ -122,6 +122,10 @@ class CreateChangelog extends ReleaseStep
 
             // Write and commit changes
             $this->log($output, "Writing changelog to <info>{$fullPath}</info>");
+            $dirname = dirname($fullPath);
+            if (!is_dir($dirname)) {
+                mkdir($dirname, 0777, true);
+            }
             file_put_contents($fullPath, $header.$content);
             $this->commitChanges($output, $changelogHolder, $version, $fullPath);
         }
