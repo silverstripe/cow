@@ -390,11 +390,36 @@ class Library
      */
     public function getComposerData()
     {
-        $path = $this->getDirectory() . '/composer.json';
+        $path = $this->getComposerPath();
         if (!file_exists($path)) {
             throw new Exception("No composer.json found in module " . $this->getName());
         }
         return Config::loadFromFile($path);
+    }
+
+    /**
+     * Write changes to composer.json
+     *
+     * @param array $data
+     * @throws Exception
+     */
+    public function setComposerData($data)
+    {
+        $path = $this->getComposerPath();
+        if (!file_exists($path)) {
+            throw new Exception("No composer.json found in module " . $this->getName());
+        }
+        Config::saveToFile($path, $data);
+    }
+
+    /**
+     * Get path to composer.json
+     *
+     * @return string
+     */
+    public function getComposerPath()
+    {
+        return $this->getDirectory() . '/composer.json';
     }
 
     /**

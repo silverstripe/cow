@@ -29,7 +29,7 @@ class Config
      * @throws Exception
      */
     public static function saveToFile($path, $data) {
-        $content = json_encode($data, JSON_PRETTY_PRINT);
+        $content = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 
         // Make sure errors are reported
         if (json_last_error()) {

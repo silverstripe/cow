@@ -5,6 +5,8 @@ namespace SilverStripe\Cow\Commands\Release;
 use SilverStripe\Cow\Commands\Command;
 use SilverStripe\Cow\Model\Modules\Project;
 use SilverStripe\Cow\Steps\Release\CreateBranch;
+use SilverStripe\Cow\Steps\Release\CreateBranches;
+use SilverStripe\Cow\Steps\Release\PlanRelease;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 
@@ -13,52 +15,28 @@ use Symfony\Component\Console\Input\InputOption;
  *
  * @author dmooyman
  */
-class Branch extends Command
+class Branch extends Release
 {
     /**
-     *
      * @var string
      */
     protected $name = 'release:branch';
 
     protected $description = 'Branch all modules';
 
-    protected function configureOptions()
-    {
-        $this
-            ->addArgument('branch', InputArgument::REQUIRED, 'Branch each module to this')
-            ->addOption('directory', 'd', InputOption::VALUE_REQUIRED, 'Optional directory to release project from');
-    }
-
     protected function fire()
     {
         // Get arguments
-        $branch = $this->getInputBranch();
-        $directory = $this->getInputDirectory();
-        $project = new Project($directory);
+        $version = $this->getInputVersion();
+        $project = $this->getProject();
 
-        // Steps
-        $step = new CreateBranch($this, $project, $branch);
-        $step->run($this->input, $this->output);
-    }
+        // Build and confirm release plan
+        $buildPlan = new PlanRelease($this, $project, $version);
+        $buildPlan->run($this->input, $this->output);
+        $releasePlan = $buildPlan->getReleasePlan();
 
-    /**
-     * Determine the branch name that should be used
-     *
-     * @return string|null
-     */
-    protected function getInputBranch()
-    {
-        return $this->input->getArgument('branch');
-    }
-
-    /**
-     * Get the directory the project is, or will be in
-     *
-     * @return string
-     */
-    protected function getInputDirectory()
-    {
-        return $this->input->getOption('directory') ?: getcwd();
+        // Branch all modules properly
+        $branchAlias = new CreateBranches($this, $project, $releasePlan);
+        $branchAlias->run($this->input, $this->output);
     }
 }
