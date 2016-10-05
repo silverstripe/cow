@@ -346,9 +346,11 @@ class Library
         $localBranches = $this->getBranches();
         $remoteBranches = $this->getBranches($remote);
         $repository = $this->getRepository($output);
+        $isLocalBranch = in_array($branch, $localBranches, true);
+        $isRemoteBranch = in_array($branch, $remoteBranches, true);
 
         // Make sure branch exists somewhere
-        if (!in_array($branch, $localBranches) && !in_array($branch, $remoteBranches)) {
+        if (!$isLocalBranch && !$isRemoteBranch) {
             if (!$canCreate) {
                 throw new InvalidArgumentException("Branch {$branch} is not a local or remote branch");
             }
@@ -361,7 +363,7 @@ class Library
         // Check if we need to switch branch
         if ($this->getBranch() !== $branch) {
             // Find source for branch to checkout from (must disambiguate from tags)
-            if (!in_array($branch, $localBranches)) {
+            if (!$isLocalBranch) {
                 $sourceRef = "{$remote}/{$branch}";
             } else {
                 $sourceRef = "refs/heads/{$branch}";
@@ -377,9 +379,21 @@ class Library
 
         // If branch is on live and local, we need to synchronise changes on local
         // (but don't push!)
-        if (in_array($branch, $localBranches) && in_array($branch, $remoteBranches)) {
+        if ($isLocalBranch && $isRemoteBranch) {
             $repository->run('pull', [$remote, $branch]);
         }
+    }
+
+    /**
+     * Checkout the given tag
+     *
+     * @param OutputInterface $output
+     * @param Version $version
+     */
+    public function resetToTag(OutputInterface $output, Version $version) {
+        $repository = $this->getRepository($output);
+        $tag = $version->getValue();
+        $repository->run('checkout', [ "refs/tags/{$tag}" ]);
     }
 
     /**

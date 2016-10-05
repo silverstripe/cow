@@ -11,14 +11,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
- * Automatically updates all branch aliases using this process for each module:
- *
- * - Ensure that current branch is branched to major.minor version (e.g. 3.3) from either a
- * prior branch name (3.2) or simpler branch (3).
- * - Update composer alias for basic branch.
- * - Push all updated branches
- *
- * Note: Changes are ordered in such a way as that future semver merges (3.3 -> 3) resolve automatically
+ * Automatically checkout the correct branches / tags for any module being released.
  */
 class CreateBranches extends ReleaseStep
 {
@@ -42,20 +35,20 @@ class CreateBranches extends ReleaseStep
      * Update branches for the given library recursively
      *
      * @param OutputInterface $output
-     * @param LibraryRelease $library
+     * @param LibraryRelease $libraryRelease
      */
-    protected function recursiveBranchLibrary(OutputInterface $output, LibraryRelease $library)
+    protected function recursiveBranchLibrary(OutputInterface $output, LibraryRelease $libraryRelease)
     {
         // Skip if not tagging this library (upgrade only)
-        if (!$library->getIsNewRelease()) {
-            return;
+        if ($libraryRelease->getIsNewRelease()) {
+            // Update this library
+            $this->branchLibrary($output, $libraryRelease);
+        } else {
+            $this->checkoutLibrary($output, $libraryRelease->getLibrary(), $libraryRelease->getVersion());
         }
 
-        // Update this library
-        $this->branchLibrary($output, $library);
-
         // Recursie
-        foreach($library->getItems() as $childLibrary) {
+        foreach($libraryRelease->getItems() as $childLibrary) {
             $this->recursiveBranchLibrary($output, $childLibrary);
         }
     }
@@ -84,6 +77,21 @@ class CreateBranches extends ReleaseStep
         } else {
             $this->log($output, "Releasing library <info>{$libraryName}</info> from branch <info>{$currentBranch}</info>");
         }
+    }
+
+    /**
+     * Checkout the given tag for this library
+     *
+     * @param OutputInterface $output
+     * @param Library $library
+     * @param Version $version
+     */
+    protected function checkoutLibrary(OutputInterface $output, Library $library, Version $version)
+    {
+        $libraryName = $library->getName();
+        $tagName = $version->getValue();
+        $this->log($output, "Checking out library <info>{$libraryName}</info> at existing tag <info>{$tagName}</info>");
+        $library->resetToTag($output, $version);
     }
 
     /**
