@@ -107,7 +107,7 @@ class ComposerConstraint
      */
     public function __construct($constraint, $parentVersion = null, $name = null)
     {
-        $this->value = $constraint;
+        $this->setValue($constraint);
 
         if ($constraint === 'self.version') {
              if (!$parentVersion instanceof Version) {
@@ -180,18 +180,21 @@ class ComposerConstraint
     {
         // Match dev constraint
         $valid = preg_match(
-            '/^(?<major>\\d+)(\\.(?<minor>\\d+))?\.[x\\*]\\-dev?$/',
+            '/^(?<major>\\d+)(\\.(?<minor>\\d+))?(?<dev>\.[x\\*]\\-dev)$/',
             $version,
             $matches
         );
         if ($valid) {
+            $minor = (isset($matches['minor']) && strlen($matches['minor'])) ? $matches['minor'] : '0';
+            $patch = (isset($matches['minor']) && $matches['minor']) ? '0' : null;
             return [
                 'type' => '~',
                 'major' => $matches['major'],
-                'minor' => isset($matches['minor']) ? $matches['minor'] : '0',
-                'patch' => isset($matches['minor']) ? '0' : null,
+                'minor' => $minor,
+                'patch' => $patch,
                 'stability' => 'alpha', // treat x-dev dependencies as matching min-alpha1 stability (lowest)
                 'stabilityVersion' => '1',
+                'dev' => $matches['dev']
             ];
         }
 
@@ -230,9 +233,7 @@ class ComposerConstraint
         $matches = [];
         foreach($tags as $tagName => $tag) {
             // Check lower and upper bounds
-            if ($this->getMinVersion()->compareTo($tag) <= 0
-                && $this->getMaxVersion()->compareTo($tag) >= 0
-            ) {
+            if ($this->matchesVersion($tag)) {
                 $matches[$tagName] = $tag;
             }
         }
@@ -246,5 +247,59 @@ class ComposerConstraint
     public function isSelfVersion()
     {
         return $this->isSelfVersion;
+    }
+
+    /**
+     * Check if the given tag matches this constraint
+     *
+     * @param Version $tag
+     * @return bool
+     */
+    public function matchesVersion(Version $tag)
+    {
+        return $this->getMinVersion()->compareTo($tag) <= 0
+            && $this->getMaxVersion()->compareTo($tag) >= 0;
+    }
+
+    /**
+     * Rewrite this constraint to support the given version
+     *
+     * @param Version $version
+     * @return ComposerConstraint|null The new constraint, or null if this cannot be automatically done.
+     */
+    public function rewriteToSupport(Version $version) {
+        // If it already supports this version there is no need to rewrite
+        if ($this->matchesVersion($version)) {
+            return $this;
+        }
+
+        if ($this->isSelfVersion()) {
+            return null;
+        }
+
+        $parts = static::parse($this->getValue());
+
+        // Match dev dependency
+        if (isset($parts['dev'])) {
+            // Rewrite to a.b.x-dev
+            $value = $version->getMajor() . '.' . $version->getMinor() . $parts['dev'];
+            return new ComposerConstraint($value);
+        }
+
+        // Can't rewrite non-semver constraints for dev versions (since it'll end up only matching tags)
+        if (empty($parts['type'])) {
+            return null;
+        }
+
+        // If major version is different for semver constraints then simplify by removing patch constraint
+        $hasPatch = isset($parts['patch']) && strlen($parts['patch']);
+        if (($parts['major'] !== $version->getMajor()) || !$hasPatch || $parts['type'] === '^') {
+            // e.g. ~3.1.0 -> ~4.1, ~4.0 -> ~4.1
+            $value = $parts['type'] . $version->getMajor() . '.' . $version->getMinor();
+        } else {
+            // e.g. ~4.0.1 -> ~4.1.0
+            $value = $parts['type'] . $version->getMajor() . '.' . $version->getMinor() . '.0';
+        }
+        return new ComposerConstraint($value);
     }
 }

@@ -123,4 +123,39 @@ class ComposerConstraintTest extends PHPUnit_Framework_TestCase
         $result = $constraintObject->filterVersions($inputVersions);
         $this->assertEquals($output, array_keys($result), "Version constraint $constraint filters the given list");
     }
+
+    public function constraintRewriteProvider() {
+        return [
+            // No change expected
+            ['3.1.3', '3.1.x-dev', '3.1.x-dev'],
+            ['3.1.3', '3.x-dev', '3.x-dev'],
+            ['3.1.3', '~3.1.0', '~3.1.0'],
+            ['3.1.3', '^3.1.0', '^3.1.0'],
+            ['3.2.3', '^3.1.0', '^3.1.0'],
+
+            // major version changes
+            ['4.1.3', '3.1.x-dev', '4.1.x-dev'],
+            ['4.1.3', '3.x-dev', '4.1.x-dev'],
+            ['4.1.3', '~3.2.0', '~4.1'],
+            ['4.1.3', '^3.2.0', '^4.1'],
+
+            // Minor version needs increment
+            ['3.2.3', '~3.1.0', '~3.2.0'],
+
+            // Downgrades (shouldn't really expect this in the wild though)
+            ['2.2.3', '3.1.x-dev', '2.2.x-dev'],
+            ['2.2.3', '3.x-dev', '2.2.x-dev'],
+            ['3.1.3', '~3.2.0', '~3.1.0'],
+            ['3.1.3', '^3.2.0', '^3.1'],
+        ];
+    }
+
+    /**
+     * @dataProvider constraintRewriteProvider()
+     */
+    public function testRewriteToSupport($version, $constraint, $expected) {
+        $constraint = new ComposerConstraint($constraint);
+        $rewritten = $constraint->rewriteToSupport(new Version($version));
+        $this->assertEquals($expected, $rewritten->getValue());
+    }
 }

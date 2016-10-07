@@ -5,6 +5,7 @@ namespace SilverStripe\Cow\Commands\Release;
 use Exception;
 use SilverStripe\Cow\Model\Release\LibraryRelease;
 use SilverStripe\Cow\Steps\Release\BuildArchive;
+use SilverStripe\Cow\Steps\Release\PublishModules;
 use SilverStripe\Cow\Steps\Release\PushRelease;
 use SilverStripe\Cow\Steps\Release\TagModules;
 use SilverStripe\Cow\Steps\Release\CreateBranches;
@@ -49,6 +50,10 @@ class Publish extends Release
 
         $project = $this->getProject();
         $releasePlan = $this->getReleasePlan();
+
+        // Does bulk of module publishing, rewrite of dev branches, rewrite of tags, and actual tagging
+        $publish = new PublishModules($this, $project, $releasePlan);
+        $publish->run($this->input, $this->output);
 
         /*
 
