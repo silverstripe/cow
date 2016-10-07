@@ -83,7 +83,13 @@ class UpdateTranslations extends ReleaseStep
     public function run(InputInterface $input, OutputInterface $output)
     {
         $modules = iterator_to_array($this->getTranslatableModules(), false);
-        $this->log($output, sprintf("Updating translations for %d module(s)", count($modules)));
+        $count = count($modules);
+        if ($count === 0) {
+            $this->log($output, "No modules require translation: skipping");
+            return;
+        }
+        
+        $this->log($output, "Updating translations for {$count} module(s)");
         $this->checkVersion($output);
         $this->storeJavascript($output, $modules);
         $this->pullSource($output, $modules);

@@ -14,6 +14,7 @@ use SilverStripe\Cow\Steps\Release\UpdateTranslations;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 use InvalidArgumentException;
+use Symfony\Component\Console\Output\Output;
 
 /**
  * Execute each release step in order to publish a new version
@@ -67,10 +68,13 @@ class Release extends Command
         $changelogs = new CreateChangelog($this, $project, $releasePlan);
         $changelogs->run($this->input, $this->output);
 
+
+
         // Output completion
         $this->output->writeln("<info>Success!</info> Release has been updated.");
+        $command = $this->getPublishCommand($version, $project);
         $this->output->writeln(
-            "Please check the changes made by this command, and run <info>cow release:publish</info>"
+            "Please check the changes made by this command, and run <info>{$command}</info>"
         );
     }
 
@@ -153,6 +157,30 @@ class Release extends Command
     {
         $directory = $this->getInputDirectory();
         return new Project($directory);
+    }
+
+    /**
+     * Get command to suggest to publish this release
+     *
+     * @param Version $version
+     * @param Project $project
+     * @return string Command name
+     */
+    protected function getPublishCommand($version, $project)
+    {
+        $command = 'cow release:publish ' . $version->getValue() . ' ' . $project->getName();
+        switch ($this->output->getVerbosity()) {
+            case Output::VERBOSITY_DEBUG:
+                $command .= ' -vvv';
+                break;
+            case Output::VERBOSITY_VERY_VERBOSE:
+                $command .= ' -vv';
+                break;
+            case Output::VERBOSITY_VERBOSE:
+                $command .= ' -v';
+                break;
+        }
+        return $command;
     }
 
 }
