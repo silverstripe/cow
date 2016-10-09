@@ -46,7 +46,7 @@ class RewriteReleaseBranches extends ReleaseStep
      */
     protected function recursiveBranchLibrary(OutputInterface $output, LibraryRelease $libraryRelease)
     {
-        // Recursie
+        // Recursively rewrite and branch child dependencies first
         foreach($libraryRelease->getItems() as $childLibrary) {
             $this->recursiveBranchLibrary($output, $childLibrary);
         }
@@ -55,6 +55,9 @@ class RewriteReleaseBranches extends ReleaseStep
         if ($libraryRelease->getIsNewRelease()) {
             // Update this library
             $this->branchLibrary($output, $libraryRelease);
+
+            // Update dev dependencies for the given module
+            $this->incrementDevDependencies($output, $libraryRelease);
         } else {
             $this->checkoutLibrary($output, $libraryRelease->getLibrary(), $libraryRelease->getVersion());
         }
@@ -90,9 +93,6 @@ class RewriteReleaseBranches extends ReleaseStep
         } else {
             $this->log($output, "Releasing library <info>{$libraryName}</info> from branch <info>{$currentBranch}</info>");
         }
-
-        // Update dev dependencies for the given module
-        $this->incrementDevDependencies($output, $libraryRelease);
     }
 
     /**
