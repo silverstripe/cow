@@ -159,4 +159,22 @@ class ComposerConstraintTest extends PHPUnit_Framework_TestCase
         $rewritten = $constraint->rewriteToSupport(new Version($version));
         $this->assertEquals($expected, $rewritten->getValue());
     }
+
+    public function comparisonProvider() {
+        return [
+            ['3.1.x-dev', '3.1.1', 0],
+            ['~3.0.0', '3.1.0', -1],
+            ['^4.2', '3.0.0', 1],
+            ['^4.2', '4.3.0', 0],
+            ['^4.2', '5.1.0', -1]
+        ];
+    }
+
+    /**
+     * @dataProvider comparisonProvider()
+     */
+    public function testComparison($constraint, $version, $result) {
+        $constraint = new ComposerConstraint($constraint);
+        $this->assertEquals($result, $constraint->compareTo(new Version($version)));
+    }
 }

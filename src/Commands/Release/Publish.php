@@ -8,7 +8,7 @@ use SilverStripe\Cow\Steps\Release\BuildArchive;
 use SilverStripe\Cow\Steps\Release\PublishModules;
 use SilverStripe\Cow\Steps\Release\PushRelease;
 use SilverStripe\Cow\Steps\Release\TagModules;
-use SilverStripe\Cow\Steps\Release\CreateBranches;
+use SilverStripe\Cow\Steps\Release\RewriteReleaseBranches;
 use SilverStripe\Cow\Steps\Release\UploadArchive;
 use SilverStripe\Cow\Steps\Release\Wait;
 use Symfony\Component\Console\Input\InputArgument;

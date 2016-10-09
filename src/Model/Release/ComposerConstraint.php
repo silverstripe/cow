@@ -233,7 +233,7 @@ class ComposerConstraint
         $matches = [];
         foreach($tags as $tagName => $tag) {
             // Check lower and upper bounds
-            if ($this->matchesVersion($tag)) {
+            if (!$this->compareTo($tag)) {
                 $matches[$tagName] = $tag;
             }
         }
@@ -250,15 +250,19 @@ class ComposerConstraint
     }
 
     /**
-     * Check if the given tag matches this constraint
+     * Compare this range to this version
      *
-     * @param Version $tag
-     * @return bool
+     * @param Version $version
+     * @return int Negative if this range is below this version, positive if above this version, or 0
      */
-    public function matchesVersion(Version $tag)
-    {
-        return $this->getMinVersion()->compareTo($tag) <= 0
-            && $this->getMaxVersion()->compareTo($tag) >= 0;
+    public function compareTo(Version $version) {
+        if ($this->getMinVersion()->compareTo($version) > 0) {
+            return 1;
+        }
+        if ($this->getMaxVersion()->compareTo($version) < 0) {
+            return -1;
+        }
+        return 0;
     }
 
     /**
@@ -269,7 +273,7 @@ class ComposerConstraint
      */
     public function rewriteToSupport(Version $version) {
         // If it already supports this version there is no need to rewrite
-        if ($this->matchesVersion($version)) {
+        if ($this->compareTo($version) === 0) {
             return $this;
         }
 

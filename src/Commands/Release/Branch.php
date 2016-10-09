@@ -5,7 +5,7 @@ namespace SilverStripe\Cow\Commands\Release;
 use SilverStripe\Cow\Commands\Command;
 use SilverStripe\Cow\Model\Modules\Project;
 use SilverStripe\Cow\Steps\Release\CreateBranch;
-use SilverStripe\Cow\Steps\Release\CreateBranches;
+use SilverStripe\Cow\Steps\Release\RewriteReleaseBranches;
 use SilverStripe\Cow\Steps\Release\PlanRelease;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
@@ -36,7 +36,7 @@ class Branch extends Release
         $releasePlan = $buildPlan->getReleasePlan();
 
         // Branch all modules properly
-        $branchAlias = new CreateBranches($this, $project, $releasePlan);
+        $branchAlias = new RewriteReleaseBranches($this, $project, $releasePlan);
         $branchAlias->run($this->input, $this->output);
     }
 }
