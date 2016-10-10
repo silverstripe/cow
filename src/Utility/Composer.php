@@ -47,4 +47,18 @@ class Composer
         }
         $runner->runCommand($command, "Could not create project with version {$version}");
     }
+
+    /**
+     * get oauth token from github
+     *
+     * @param CommandRunner $runner
+     * @return string
+     */
+    public static function getOAUTHToken(CommandRunner $runner) {
+        // try composer stored oauth token
+        $command = [ 'composer', 'config', '-g', 'github-oauth.github.com' ];
+        $error = "Couldn't determine GitHub oAuth token. Please set GITHUB_API_TOKEN";
+        $result = $runner->runCommand($command, $error);
+        return trim($result);
+    }
 }

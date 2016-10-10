@@ -131,7 +131,7 @@ class CreateChangelog extends ReleaseStep
         }
 
         // Store in yml to later push to git
-        if ($library->getTaggingType() === Library::TAGGING_GITHUB_CHANGELOG) {
+        if ($library->hasGithubChangelog()) {
             // Generate header
             $existingContent = $changelogLibrary->getRelease()->getChangelog();
             $header = $this->getFileHeader($output, $version, $existingContent);

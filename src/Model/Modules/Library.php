@@ -23,19 +23,19 @@ use Symfony\Component\Console\Output\OutputInterface;
 class Library
 {
     /**
-     * Tag with normal tag and push with git
+     * Dependencies are tagged at exact version (1.0.0)
      */
-    const TAGGING_NORMAL = 'normal';
+    const DEPENDENCY_EXACT = 'exact';
 
     /**
-     * Push via github api
+     * Dependencies allow loose-compatible upgrade (~1.0.0)
      */
-    const TAGGING_GITHUB = 'github';
+    const DEPENDENCY_LOOSE = 'loose';
 
     /**
-     * Push via github API with changelog
+     * Dependencies allow any semver-compatible upgrade (^1.0.0)
      */
-    const TAGGING_GITHUB_CHANGELOG = 'github-changelog';
+    const DEPENDENCY_SEMVER = 'semver';
 
     /**
      * Parent project (installer module)
@@ -317,6 +317,18 @@ class Library
     }
 
     /**
+     * Push a single tag
+     *
+     * @param string $tag Name of tag
+     * @param string $remote
+     */
+    public function pushTag($tag, $remote = 'origin') {
+        $repo = $this->getRepository();
+        $args = array($remote, "refs/tags/{$tag}");
+        $repo->run('push', $args);
+    }
+
+    /**
      * Fetch all upstream changes
      *
      * @param OutputInterface $output
@@ -335,8 +347,8 @@ class Library
      * may have just been tagged as 3.1.0, and is about to get deleted).
      *
      * @param OutputInterface $output
-     * @param string $branch
-     * @param string $remote
+     * @param string $branch Name of branch to checkout or create
+     * @param string $remote name of remote to look for branch in. Set to empty to disable remote checkout.
      * @param bool $canCreate Set to true to allow creation of new branches
      * if not found. Branch will be created from current head.
      */
@@ -344,7 +356,7 @@ class Library
     {
         // Check if local branch exists
         $localBranches = $this->getBranches();
-        $remoteBranches = $this->getBranches($remote);
+        $remoteBranches = $remote ? $this->getBranches($remote) : [];
         $repository = $this->getRepository($output);
         $isLocalBranch = in_array($branch, $localBranches, true);
         $isRemoteBranch = in_array($branch, $remoteBranches, true);
@@ -731,6 +743,29 @@ class Library
     }
 
     /**
+     * Get dependency tagging behaviour.
+     *
+     * @return string
+     * @throws InvalidArgumentException
+     */
+    public function getDependencyConstraint() {
+        $data = $this->getCowData();
+        if (empty($data['dependency-constraint'])) {
+            return self::DEPENDENCY_EXACT;
+        }
+
+        $dependencyconstraint = $data['dependency-constraint'];
+        switch($dependencyconstraint) {
+            case self::DEPENDENCY_LOOSE:
+            case self::DEPENDENCY_SEMVER:
+            case self::DEPENDENCY_EXACT:
+                return $dependencyconstraint;
+            default:
+                throw new InvalidArgumentException("Invalid dependency-constraint: {$dependencyconstraint}");
+        }
+    }
+
+    /**
      * Create a child library
      *
      * @param string $path
@@ -840,15 +875,25 @@ class Library
         $cowData = $this->getCowData();
 
         // If generating via markdown committed to source control
-        if (!empty($cowData['changelog'])) {
+        if (!empty($cowData['changelog-path'])) {
             return true;
         }
 
         // Can also be pushed via githb API
-        if ($this->getTaggingType() === static::TAGGING_GITHUB_CHANGELOG) {
+        if ($this->hasGithubChangelog()) {
             return true;
         }
         return false;
+    }
+
+    /**
+     * Should changelog be pushed to github API?
+     *
+     * @return bool
+     */
+    public function hasGithubChangelog() {
+        $cowData = $this->getCowData();
+        return !empty($cowData['changelog-github']);
     }
 
     /**
@@ -861,11 +906,11 @@ class Library
         $cowData = $this->getCowData();
 
         // If generating via markdown committed to source control
-        if (empty($cowData['changelog'])) {
+        if (empty($cowData['changelog-path'])) {
             return null;
         }
 
-        $path = Format::formatString($cowData['changelog'], [
+        $path = Format::formatString($cowData['changelog-path'], [
             'stability' => $version->getStability(),
             'stabilityVersion' => $version->getStabilityVersion(),
             'major' => $version->getMajor(),
@@ -876,7 +921,6 @@ class Library
         ]);
         // Collapse duplicate //
         return str_replace('//', '/', $path);
-
     }
 
     /**
@@ -919,28 +963,5 @@ class Library
             );
         }
         return $library;
-    }
-
-    /**
-     * Get tagging type. Defaults to "normal"
-     *
-     * @return string
-     * @throws Exception
-     */
-    public function getTaggingType() {
-        $data = $this->getCowData();
-        // Default tagging
-        if (empty($data['tagging'])) {
-            return static::TAGGING_NORMAL;
-        }
-        // Validate tagging type
-        switch ($data['tagging']) {
-            case self::TAGGING_NORMAL:
-            case self::TAGGING_GITHUB:
-            case self::TAGGING_GITHUB_CHANGELOG:
-                return $data['tagging'];
-            default:
-                throw new Exception("Invalid tagging type " . $data['tagging']);
-        }
     }
 }
