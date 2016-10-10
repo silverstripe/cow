@@ -480,6 +480,8 @@ class Library
      */
     public function getCowData()
     {
+        // @todo - Validate against schema
+        // http://json-schema.org/examples.html
         $path = $this->getDirectory() . '/.cow.json';
         return Config::loadFromFile($path);
     }

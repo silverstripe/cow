@@ -99,7 +99,7 @@ class PublishModules extends ReleaseStep
     protected function detachBranch(OutputInterface $output, Library $library)
     {
         $repository = $library->getRepository($output);
-        $repository->run('checkout', 'HEAD~0');
+        $repository->run('checkout', ['HEAD~0']);
         if ($library->getBranch()) {
             throw new \LogicException("Error checking out detached HEAD~0 of " . $library->getName());
         }
@@ -174,10 +174,10 @@ class PublishModules extends ReleaseStep
         // Commit to git
         $path = $parentLibrary->getComposerPath();
         $repo = $parentLibrary->getRepository();
-        $repo->run("add", array($path));
+        $repo->run("add", [$path]);
         $status = $repo->run("status");
         if (stripos($status, 'Changes to be committed:')) {
-            $repo->run("commit", array("-m", "Update development dependencies"));
+            $repo->run("commit", ["-m", "Update development dependencies"]);
         }
     }
 
@@ -279,7 +279,9 @@ class PublishModules extends ReleaseStep
         // Create authenticated github client
         $token = $this->getOAUTHToken($output);
         $client = new GithubClient();
-        $httpClient = new GuzzleClient();
+        $httpClient = GuzzleClient::createWithConfig([
+            'http_errors' => false // http errors are not runtime errors
+        ]);
         $client->setHttpClient($httpClient);
         $client->authenticate($token, null, GithubClient::AUTH_HTTP_TOKEN);
 
