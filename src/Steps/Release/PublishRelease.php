@@ -246,10 +246,14 @@ class PublishRelease extends ReleaseStep
         $releaseData = [
             'tag_name' => $tag,
             'name' => $tag,
-            'body' => $release->getChangelog(),
             'prerelease' => !$version->isStable(),
             'draft' => false,
         ];
+        $changelog = $release->getChangelog();
+        if ($changelog) {
+            $releaseData['body'] = $changelog;
+        }
+
 
         // Determine if editing or creating a release
         $existing = null;
