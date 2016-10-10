@@ -107,13 +107,16 @@ class ChangelogLibrary
     }
 
 
-
     /**
      * Get recursive items
      *
+     * @param bool $includeSelf
      * @return Generator|ChangelogLibrary[]
      */
-    public function getAllItems() {
+    public function getAllItems($includeSelf = false) {
+        if ($includeSelf) {
+            yield $this;
+        }
         $items = $this->getItems();
         foreach ($items as $child) {
             yield $child;

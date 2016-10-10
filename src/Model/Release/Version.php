@@ -393,6 +393,23 @@ class Version
     }
 
     /**
+     * Filter out by callback
+     *
+     * @param Version[] $tags
+     * @param callable $callback
+     * @return Version[]
+     */
+    public static function filter($tags, $callback) {
+        $filtered = [];
+        foreach($tags as $tag) {
+            if ($callback($tag)) {
+                $filtered[$tag->getValue()] = $tag;
+            }
+        }
+        return $filtered;
+    }
+
+    /**
      * Guess the next version to release from this version
      *
      * @param string $stability Stability of the next version to use

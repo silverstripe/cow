@@ -168,9 +168,13 @@ class LibraryRelease
     /**
      * Get recursive items
      *
+     * @param bool $includeSelf
      * @return Generator|LibraryRelease[]
      */
-    public function getAllItems() {
+    public function getAllItems($includeSelf = false) {
+        if ($includeSelf) {
+            yield $this;
+        }
         $items = $this->getItems();
         foreach ($items as $child) {
             yield $child;

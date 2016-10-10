@@ -90,8 +90,16 @@ class CreateChangelog extends ReleaseStep
         // This does a deep search through composer dependencies and recursively checks out old versions
         // of composer.json to determine historic version information
         $changelogLibrary = $this->getChangelogLibrary($release, $fromVersion);
+
+        // Preview diffs to generate for this changelog
         $count = $changelogLibrary->count();
-        $this->log($output, "Found changes in <info>{$count}</info> modules");
+        $this->log($output, "Found changes in <info>{$count}</info> modules:");
+        foreach($changelogLibrary->getAllItems(true) as $item) {
+            $prior = $item->getPriorVersion()->getValue();
+            $version = $item->getRelease()->getVersion()->getValue();
+            $name = $item->getRelease()->getLibrary()->getName();
+            $this->log($output, " * <info>{$name}</info> from <info>{$prior}</info> to <info>{$version}</info>");
+        }
 
         // Generate markedown from plan
         $changelog = new Changelog($changelogLibrary);
@@ -172,6 +180,16 @@ class CreateChangelog extends ReleaseStep
             // Get oldest existing tag that matches the given constraint as the "from" for changelog purposes.
             $historicConstraint = new ComposerConstraint($historicConstraintName, $historicVersion, $childReleaseName);
             $childVersions = $historicConstraint->filterVersions($childNewRelease->getLibrary()->getTags());
+
+            // If "to" is stable, then filter out unstable "from"
+            // E.g. prefer "3.4.0..3.4.1" over "3.4.0-rc1..3.4.1"
+            if ($childNewRelease->getVersion()->isStable()) {
+                $childVersions = Version::filter($childVersions, function(Version $nextTag) {
+                    return $nextTag->isStable();
+                });
+            }
+
+            // Get smallest matching version
             $childVersions = Version::sort($childVersions, Version::ASC);
             if (empty($childVersions)) {
                 throw new \LogicException(

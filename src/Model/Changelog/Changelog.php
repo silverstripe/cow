@@ -61,7 +61,7 @@ class Changelog
      * @param ChangelogLibrary $changelogLibrary
      * @return array
      */
-    protected function getModuleLog(OutputInterface $output, ChangelogLibrary $changelogLibrary)
+    protected function getLibraryLog(OutputInterface $output, ChangelogLibrary $changelogLibrary)
     {
         $items = array();
 
@@ -121,8 +121,9 @@ class Changelog
     protected function getChanges(OutputInterface $output)
     {
         $changes = array();
-        foreach ($this->getLibraries() as $module) {
-            $moduleChanges = $this->getModuleLog($output, $module);
+        $libraries = $this->getRootLibrary()->getAllItems(true);
+        foreach ($libraries as $library) {
+            $moduleChanges = $this->getLibraryLog($output, $library);
             $changes = array_merge($changes, $moduleChanges);
         }
 
@@ -293,18 +294,5 @@ class Changelog
             }
         });
         return $commits;
-    }
-
-    /**
-     * Get modules for this changelog
-     *
-     * @return Generator|ChangelogLibrary[]
-     */
-    protected function getLibraries()
-    {
-        yield $this->getRootLibrary();
-        foreach ($this->getRootLibrary()->getAllItems() as $item) {
-            yield $item;
-        }
     }
 }
