@@ -2,10 +2,7 @@
 
 namespace SilverStripe\Cow\Steps\Release;
 
-use Exception;
-use SilverStripe\Cow\Commands\Command;
 use SilverStripe\Cow\Model\Modules\Project;
-use SilverStripe\Cow\Steps\Step;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 

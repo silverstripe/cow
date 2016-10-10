@@ -4,14 +4,7 @@ namespace SilverStripe\Cow\Commands\Release;
 
 use Exception;
 use SilverStripe\Cow\Model\Release\LibraryRelease;
-use SilverStripe\Cow\Steps\Release\BuildArchive;
 use SilverStripe\Cow\Steps\Release\PublishRelease;
-use SilverStripe\Cow\Steps\Release\PushRelease;
-use SilverStripe\Cow\Steps\Release\TagModules;
-use SilverStripe\Cow\Steps\Release\RewriteReleaseBranches;
-use SilverStripe\Cow\Steps\Release\UploadArchive;
-use SilverStripe\Cow\Steps\Release\Wait;
-use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 
 /**
@@ -40,14 +33,6 @@ class Publish extends Release
     protected function fire()
     {
         // Get arguments
-        /*
-        $version = $this->getInputVersion();
-        $recipe = $this->getInputRecipe();
-        $directory = $this->getInputDirectory($version, $recipe);
-        $awsProfile = $this->getInputAWSProfile();
-        $modules = $this->getReleaseModules($directory);
-        */
-
         $project = $this->getProject();
         $releasePlan = $this->getReleasePlan();
 
@@ -56,15 +41,6 @@ class Publish extends Release
         $publish->run($this->input, $this->output);
 
         /*
-
-        // Tag
-        $tag = new TagModules($this, $version, $directory, $modules);
-        $tag->run($this->input, $this->output);
-
-        // Push tag & branch
-        $push = new PushRelease($this, $directory, $modules);
-        $push->run($this->input, $this->output);
-
         // Once pushed, wait until installable
         $wait = new Wait($this, $version);
         $wait->run($this->input, $this->output);

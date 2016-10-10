@@ -1,6 +1,5 @@
 <?php
 
-
 namespace SilverStripe\Cow\Steps\Release;
 
 use Exception;

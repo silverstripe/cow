@@ -37,15 +37,6 @@ class Application extends Console\Application
         $commands[] = new Commands\Release\Release();
         $commands[] = new Commands\Release\Publish();
 
-        // Module commands
-        $commands[] = new Commands\Module\Translate();
-        $commands[] = new Commands\Module\Tag();
-
-        // Branch commands
-        $commands[] = new Commands\Branch\Merge();
-        $commands[] = new Commands\Branch\Push();
-        $commands[] = new Commands\Branch\Checkout();
-
         return $commands;
     }
 }
