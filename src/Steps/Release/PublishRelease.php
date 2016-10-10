@@ -13,7 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Github\Client as GithubClient;
 use Http\Adapter\Guzzle6\Client as GuzzleClient;
 
-class PublishModules extends ReleaseStep
+class PublishRelease extends ReleaseStep
 {
     /**
      * Github API client
@@ -140,6 +140,11 @@ class PublishModules extends ReleaseStep
     {
         // Rewrite requirement for tag
         $childRequirement = $item->getVersion()->getValue();
+        if ($item->getVersion()->isStable()) {
+            $childRequirement .= '@stable';
+        }
+
+        // Add stability variability
         switch ($constraintType) {
             case Library::DEPENDENCY_LOOSE:
                 $childRequirement = "~{$childRequirement}";
