@@ -29,6 +29,11 @@
   "require-dev": {
     "phpunit/phpunit": "4@stable"
   },
+  "extra": {
+    "branch-alias": {
+      "dev-master": "2.0.x-dev"
+    }
+  },
   "prefer-stable": true,
   "minimum-stability": "dev"
 }
