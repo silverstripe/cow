@@ -140,13 +140,10 @@ class CreateChangelog extends ReleaseStep
 
         // Store in yml to later push to git
         if ($library->hasGithubChangelog()) {
-            // Generate header
-            $existingContent = $changelogLibrary->getRelease()->getChangelog();
-            $header = $this->getFileHeader($output, $version, $existingContent);
-
+            // Note that we skip file header for github changes (for simplicity)
             // Write and commit changes to .cow.plan.json
             $this->log($output, "Caching changelog to push to github");
-            $changelogLibrary->getRelease()->setChangelog($header.$content);
+            $changelogLibrary->getRelease()->setChangelog($content);
             $this->getProject()->saveCachedPlan($this->getReleasePlan());
         }
     }
