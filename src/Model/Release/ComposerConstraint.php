@@ -200,7 +200,7 @@ class ComposerConstraint
 
         // Match semver constraint
         $valid = preg_match(
-            '/^(?<type>[~^])(?<major>\d+)(\\.(?<minor>\d+)(\\.(?<patch>\\d+))?)?(@(?<stability>rc|alpha|beta|stable)(?<stabilityVersion>\d+)?)?$/',
+            '/^(?<type>[~^])(?<major>\d+)(\\.(?<minor>\d+)(\\.(?<patch>\\d+))?)?([-@](?<stability>rc|alpha|beta|stable)(?<stabilityVersion>\d+)?)?$/',
             $version,
             $matches
         );
