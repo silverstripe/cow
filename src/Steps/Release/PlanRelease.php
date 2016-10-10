@@ -337,7 +337,8 @@ class PlanRelease extends Step
         LibraryRelease $selectedVersion
     ) {
         $question = new Question(
-            "Please enter a new version to release for <info>" . $selectedVersion->getLibrary()->getName() . "</info>: ",
+            "Please enter a new version to release for <info>"
+            . $selectedVersion->getLibrary()->getName() . "</info>: ",
             $selectedVersion->getVersion()
         );
         $newVersionName = $this->getQuestionHelper()->ask($input, $output, $question);
@@ -387,7 +388,8 @@ class PlanRelease extends Step
     {
         $options = [];
         // Format / indent this line
-        $formatting = str_repeat(' ', $depth) . ($depth ? html_entity_decode('&#x2514;', ENT_NOQUOTES, 'UTF-8') . ' ' : '');
+        $formatting
+            = str_repeat(' ', $depth) . ($depth ? html_entity_decode('&#x2514;', ENT_NOQUOTES, 'UTF-8') . ' ' : '');
 
         // Get version release information
         if ($node->getIsNewRelease()) {

@@ -14,4 +14,4 @@ before_script:
 
 script:
   - "if [ \"$PHPUNIT_TEST\" = \"1\" ]; then vendor/bin/phpunit tests; fi"
-  - "if [ \"$PHPCS_TEST\" = \"1\" ]; then phpcs --standard=PSR2 -n bin/ src/ tests/; fi"
+  - "if [ \"$PHPCS_TEST\" = \"1\" ]; then phpcs --standard=PSR2 bin/ src/ tests/; fi"

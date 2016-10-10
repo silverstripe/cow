@@ -84,14 +84,20 @@ class RewriteReleaseBranches extends ReleaseStep
             // Check versions to checkout
             $majorBranch = $libraryRelease->getVersion()->getMajor();
             $minorBranch = $majorBranch . "." . $libraryRelease->getVersion()->getMinor();
-            $this->log($output, "Branching library <info>{$libraryName}</info> to <info>{$minorBranch}</info> (new branch)");
+            $this->log(
+                $output,
+                "Branching library <info>{$libraryName}</info> to <info>{$minorBranch}</info> (new branch)"
+            );
 
             // Branch both major and minor versions
             $library->checkout($output, $majorBranch, 'origin', true);
             $library->checkout($output, $minorBranch, 'origin', true);
             $this->removeComposerAlias($output, $library);
         } else {
-            $this->log($output, "Releasing library <info>{$libraryName}</info> from branch <info>{$currentBranch}</info>");
+            $this->log(
+                $output,
+                "Releasing library <info>{$libraryName}</info> from branch <info>{$currentBranch}</info>"
+            );
         }
 
         // Synchronise local branch with upstream
