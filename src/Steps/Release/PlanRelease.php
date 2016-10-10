@@ -81,7 +81,8 @@ class PlanRelease extends Step
      *
      * @param OutputInterface $output
      */
-    protected function buildInitialPlan(OutputInterface $output) {
+    protected function buildInitialPlan(OutputInterface $output)
+    {
         // Load cached value
         $moduleRelease = $this->getProject()->loadCachedPlan();
         if ($moduleRelease) {
@@ -106,10 +107,11 @@ class PlanRelease extends Step
      * @param LibraryRelease $parent Parent release object
      * @throws Exception
      */
-    protected function generateChildReleases(LibraryRelease $parent) {
+    protected function generateChildReleases(LibraryRelease $parent)
+    {
         // Get children
         $childModules = $parent->getLibrary()->getChildren();
-        foreach($childModules as $childModule) {
+        foreach ($childModules as $childModule) {
             // For the given child module, guess the upgrade mechanism (upgrade or new tag)
             if ($parent->getLibrary()->isChildUpgradeOnly($childModule->getName())) {
                 $release = $this->generateUpgradeRelease($parent, $childModule);
@@ -136,7 +138,8 @@ class PlanRelease extends Step
      * @return LibraryRelease
      * @throws Exception
      */
-    protected function generateUpgradeRelease(LibraryRelease $parentRelease, Library $childModule) {
+    protected function generateUpgradeRelease(LibraryRelease $parentRelease, Library $childModule)
+    {
         // Get tags and composer constraint to filter by
         $tags = $childModule->getTags();
         $constraint = $parentRelease->getLibrary()->getChildConstraint(
@@ -158,7 +161,7 @@ class PlanRelease extends Step
 
         // Get all stable tags that match the given composer constraint
         $candidates = $constraint->filterVersions($tags);
-        foreach($candidates as $tag => $version) {
+        foreach ($candidates as $tag => $version) {
             if (!$version->isStable()) {
                 unset($candidates[$tag]);
             }
@@ -187,7 +190,8 @@ class PlanRelease extends Step
      * @return mixed|Version
      * @throws Exception
      */
-    protected function proposeNewReleaseVersion(LibraryRelease $parentRelease, Library $childModule) {
+    protected function proposeNewReleaseVersion(LibraryRelease $parentRelease, Library $childModule)
+    {
         // Get tags and composer constraint to filter by
         $tags = $childModule->getTags();
         $constraint = $parentRelease->getLibrary()->getChildConstraint(
@@ -210,7 +214,7 @@ class PlanRelease extends Step
 
         // Get stability to use for the new tag
         $useSameStability = $parentRelease->getLibrary()->isStabilityInherited($childModule);
-        if($useSameStability) {
+        if ($useSameStability) {
             $stability = $parentRelease->getVersion()->getStability();
             $stabilityVersion = $parentRelease->getVersion()->getStabilityVersion();
         } else {
@@ -224,7 +228,7 @@ class PlanRelease extends Step
 
         // Determine which best tag to create (with the correct stability)
         $existingTag = reset($tags);
-        if($existingTag) {
+        if ($existingTag) {
             // Increment from to guess next version
             $version = $existingTag->getNextVersion($stability, $stabilityVersion);
         } else {
@@ -290,7 +294,7 @@ class PlanRelease extends Step
         $message = "The below release plan has been generated for this project";
         if (!$input->isInteractive()) {
             $this->log($output, $message);
-            foreach($releaseLines as $line) {
+            foreach ($releaseLines as $line) {
                 $this->log($output, $line);
             }
             return;
@@ -308,7 +312,7 @@ class PlanRelease extends Step
         $selectedLibrary = $this->getQuestionHelper()->ask($input, $output, $question);
 
         // Break if plan is accepted
-        if($selectedLibrary === 'continue') {
+        if ($selectedLibrary === 'continue') {
             return;
         }
 
@@ -379,7 +383,8 @@ class PlanRelease extends Step
      * @param int $depth
      * @return array List of options
      */
-    protected function getReleaseOptions(LibraryRelease $node, $depth = 0) {
+    protected function getReleaseOptions(LibraryRelease $node, $depth = 0)
+    {
         $options = [];
         // Format / indent this line
         $formatting = str_repeat(' ', $depth) . ($depth ? html_entity_decode('&#x2514;', ENT_NOQUOTES, 'UTF-8') . ' ' : '');
@@ -402,7 +407,7 @@ class PlanRelease extends Step
         $options[$node->getLibrary()->getName()] = $formatting . $node->getLibrary()->getName() . $version;
 
         // Build child version options
-        foreach($node->getItems() as $child) {
+        foreach ($node->getItems() as $child) {
             $options = array_merge(
                 $options,
                 $this->getReleaseOptions($child, $depth ? $depth + 3 : 1)

@@ -110,7 +110,7 @@ class ComposerConstraint
         $this->setValue($constraint);
 
         if ($constraint === 'self.version') {
-             if (!$parentVersion instanceof Version) {
+            if (!$parentVersion instanceof Version) {
                 throw new InvalidArgumentException(
                     "$name dependency self.version given with missing parent version"
                 );
@@ -145,7 +145,8 @@ class ComposerConstraint
             $fromStabilityVersion = isset($parsed['stabilityVersion']) ? $parsed['stabilityVersion'] : '';
             $fromStability = '-' . $parsed['stability'] . $fromStabilityVersion;
         }
-        $from = sprintf("%d.%d.%d%s",
+        $from = sprintf(
+            "%d.%d.%d%s",
             $parsed['major'],
             isset($parsed['minor']) ? $parsed['minor'] : '0',
             isset($parsed['patch']) ? $parsed['patch'] : '0',
@@ -229,9 +230,10 @@ class ComposerConstraint
      * @param Version[] $tags
      * @return Version[]
      */
-    public function filterVersions($tags) {
+    public function filterVersions($tags)
+    {
         $matches = [];
-        foreach($tags as $tagName => $tag) {
+        foreach ($tags as $tagName => $tag) {
             // Check lower and upper bounds
             if (!$this->compareTo($tag)) {
                 $matches[$tagName] = $tag;
@@ -255,7 +257,8 @@ class ComposerConstraint
      * @param Version $version
      * @return int Negative if this range is below this version, positive if above this version, or 0
      */
-    public function compareTo(Version $version) {
+    public function compareTo(Version $version)
+    {
         if ($this->getMinVersion()->compareTo($version) > 0) {
             return 1;
         }
@@ -271,7 +274,8 @@ class ComposerConstraint
      * @param Version $version
      * @return ComposerConstraint|null The new constraint, or null if this cannot be automatically done.
      */
-    public function rewriteToSupport(Version $version) {
+    public function rewriteToSupport(Version $version)
+    {
         // If it already supports this version there is no need to rewrite
         if ($this->compareTo($version) === 0) {
             return $this;

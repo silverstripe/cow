@@ -3,7 +3,6 @@
 
 namespace SilverStripe\Cow\Utility;
 
-
 class Format
 {
 
@@ -22,5 +21,4 @@ class Format
         }
         return $result;
     }
-
 }

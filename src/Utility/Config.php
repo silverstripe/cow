@@ -12,7 +12,8 @@ class Config
      * @param string $path
      * @return array
      */
-    public static function loadFromFile($path) {
+    public static function loadFromFile($path)
+    {
         // Allow empty config
         if (!file_exists($path)) {
             return [];
@@ -28,7 +29,8 @@ class Config
      * @param array $data
      * @throws Exception
      */
-    public static function saveToFile($path, $data) {
+    public static function saveToFile($path, $data)
+    {
         $content = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 
         // Make sure errors are reported

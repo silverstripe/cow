@@ -99,7 +99,8 @@ class Version
      *
      * @return bool
      */
-    public function isStable() {
+    public function isStable()
+    {
         return empty($this->stability);
     }
 
@@ -111,7 +112,7 @@ class Version
 
     public function getStabilityVersion()
     {
-        if($this->isStable()) {
+        if ($this->isStable()) {
             return null;
         }
         return (int)$this->stabilityVersion;
@@ -134,11 +135,13 @@ class Version
         return $this;
     }
 
-    public function getMinor() {
+    public function getMinor()
+    {
         return $this->minor;
     }
 
-    public function setMinor($minor) {
+    public function setMinor($minor)
+    {
         $this->minor = $minor;
         return $this;
     }
@@ -276,7 +279,8 @@ class Version
      * @param Version $other
      * @return int negative for smaller version, 0 for equal, positive for later version
      */
-    public function compareTo(Version $other) {
+    public function compareTo(Version $other)
+    {
         $diff = $this->getMajor() - $other->getMajor();
         if ($diff) {
             return $diff;
@@ -306,7 +310,8 @@ class Version
      * @param string $right
      * @return int
      */
-    protected function compareStabliity($left, $right) {
+    protected function compareStabliity($left, $right)
+    {
         $precedence = [
             '',
             'rc',
@@ -322,7 +327,7 @@ class Version
         if ($left === $right) {
             return 0;
         }
-        foreach($precedence as $type) {
+        foreach ($precedence as $type) {
             if ($left === $type) {
                 return 1;
             }
@@ -340,7 +345,8 @@ class Version
      * @param string $libraryName Name of library (for error reporting only)
      * @return Version
      */
-    public function getPriorVersionFromTags($tags, $libraryName) {
+    public function getPriorVersionFromTags($tags, $libraryName)
+    {
         // If we can programatically detect a prior version, then use this
         $prior = $this->getPriorVersion();
         if ($prior && array_key_exists($prior->getValue(), $tags)) {
@@ -349,7 +355,7 @@ class Version
 
         // Search all tags to find best prior version
         $best = null;
-        foreach($tags as $tag) {
+        foreach ($tags as $tag) {
             // Skip pre-releases
             if ($tag->getStability()) {
                 continue;
@@ -378,9 +384,10 @@ class Version
      * @param string $dir ASC or DESC constant values.
      * @return Version[]
      */
-    public static function sort($tags, $dir = self::DESC) {
-        uasort($tags, function(Version $left, Version $right) use ($dir) {
-            switch($dir) {
+    public static function sort($tags, $dir = self::DESC)
+    {
+        uasort($tags, function (Version $left, Version $right) use ($dir) {
+            switch ($dir) {
                 case self::ASC:
                     return $left->compareTo($right);
                 case self::DESC:
@@ -399,9 +406,10 @@ class Version
      * @param callable $callback
      * @return Version[]
      */
-    public static function filter($tags, $callback) {
+    public static function filter($tags, $callback)
+    {
         $filtered = [];
-        foreach($tags as $tag) {
+        foreach ($tags as $tag) {
             if ($callback($tag)) {
                 $filtered[$tag->getValue()] = $tag;
             }
@@ -416,14 +424,15 @@ class Version
      * @param int $stabilityVersion
      * @return Version
      */
-    public function getNextVersion($stability = '', $stabilityVersion = 0) {
+    public function getNextVersion($stability = '', $stabilityVersion = 0)
+    {
         $canditate = clone $this;
 
         // Check if we can simply release a new stability of the same version
         // E.g. 4.0.0-alpha1 -> 4.0.0, or 4.0.0-alpha1 -> 4.0.0-beta1
         $canditate->setStability($stability);
         $canditate->setStabilityVersion($stabilityVersion);
-        if($this->compareTo($canditate) < 0) {
+        if ($this->compareTo($canditate) < 0) {
             return $canditate;
         }
 

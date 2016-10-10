@@ -121,7 +121,8 @@ abstract class Step
      * @param OutputInterface $output
      * @return CommandRunner
      */
-    public function getCommandRunner(OutputInterface $output) {
+    public function getCommandRunner(OutputInterface $output)
+    {
         return new StepCommandRunner($this, $output);
     }
 }

@@ -69,7 +69,8 @@ class Publish extends Release
      * @return LibraryRelease
      * @throws Exception
      */
-    protected function getReleasePlan() {
+    protected function getReleasePlan()
+    {
         $plan = $this->getProject()->loadCachedPlan();
         if (empty($plan)) {
             throw new Exception("Please run 'cow release' before 'cow release:publish'");

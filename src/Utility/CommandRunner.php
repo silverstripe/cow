@@ -7,7 +7,8 @@ use Symfony\Component\Process\Process;
 /**
  * Interface for exposing the ability to run console commands
  */
-interface CommandRunner {
+interface CommandRunner
+{
 
     /**
      * Run the command

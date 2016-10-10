@@ -75,7 +75,8 @@ abstract class ReleaseStep extends Step
      *
      * @return LibraryRelease[]|Generator
      */
-    public function getNewReleases() {
+    public function getNewReleases()
+    {
         foreach ($this->getReleases() as $item) {
             if ($item->getIsNewRelease()) {
                 yield $item;
@@ -88,7 +89,8 @@ abstract class ReleaseStep extends Step
      *
      * @return LibraryRelease[]|Generator
      */
-    public function getReleases() {
+    public function getReleases()
+    {
         // Add root item
         yield $this->getReleasePlan();
         foreach ($this->getReleasePlan()->getAllItems() as $item) {

@@ -91,7 +91,8 @@ class ChangelogLibrary
      * @param ChangelogLibrary $changelogLibrary
      * @return $this
      */
-    public function addItem(ChangelogLibrary $changelogLibrary) {
+    public function addItem(ChangelogLibrary $changelogLibrary)
+    {
         $name = $changelogLibrary->getRelease()->getLibrary()->getName();
         $this->items[$name] = $changelogLibrary;
         return $this;
@@ -102,7 +103,8 @@ class ChangelogLibrary
      *
      * @return ChangelogLibrary[]
      */
-    public function getItems() {
+    public function getItems()
+    {
         return $this->items;
     }
 
@@ -113,14 +115,15 @@ class ChangelogLibrary
      * @param bool $includeSelf
      * @return Generator|ChangelogLibrary[]
      */
-    public function getAllItems($includeSelf = false) {
+    public function getAllItems($includeSelf = false)
+    {
         if ($includeSelf) {
             yield $this;
         }
         $items = $this->getItems();
         foreach ($items as $child) {
             yield $child;
-            foreach($child->getAllItems() as $nested) {
+            foreach ($child->getAllItems() as $nested) {
                 yield $nested;
             }
         }
@@ -131,12 +134,12 @@ class ChangelogLibrary
      *
      * @return int
      */
-    public function count() {
+    public function count()
+    {
         $count = 1;
         foreach ($this->getItems() as $item) {
             $count += $item->count();
         }
         return $count;
     }
-
 }

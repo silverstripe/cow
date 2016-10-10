@@ -15,7 +15,7 @@ class Module extends Library
     public function getLangDirectory()
     {
         $sources = $this->getTransifexSources();
-        foreach($sources as $source) {
+        foreach ($sources as $source) {
             if (preg_match('#^(?<dir>.+)\\/(?<file>[^\\/]+)\\.yml$#', $source, $matches)) {
                 return $this->getDirectory() . '/' . $matches['dir'];
             }
@@ -32,7 +32,7 @@ class Module extends Library
     {
         $sources = $this->getTransifexSources();
         $dirs = [];
-        foreach($sources as $source) {
+        foreach ($sources as $source) {
             // Strip out /src/ dir and trailing file.js
             if (preg_match('#^(?<dir>.+)\\/src\\/(?<file>[^\\/]+)\\.js$#', $source, $matches)) {
                 $dirs[] = $this->getDirectory() . '/' . $matches['dir'];
@@ -46,7 +46,8 @@ class Module extends Library
      *
      * @return string[]
      */
-    public function getTransifexSources() {
+    public function getTransifexSources()
+    {
         if (!$this->isTranslatable()) {
             return [];
         }
@@ -54,7 +55,7 @@ class Module extends Library
         $path = $this->getDirectory() . '/.tx/config';
         $content = file_get_contents($path);
         $sources = [];
-        foreach(preg_split('~\R~u', $content) as $line) {
+        foreach (preg_split('~\R~u', $content) as $line) {
             if (preg_match('#source_file\s=\s(?<path>\S+)#', $line, $matches)) {
                 $sources[] = $matches['path'];
             }
@@ -78,7 +79,8 @@ class Module extends Library
      *
      * @return string
      */
-    public function getRelativeMainDirectory() {
+    public function getRelativeMainDirectory()
+    {
         $dir = $this->getMainDirectory();
         $base = $this->getProject()->getDirectory();
 

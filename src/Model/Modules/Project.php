@@ -57,7 +57,8 @@ class Project extends Module
      *
      * @return array Map of module names to path
      */
-    protected function cacheModulePaths() {
+    protected function cacheModulePaths()
+    {
         if (isset($this->modulePaths)) {
             return $this->modulePaths;
         }
@@ -78,7 +79,8 @@ class Project extends Module
      *
      * @return Generator
      */
-    protected function getDirectories() {
+    protected function getDirectories()
+    {
         // Search all directories
         foreach (glob($this->directory."/*", GLOB_ONLYDIR) as $baseDir) {
             yield $baseDir;

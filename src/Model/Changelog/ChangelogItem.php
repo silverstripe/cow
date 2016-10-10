@@ -121,7 +121,8 @@ class ChangelogItem
      * @param Commit $commit
      * @return $this
      */
-    public function setCommit(Commit $commit) {
+    public function setCommit(Commit $commit)
+    {
         $this->commit = $commit;
         return $this;
     }

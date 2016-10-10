@@ -40,7 +40,8 @@ class CreateChangelog extends ReleaseStep
      * @param OutputInterface $output
      * @param LibraryRelease $release
      */
-    protected function recursiveGenerateChangelog(OutputInterface $output, LibraryRelease $release) {
+    protected function recursiveGenerateChangelog(OutputInterface $output, LibraryRelease $release)
+    {
         // Don't generate changelogs for non-release upgrades (e.g. bump to existing tag)
         if (!$release->getIsNewRelease()) {
             return;
@@ -50,7 +51,7 @@ class CreateChangelog extends ReleaseStep
         $this->generateChangelog($output, $release);
 
         // Recurse
-        foreach($release->getItems() as $child) {
+        foreach ($release->getItems() as $child) {
             $this->recursiveGenerateChangelog($output, $child);
         }
     }
@@ -62,7 +63,8 @@ class CreateChangelog extends ReleaseStep
      * @param LibraryRelease $release
      * @throws Exception
      */
-    protected function generateChangelog(OutputInterface $output, LibraryRelease $release) {
+    protected function generateChangelog(OutputInterface $output, LibraryRelease $release)
+    {
         // Determine if this library has a changelog configured
         if (!$release->getLibrary()->hasChangelog()) {
             return;
@@ -94,7 +96,7 @@ class CreateChangelog extends ReleaseStep
         // Preview diffs to generate for this changelog
         $count = $changelogLibrary->count();
         $this->log($output, "Found changes in <info>{$count}</info> modules:");
-        foreach($changelogLibrary->getAllItems(true) as $item) {
+        foreach ($changelogLibrary->getAllItems(true) as $item) {
             $prior = $item->getPriorVersion()->getValue();
             $version = $item->getRelease()->getVersion()->getValue();
             $name = $item->getRelease()->getLibrary()->getName();
@@ -114,7 +116,8 @@ class CreateChangelog extends ReleaseStep
      * @param ChangelogLibrary $changelogLibrary Changelog details
      * @param string $content content to save
      */
-    protected function storeChangelog(OutputInterface $output, ChangelogLibrary $changelogLibrary, $content) {
+    protected function storeChangelog(OutputInterface $output, ChangelogLibrary $changelogLibrary, $content)
+    {
         // Determine saving mechanism
         $version = $changelogLibrary->getRelease()->getVersion();
         $library = $changelogLibrary->getRelease()->getLibrary();
@@ -155,7 +158,8 @@ class CreateChangelog extends ReleaseStep
      * @param Version $historicVersion
      * @return ChangelogLibrary Changelog information for a library
      */
-    protected function getChangelogLibrary(LibraryRelease $newRelease, Version $historicVersion) {
+    protected function getChangelogLibrary(LibraryRelease $newRelease, Version $historicVersion)
+    {
         // Build root release node
         $historicRelease = new ChangelogLibrary($newRelease, $historicVersion);
 
@@ -181,7 +185,7 @@ class CreateChangelog extends ReleaseStep
             // If "to" is stable, then filter out unstable "from"
             // E.g. prefer "3.4.0..3.4.1" over "3.4.0-rc1..3.4.1"
             if ($childNewRelease->getVersion()->isStable()) {
-                $childVersions = Version::filter($childVersions, function(Version $nextTag) {
+                $childVersions = Version::filter($childVersions, function (Version $nextTag) {
                     return $nextTag->isStable();
                 });
             }

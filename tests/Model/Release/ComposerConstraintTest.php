@@ -8,7 +8,8 @@ use SilverStripe\Cow\Model\Release\Version;
 
 class ComposerConstraintTest extends PHPUnit_Framework_TestCase
 {
-    public function testParseSemver() {
+    public function testParseSemver()
+    {
         $constraint = new ComposerConstraint('^4.1.1');
         $this->assertEquals('4.1.1-alpha1', $constraint->getMinVersion()->getValue());
         $this->assertEquals('4.99999.99999', $constraint->getMaxVersion()->getValue());
@@ -22,7 +23,8 @@ class ComposerConstraintTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('4.99999.99999', $constraint->getMaxVersion()->getValue());
     }
 
-    public function testParseLoose() {
+    public function testParseLoose()
+    {
         $constraint = new ComposerConstraint('~4.1.1-rc2');
         $this->assertEquals('4.1.1-rc2', $constraint->getMinVersion()->getValue());
         $this->assertEquals('4.1.99999', $constraint->getMaxVersion()->getValue());
@@ -74,7 +76,8 @@ class ComposerConstraintTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('4.99999.99999', $constraint->getMaxVersion()->getValue());
     }
 
-    public function testParseDev() {
+    public function testParseDev()
+    {
         $constraint = new ComposerConstraint('4.1.x-dev');
         $this->assertEquals('4.1.0-alpha1', $constraint->getMinVersion()->getValue());
         $this->assertEquals('4.1.99999', $constraint->getMaxVersion()->getValue());
@@ -92,13 +95,15 @@ class ComposerConstraintTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('4.99999.99999', $constraint->getMaxVersion()->getValue());
     }
 
-    public function testParseSelfVersion() {
+    public function testParseSelfVersion()
+    {
         $constraint = new ComposerConstraint('self.version', new Version('4.1.1'));
         $this->assertEquals('4.1.1', $constraint->getMinVersion()->getValue());
         $this->assertEquals('4.1.1', $constraint->getMaxVersion()->getValue());
     }
 
-    public function filterVersionsProvider() {
+    public function filterVersionsProvider()
+    {
         return [
             // Test exact version
             ['4.1.1', null, ['4.1.0', '4.1.1', '4.1.1-alpha1', '4.1.2', '4.2.0', '5.0.0'], ['4.1.1']],
@@ -122,17 +127,19 @@ class ComposerConstraintTest extends PHPUnit_Framework_TestCase
     /**
      * @dataProvider filterVersionsProvider()
      */
-    public function testFilterVersions($constraint, $parentVersion, $input, $output) {
+    public function testFilterVersions($constraint, $parentVersion, $input, $output)
+    {
         $constraintObject = new ComposerConstraint($constraint, $parentVersion);
         $inputVersions = [];
-        foreach($input as $tag) {
+        foreach ($input as $tag) {
             $inputVersions[$tag] = new Version($tag);
         }
         $result = $constraintObject->filterVersions($inputVersions);
         $this->assertEquals($output, array_keys($result), "Version constraint $constraint filters the given list");
     }
 
-    public function constraintRewriteProvider() {
+    public function constraintRewriteProvider()
+    {
         return [
             // No change expected
             ['3.1.3', '3.1.x-dev', '3.1.x-dev'],
@@ -162,13 +169,15 @@ class ComposerConstraintTest extends PHPUnit_Framework_TestCase
     /**
      * @dataProvider constraintRewriteProvider()
      */
-    public function testRewriteToSupport($version, $constraint, $expected) {
+    public function testRewriteToSupport($version, $constraint, $expected)
+    {
         $constraint = new ComposerConstraint($constraint);
         $rewritten = $constraint->rewriteToSupport(new Version($version));
         $this->assertEquals($expected, $rewritten->getValue());
     }
 
-    public function comparisonProvider() {
+    public function comparisonProvider()
+    {
         return [
             ['3.1.x-dev', '3.1.1', 0],
             ['~3.0.0', '3.1.0', -1],
@@ -181,7 +190,8 @@ class ComposerConstraintTest extends PHPUnit_Framework_TestCase
     /**
      * @dataProvider comparisonProvider()
      */
-    public function testComparison($constraint, $version, $result) {
+    public function testComparison($constraint, $version, $result)
+    {
         $constraint = new ComposerConstraint($constraint);
         $this->assertEquals($result, $constraint->compareTo(new Version($version)));
     }

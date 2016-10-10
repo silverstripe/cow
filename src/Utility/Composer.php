@@ -16,9 +16,10 @@ class Composer
      * @param string $library
      * @return array List of versions
      */
-    public static function getLibraryVersions(CommandRunner $runner, $library) {
+    public static function getLibraryVersions(CommandRunner $runner, $library)
+    {
         $error = "Could not parse available versions from command \"composer show {$library}\"";
-        $result = $runner->runCommand( ["composer", "global", "show", $library, "--all"], $error);
+        $result = $runner->runCommand(["composer", "global", "show", $library, "--all"], $error);
 
         if (empty($result) || !preg_match('/^versions\s*:\s*(?<versions>(\S.+\S))\s*$/m', $result, $matches)) {
             throw new InvalidArgumentException($error);
@@ -54,7 +55,8 @@ class Composer
      * @param CommandRunner $runner
      * @return string
      */
-    public static function getOAUTHToken(CommandRunner $runner) {
+    public static function getOAUTHToken(CommandRunner $runner)
+    {
         // try composer stored oauth token
         $command = [ 'composer', 'config', '-g', 'github-oauth.github.com' ];
         $error = "Couldn't determine GitHub oAuth token. Please set GITHUB_API_TOKEN";

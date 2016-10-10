@@ -89,7 +89,8 @@ class CreateProject extends Step
     /**
      * @return Project
      */
-    public function getProject() {
+    public function getProject()
+    {
         return new Project($this->directory);
     }
 

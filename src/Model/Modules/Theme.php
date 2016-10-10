@@ -3,13 +3,13 @@
 
 namespace SilverStripe\Cow\Model\Modules;
 
-
 /**
  * Legacy support for silverstripe-theme. Will be deprecated in the future
  */
 class Theme extends Module
 {
-    public static function isThemeDir($dir) {
+    public static function isThemeDir($dir)
+    {
         if (!static::isLibraryPath($dir)) {
             return false;
         }

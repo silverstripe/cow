@@ -109,7 +109,8 @@ class Release extends Command
      *
      * @return string
      */
-    protected function getInputRepository() {
+    protected function getInputRepository()
+    {
         return $this->input->getOption('repository');
     }
 
@@ -182,5 +183,4 @@ class Release extends Command
         }
         return $command;
     }
-
 }

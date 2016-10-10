@@ -70,7 +70,8 @@ class UpdateTranslations extends ReleaseStep
      * @param LibraryRelease $plan
      * @param bool $doPush Do git push at end
      */
-    public function __construct(Command $command, Project $project, LibraryRelease $plan, $doPush = false) {
+    public function __construct(Command $command, Project $project, LibraryRelease $plan, $doPush = false)
+    {
         parent::__construct($command, $project, $plan);
         $this->setDoPush($doPush);
     }
@@ -399,7 +400,8 @@ TMPL;
     /**
      * @return Module[]|Generator
      */
-    public function getTranslatableModules() {
+    public function getTranslatableModules()
+    {
         // Don't translate upgrade-only
         foreach ($this->getNewReleases() as $release) {
             // Only translate modules with .tx directories

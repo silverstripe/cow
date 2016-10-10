@@ -47,7 +47,7 @@ class RewriteReleaseBranches extends ReleaseStep
     protected function recursiveBranchLibrary(OutputInterface $output, LibraryRelease $libraryRelease)
     {
         // Recursively rewrite and branch child dependencies first
-        foreach($libraryRelease->getItems() as $childLibrary) {
+        foreach ($libraryRelease->getItems() as $childLibrary) {
             $this->recursiveBranchLibrary($output, $childLibrary);
         }
 
@@ -120,7 +120,8 @@ class RewriteReleaseBranches extends ReleaseStep
      * @param Version $version
      * @return bool Whether the branch should be changed
      */
-    protected function canCheckout($currentBranch, Version $version) {
+    protected function canCheckout($currentBranch, Version $version)
+    {
         // Get expected major and minor branches
         $majorBranch = $version->getMajor();
         $minorBranch = $version->getMajor() . "." . $version->getMinor();
@@ -179,7 +180,8 @@ class RewriteReleaseBranches extends ReleaseStep
      * @param OutputInterface $output
      * @param LibraryRelease $releasePlan
      */
-    protected function incrementDevDependencies(OutputInterface $output, LibraryRelease $releasePlan) {
+    protected function incrementDevDependencies(OutputInterface $output, LibraryRelease $releasePlan)
+    {
         $parentLibrary = $releasePlan->getLibrary();
         $parentName = $parentLibrary->getName();
         $originalData = $composerData = $parentLibrary->getComposerData();
@@ -238,5 +240,4 @@ class RewriteReleaseBranches extends ReleaseStep
             }
         }
     }
-
 }

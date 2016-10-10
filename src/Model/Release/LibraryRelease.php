@@ -93,7 +93,8 @@ class LibraryRelease
      * @param LibraryRelease $release
      * @return $this
      */
-    public function addItem(LibraryRelease $release) {
+    public function addItem(LibraryRelease $release)
+    {
         $name = $release->getLibrary()->getName();
         $this->items[$name] = $release;
         return $this;
@@ -105,8 +106,9 @@ class LibraryRelease
      * @param LibraryRelease[] $releases
      * @return $this
      */
-    public function addItems($releases) {
-        foreach($releases as $release) {
+    public function addItems($releases)
+    {
+        foreach ($releases as $release) {
             $this->addItem($release);
         }
         return $this;
@@ -118,7 +120,8 @@ class LibraryRelease
      * @param string $name
      * @return $this
      */
-    public function removeItem($name) {
+    public function removeItem($name)
+    {
         unset($this->items[$name]);
         return $this;
     }
@@ -130,7 +133,8 @@ class LibraryRelease
      * @param string $name Library name
      * @return null|LibraryRelease
      */
-    public function getItem($name) {
+    public function getItem($name)
+    {
         // Identity check
         if ($this->getLibrary()->getName() === $name) {
             return $this;
@@ -151,7 +155,8 @@ class LibraryRelease
      *
      * @return $this
      */
-    public function clearItems() {
+    public function clearItems()
+    {
         $this->items = [];
         return $this;
     }
@@ -161,7 +166,8 @@ class LibraryRelease
      *
      * @return LibraryRelease[]
      */
-    public function getItems() {
+    public function getItems()
+    {
         return $this->items;
     }
 
@@ -171,14 +177,15 @@ class LibraryRelease
      * @param bool $includeSelf
      * @return Generator|LibraryRelease[]
      */
-    public function getAllItems($includeSelf = false) {
+    public function getAllItems($includeSelf = false)
+    {
         if ($includeSelf) {
             yield $this;
         }
         $items = $this->getItems();
         foreach ($items as $child) {
             yield $child;
-            foreach($child->getAllItems() as $nested) {
+            foreach ($child->getAllItems() as $nested) {
                 yield $nested;
             }
         }
@@ -189,7 +196,8 @@ class LibraryRelease
      *
      * @return bool True if a new tag will be created, false if using existing tag
      */
-    public function getIsNewRelease() {
+    public function getIsNewRelease()
+    {
         $tags = $this->getLibrary()->getTags();
         return !array_key_exists($this->getVersion()->getValue(), $tags);
     }
@@ -199,7 +207,8 @@ class LibraryRelease
      *
      * @return Version
      */
-    public function getPriorVersion() {
+    public function getPriorVersion()
+    {
         $tags = $this->getLibrary()->getTags();
         return $this->getVersion()->getPriorVersionFromTags($tags, $this->getLibrary()->getName());
     }

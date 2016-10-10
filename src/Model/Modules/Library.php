@@ -267,7 +267,7 @@ class Library
 
         // Objectify tags
         $this->tags = [];
-        foreach($tags as $tag) {
+        foreach ($tags as $tag) {
             // Skip invalid tags
             if (Version::parse($tag)) {
                 $version = new Version($tag);
@@ -350,7 +350,8 @@ class Library
      * @param string $tag Name of tag
      * @param string $remote
      */
-    public function pushTag($tag, $remote = 'origin') {
+    public function pushTag($tag, $remote = 'origin')
+    {
         $repo = $this->getRepository();
         $args = array($remote, "refs/tags/{$tag}");
         $repo->run('push', $args);
@@ -430,7 +431,8 @@ class Library
      * @param OutputInterface $output
      * @param Version $version
      */
-    public function resetToTag(OutputInterface $output, Version $version) {
+    public function resetToTag(OutputInterface $output, Version $version)
+    {
         $repository = $this->getRepository($output);
         $tag = $version->getValue();
         $repository->run('checkout', [ "refs/tags/{$tag}" ]);
@@ -482,7 +484,8 @@ class Library
      * @param string $ref Git ref (tag / branch / SHA)
      * @return array|null
      */
-    public function getHistoryComposerData($ref) {
+    public function getHistoryComposerData($ref)
+    {
         $content = $this->getRepository()->run('show', ["{$ref}:composer.json"]);
         if ($content) {
             return Config::parseContent($content);
@@ -493,7 +496,8 @@ class Library
     /**
      * @return array List of test commands
      */
-    public function getTests() {
+    public function getTests()
+    {
         $data = $this->getCowData();
         if (isset($data['tests'])) {
             return $data['tests'];
@@ -557,7 +561,8 @@ class Library
      *
      * @return string
      */
-    protected function getCommitLinkFormat() {
+    protected function getCommitLinkFormat()
+    {
         $data = $this->getCowData();
         if (isset($data['commit-link'])) {
             return $data['commit-link'];
@@ -587,7 +592,8 @@ class Library
      *
      * @return Generator|Library[]
      */
-    public function getAllChildren() {
+    public function getAllChildren()
+    {
         foreach ($this->getChildren() as $child) {
             yield $child;
             foreach ($child->getAllChildren() as $nested) {
@@ -601,7 +607,8 @@ class Library
      *
      * @return Library[]
      */
-    public function getChildren() {
+    public function getChildren()
+    {
         if (isset($this->children)) {
             return $this->children;
         }
@@ -636,13 +643,14 @@ class Library
      * @param string $name
      * @return Library
      */
-    public function getLibrary($name) {
+    public function getLibrary($name)
+    {
         if ($this->getName() === $name) {
             return $this;
         }
 
-        foreach($this->getAllChildren() as $child) {
-            if($child->getName() === $name) {
+        foreach ($this->getAllChildren() as $child) {
+            if ($child->getName() === $name) {
                 return $child;
             }
         }
@@ -656,7 +664,8 @@ class Library
      * @param Version $thisVersion Value of self.version
      * @return ComposerConstraint Composer constraint
      */
-    public function getChildConstraint($name, Version $thisVersion = null) {
+    public function getChildConstraint($name, Version $thisVersion = null)
+    {
         $data = $this->getComposerData();
         if (isset($data['require'][$name])) {
             return new ComposerConstraint($data['require'][$name], $thisVersion, $name);
@@ -671,7 +680,8 @@ class Library
      * @param string $name
      * @return bool
      */
-    public function isChildLibrary($name) {
+    public function isChildLibrary($name)
+    {
         // Ensure name is valid
         if (strstr($name, '/') === false) {
             return false;
@@ -706,7 +716,8 @@ class Library
      * @param string $name
      * @return bool
      */
-    public function isChildUpgradeOnly($name) {
+    public function isChildUpgradeOnly($name)
+    {
         $cowData = $this->getCowData();
         return isset($cowData['upgrade-only']) && in_array($name, $cowData['upgrade-only']);
     }
@@ -716,7 +727,8 @@ class Library
      *
      * @return bool
      */
-    public function isUpgradeOnly() {
+    public function isUpgradeOnly()
+    {
         $parent = $this->getParent();
         return $parent && $parent->isChildUpgradeOnly($this->getName());
     }
@@ -727,7 +739,8 @@ class Library
      * @param Library $childLibrary Library to test for stability inheritance for
      * @return bool
      */
-    public function isStabilityInherited(Library $childLibrary) {
+    public function isStabilityInherited(Library $childLibrary)
+    {
         $cowData = $this->getCowData();
         if (empty($cowData['child-stability-inherit'])) {
             return false;
@@ -746,7 +759,8 @@ class Library
      *
      * @return Project
      */
-    public function getProject() {
+    public function getProject()
+    {
         return $this->getParent()->getProject();
     }
 
@@ -755,7 +769,8 @@ class Library
      *
      * @return Library
      */
-    public function getParent() {
+    public function getParent()
+    {
         return $this->parent;
     }
 
@@ -764,7 +779,8 @@ class Library
      *
      * @return int
      */
-    public function getDepth() {
+    public function getDepth()
+    {
         $parent = $this->getParent();
         if (empty($parent)) {
             return 0;
@@ -778,14 +794,15 @@ class Library
      * @return string
      * @throws InvalidArgumentException
      */
-    public function getDependencyConstraint() {
+    public function getDependencyConstraint()
+    {
         $data = $this->getCowData();
         if (empty($data['dependency-constraint'])) {
             return self::DEPENDENCY_EXACT;
         }
 
         $dependencyconstraint = $data['dependency-constraint'];
-        switch($dependencyconstraint) {
+        switch ($dependencyconstraint) {
             case self::DEPENDENCY_LOOSE:
             case self::DEPENDENCY_SEMVER:
             case self::DEPENDENCY_EXACT:
@@ -819,7 +836,8 @@ class Library
      *
      * @return LibraryRelease|null The root release, or null if not cached
      */
-    public function loadCachedPlan() {
+    public function loadCachedPlan()
+    {
         // Check cached plan file
         $path = $this->getDirectory() . '/.cow.plan.json';
         if (!file_exists($path)) {
@@ -835,7 +853,8 @@ class Library
      *
      * @param LibraryRelease $plan
      */
-    public function saveCachedPlan(LibraryRelease $plan) {
+    public function saveCachedPlan(LibraryRelease $plan)
+    {
         $path = $this->getDirectory() . '/.cow.plan.json';
         $data = $this->serialisePlan($plan);
         Config::saveToFile($path, $data);
@@ -848,9 +867,10 @@ class Library
      * @return LibraryRelease[]
      * @throws Exception
      */
-    protected function unserialisePlan($serialisedPlan) {
+    protected function unserialisePlan($serialisedPlan)
+    {
         $releases = [];
-        foreach($serialisedPlan as $name => $data) {
+        foreach ($serialisedPlan as $name => $data) {
             // Unserialise this node
             $library = $this->getLibrary($name);
             if (!$library) {
@@ -860,7 +880,7 @@ class Library
             $libraryRelease = new LibraryRelease($library, $version);
 
             // Restore cached changelog
-            if(!empty($data['Changelog'])) {
+            if (!empty($data['Changelog'])) {
                 $libraryRelease->setChangelog($data['Changelog']);
             }
 
@@ -879,7 +899,8 @@ class Library
      * @param LibraryRelease $plan
      * @return array Encoded json data
      */
-    public function serialisePlan(LibraryRelease $plan) {
+    public function serialisePlan(LibraryRelease $plan)
+    {
         $content = [];
         $name = $plan->getLibrary()->getName();
         $content[$name] = [
@@ -887,7 +908,7 @@ class Library
             'Changelog' => $plan->getChangelog(),
             'Items' => []
         ];
-        foreach($plan->getItems() as $item) {
+        foreach ($plan->getItems() as $item) {
             $content[$name]['Items'] = array_merge(
                 $content[$name]['Items'],
                 $item->getLibrary()->serialisePlan($item)
@@ -901,7 +922,8 @@ class Library
      *
      * @return bool
      */
-    public function hasChangelog() {
+    public function hasChangelog()
+    {
         $cowData = $this->getCowData();
 
         // If generating via markdown committed to source control
@@ -921,7 +943,8 @@ class Library
      *
      * @return bool
      */
-    public function hasGithubChangelog() {
+    public function hasGithubChangelog()
+    {
         $cowData = $this->getCowData();
         return !empty($cowData['changelog-github']);
     }
@@ -932,7 +955,8 @@ class Library
      * @param Version $version
      * @return string
      */
-    public function getChangelogPath(Version $version) {
+    public function getChangelogPath(Version $version)
+    {
         $cowData = $this->getCowData();
 
         // If generating via markdown committed to source control
@@ -959,7 +983,8 @@ class Library
      * @return string one of FORMAT_GROUPED or FORMAT_FLAT
      * @throws Exception
      */
-    public function getChangelogFormat() {
+    public function getChangelogFormat()
+    {
         $data = $this->getCowData();
         // Default tagging
         if (empty($data['changelog-type'])) {
@@ -980,7 +1005,8 @@ class Library
      *
      * @return Library
      */
-    public function getChangelogHolder() {
+    public function getChangelogHolder()
+    {
         $data = $this->getCowData();
         if (empty($data['changelog-holder'])) {
             return $this;

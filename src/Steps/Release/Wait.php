@@ -62,7 +62,6 @@ class Wait extends Step
         $start = time();
         $version = $this->version->getValue();
         while ($start + $this->timeout >= time()) {
-
             // todo - this line should get project name
             throw new Exception("todo");
 
