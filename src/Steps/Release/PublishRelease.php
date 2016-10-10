@@ -4,6 +4,7 @@ namespace SilverStripe\Cow\Steps\Release;
 
 use Exception;
 use Github\Api\Repo;
+use Github\Exception\RuntimeException;
 use InvalidArgumentException;
 use SilverStripe\Cow\Model\Modules\Library;
 use SilverStripe\Cow\Model\Release\LibraryRelease;
@@ -241,9 +242,9 @@ class PublishRelease extends ReleaseStep
         $releasesAPI = $reposAPI->releases();
 
         // Build release payload
+        // Note target_commitish is omitted since the tag already exists
         $releaseData = [
             'tag_name' => $tag,
-            'target_commitish' => $tag,
             'name' => $tag,
             'body' => $release->getChangelog(),
             'prerelease' => !$version->isStable(),
@@ -251,7 +252,17 @@ class PublishRelease extends ReleaseStep
         ];
 
         // Determine if editing or creating a release
-        $existing = $releasesAPI->tag($org, $repo, $tag);
+        $existing = null;
+        try {
+            sleep(1); // Ensure non-zero period between tagging and searching for this tag
+            $existing = $releasesAPI->tag($org, $repo, $tag);
+        } catch (RuntimeException $ex) {
+            if ($ex->getCode() !== 404) {
+                throw $ex;
+            }
+        }
+
+        // Create or update
         if ($existing && !empty($existing['id'])) {
             $result = $releasesAPI->edit($org, $repo, $existing['id'], $releaseData);
             if (isset($result['created_at'])) {

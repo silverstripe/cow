@@ -93,6 +93,9 @@ class RewriteReleaseBranches extends ReleaseStep
         } else {
             $this->log($output, "Releasing library <info>{$libraryName}</info> from branch <info>{$currentBranch}</info>");
         }
+
+        // Synchronise local branch with upstream
+        $library->rebase($output, 'origin');
     }
 
     /**
@@ -224,7 +227,6 @@ class RewriteReleaseBranches extends ReleaseStep
         if ($composerData !== $originalData) {
             $this->log($output, "Rewriting composer.json for <info>$parentName</info>");
             $parentLibrary->setComposerData($composerData);
-
 
             // Commit to git
             $path = $parentLibrary->getComposerPath();

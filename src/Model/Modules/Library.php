@@ -317,6 +317,34 @@ class Library
     }
 
     /**
+     * Do automatic rebase with remote in case it's out of date. Can be useful if things
+     * have been merged upstream during the release.
+     *
+     * @param OutputInterface $output
+     * @param string $remote
+     * @throws Exception
+     */
+    public function rebase(OutputInterface $output = null, $remote = 'origin')
+    {
+        // Validate branch
+        $branch = $this->getBranch();
+        if (!$branch) {
+            throw new Exception("Module " . $this->getName() . " cannot rebase without a current branch");
+        }
+
+        // Check if remote branch exists
+        $remoteBranches = $this->getBranches($remote);
+        if (!in_array($branch, $remoteBranches, true)) {
+            // No remote branch to rebase with
+            return;
+        }
+
+        // Pull
+        $repo = $this->getRepository($output);
+        $repo->run('pull', [$remote, $branch, '--rebase']);
+    }
+
+    /**
      * Push a single tag
      *
      * @param string $tag Name of tag
