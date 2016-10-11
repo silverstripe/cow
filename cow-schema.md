@@ -37,7 +37,7 @@ Basic options are:
   "changelog-type": "grouped",
   "changelog-github": true,
   "child-stability-inherit": true,
-  "dependency-constraint": "allow-patch",
+  "dependency-constraint": "loose",
   "vendors": [
     "silverstripe",
     "silverstripe-australia"
