@@ -1,0 +1,447 @@
+<?php
+
+namespace SilverStripe\Cow\Model\Release;
+
+use InvalidArgumentException;
+use LogicException;
+
+/**
+ * Represents a version for a release
+ */
+class Version
+{
+    const ASC = 'ascending';
+
+    const DESC = 'descending';
+
+    /**
+     * @var int
+     */
+    protected $major;
+
+    /**
+     * @var int
+     */
+    protected $minor;
+
+    /**
+     * @var int|null
+     */
+    protected $patch;
+
+    /**
+     * Null if stable, or a stability string otherwise (rc, beta, alpha)
+     *
+     * @var string|null
+     */
+    protected $stability;
+
+    /**
+     *
+     * @var int|null
+     */
+    protected $stabilityVersion;
+
+    /**
+     * Helper method to parse a version
+     *
+     * @param string $version
+     * @return bool|array Either false, or an array of parts
+     */
+    public static function parse($version)
+    {
+        // Note: Ignore leading 'v'
+        $valid = preg_match(
+            '/^(v?)(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)'
+            . '(\-(?<stability>rc|alpha|beta)(?<stabilityVersion>\d+)?)?$/',
+            $version,
+            $matches
+        );
+        if (!$valid) {
+            return false;
+        }
+        return $matches;
+    }
+
+    public function __construct($version)
+    {
+        $matches = static::parse($version);
+        if ($matches === false) {
+            throw new InvalidArgumentException(
+                "Invalid version $version. Expect full version (3.1.13) with optional rc|alpha|beta suffix"
+            );
+        }
+        $this->major = $matches['major'];
+        $this->minor = $matches['minor'];
+        $this->patch = $matches['patch'];
+        $this->stabilityVersion = null;
+        if (empty($matches['stability'])) {
+            $this->stability = null;
+        } else {
+            $this->stability = $matches['stability'];
+            if (!empty($matches['stabilityVersion'])) {
+                $this->stabilityVersion = $matches['stabilityVersion'];
+            }
+        }
+    }
+
+    public function __toString()
+    {
+        return $this->getValue();
+    }
+
+    public function getStability()
+    {
+        return $this->stability ?: ''; // Default to '' which is stable
+    }
+
+    /**
+     * Is this version stable?
+     *
+     * @return bool
+     */
+    public function isStable()
+    {
+        return empty($this->stability);
+    }
+
+    public function setStability($stability)
+    {
+        $this->stability = $stability;
+        return $this;
+    }
+
+    public function getStabilityVersion()
+    {
+        if ($this->isStable()) {
+            return null;
+        }
+        return (int)$this->stabilityVersion;
+    }
+
+    public function setStabilityVersion($stabilityVersion)
+    {
+        $this->stabilityVersion = $stabilityVersion;
+        return $this;
+    }
+
+    public function getMajor()
+    {
+        return $this->major;
+    }
+
+    public function setMajor($major)
+    {
+        $this->major = $major;
+        return $this;
+    }
+
+    public function getMinor()
+    {
+        return $this->minor;
+    }
+
+    public function setMinor($minor)
+    {
+        $this->minor = $minor;
+        return $this;
+    }
+
+    public function getPatch()
+    {
+        return $this->patch;
+    }
+
+    public function setPatch($patch)
+    {
+        $this->patch = $patch;
+        return $this;
+    }
+
+    /**
+     * Get stable version this version is targetting (ignoring rc, beta, etc)
+     *
+     * @return string
+     */
+    public function getValueStable()
+    {
+        return implode('.', array($this->major, $this->minor, $this->patch));
+    }
+
+    /**
+     * Get version string
+     *
+     * @return string
+     */
+    public function getValue()
+    {
+        $value = $this->getValueStable();
+        if ($this->stability) {
+            $value .= "-{$this->stability}{$this->stabilityVersion}";
+        }
+        return $value;
+    }
+
+    /**
+     * Get list of preferred versions for installing this release
+     *
+     * @array List of composer versions from best to worst
+     */
+    public function getComposerVersions()
+    {
+        $versions = array();
+
+        // Prefer exact version (e.g. 3.1.13-rc1)
+        $versions[] = $this->getValue();
+
+        // Fall back to patch branch (e.g. 3.1.13.x-dev, 3.1.x-dev, 3.x-dev)
+        $parts = array($this->major, $this->minor, $this->patch);
+        while ($parts) {
+            $versions[] = implode('.', $parts) . '.x-dev';
+            array_pop($parts);
+        }
+
+        // If we need to fallback to dev-master we probably have done something wrong
+
+        return $versions;
+    }
+
+    /**
+     * Guess the best prior version to release as changelog.
+     * E.g. 4.1.1 -> 4.1.0, or 4.1.1-alpha2 -> 4.1.1-alpha1
+     *
+     * Returns null if this cannot be determined programatically.
+     * E.g. 4.0.0
+     *
+     * @return Version
+     */
+    public function getPriorVersion()
+    {
+        $prior = clone $this;
+
+        // If beta2 or above, guess prior version to be beta1
+        $stabilityVersion = $prior->getStabilityVersion();
+        if ($stabilityVersion > 1) {
+            $prior->setStabilityVersion($stabilityVersion - 1);
+            return $prior;
+        }
+
+        // Set prior version to stable only
+        $prior->setStability(null);
+        $prior->setStabilityVersion(null);
+
+        // If patch version is > 0 we can decrement it to get prior
+        $patch = $prior->getPatch();
+        if ($patch) {
+            // Select prior patch version (e.g. 3.1.14 -> 3.1.13)
+            $prior->setPatch($patch - 1);
+            return $prior;
+        }
+
+        // Will need to guess from composer. E.g. 3.1.0 has an ambiguous prior version
+        return null;
+    }
+
+    /**
+     * Get all filenames
+     *
+     * @return string
+     */
+    public function getReleaseFilenames()
+    {
+        $names = array();
+        foreach (array(false, true) as $includeCMS) {
+            foreach (array('.zip', '.tar.gz') as $extension) {
+                $names[] = $this->getReleaseFilename($includeCMS, $extension);
+            }
+        }
+        return $names;
+    }
+
+    /**
+     * For this version, generate the filename
+     *
+     * @param bool $includeCMS Does this include CMS?
+     * @param string $extension archive extension (including period)
+     * @return string
+     */
+    public function getReleaseFilename($includeCMS = true, $extension = '.tar.gz')
+    {
+        $type = $includeCMS ? 'cms' : 'framework';
+        $version = $this->getValue();
+        return "SilverStripe-{$type}-v{$version}{$extension}";
+    }
+
+    /**
+     * Compare versions.
+     *
+     *  (4.0.0 > 4.0.0-alpha1, 4.0.0 < 4.0.1)
+     *
+     * @param Version $other
+     * @return int negative for smaller version, 0 for equal, positive for later version
+     */
+    public function compareTo(Version $other)
+    {
+        $diff = $this->getMajor() - $other->getMajor();
+        if ($diff) {
+            return $diff;
+        }
+        $diff = $this->getMinor() - $other->getMinor();
+        if ($diff) {
+            return $diff;
+        }
+        $diff = $this->getPatch() - $other->getPatch();
+        if ($diff) {
+            return $diff;
+        }
+        // Compare stability
+        $diff = $this->compareStabliity($this->getStability(), $other->getStability());
+        if ($diff) {
+            return $diff;
+        }
+        // Fall back to stability type (e.g. alpha1 vs alpha2)
+        $diff = $this->getStabilityVersion() - $other->getStabilityVersion();
+        return $diff;
+    }
+
+    /**
+     * Compare stability strings
+     *
+     * @param string $left
+     * @param string $right
+     * @return int
+     */
+    protected function compareStabliity($left, $right)
+    {
+        $precedence = [
+            '',
+            'rc',
+            'beta',
+            'alpha'
+        ];
+        if (!in_array($left, $precedence)) {
+            throw new InvalidArgumentException("Invalid stability $left");
+        }
+        if (!in_array($right, $precedence)) {
+            throw new InvalidArgumentException("Invalid stability $left");
+        }
+        if ($left === $right) {
+            return 0;
+        }
+        foreach ($precedence as $type) {
+            if ($left === $type) {
+                return 1;
+            }
+            if ($right === $type) {
+                return -1;
+            }
+        }
+        throw new LogicException("Internal error");
+    }
+
+    /**
+     * Given a list of tags, determine which is the best "from" version
+     *
+     * @param Version[] $tags List of tags to search
+     * @param string $libraryName Name of library (for error reporting only)
+     * @return Version
+     */
+    public function getPriorVersionFromTags($tags, $libraryName)
+    {
+        // If we can programatically detect a prior version, then use this
+        $prior = $this->getPriorVersion();
+        if ($prior && array_key_exists($prior->getValue(), $tags)) {
+            return $prior;
+        }
+
+        // Search all tags to find best prior version
+        $best = null;
+        foreach ($tags as $tag) {
+            // Skip pre-releases
+            if ($tag->getStability()) {
+                continue;
+            }
+
+            // Skip newer versions
+            if ($tag->compareTo($this) >= 0) {
+                continue;
+            }
+
+            // Skip if we found a better tag
+            if ($best && $tag->compareTo($best) < 0) {
+                continue;
+            }
+
+            $best = $tag;
+        }
+
+        return $best;
+    }
+
+    /**
+     * Sort a list of tags, by default newest first
+     *
+     * @param Version[] $tags
+     * @param string $dir ASC or DESC constant values.
+     * @return Version[]
+     */
+    public static function sort($tags, $dir = self::DESC)
+    {
+        uasort($tags, function (Version $left, Version $right) use ($dir) {
+            switch ($dir) {
+                case self::ASC:
+                    return $left->compareTo($right);
+                case self::DESC:
+                    return $right->compareTo($left);
+                default:
+                    throw new InvalidArgumentException("Invalid dir $dir");
+            }
+        });
+        return $tags;
+    }
+
+    /**
+     * Filter out by callback
+     *
+     * @param Version[] $tags
+     * @param callable $callback
+     * @return Version[]
+     */
+    public static function filter($tags, $callback)
+    {
+        $filtered = [];
+        foreach ($tags as $tag) {
+            if ($callback($tag)) {
+                $filtered[$tag->getValue()] = $tag;
+            }
+        }
+        return $filtered;
+    }
+
+    /**
+     * Guess the next version to release from this version
+     *
+     * @param string $stability Stability of the next version to use
+     * @param int $stabilityVersion
+     * @return Version
+     */
+    public function getNextVersion($stability = '', $stabilityVersion = 0)
+    {
+        $canditate = clone $this;
+
+        // Check if we can simply release a new stability of the same version
+        // E.g. 4.0.0-alpha1 -> 4.0.0, or 4.0.0-alpha1 -> 4.0.0-beta1
+        $canditate->setStability($stability);
+        $canditate->setStabilityVersion($stabilityVersion);
+        if ($this->compareTo($canditate) < 0) {
+            return $canditate;
+        }
+
+        // if suggested stability isn't more stable, advance to next stable patch release
+        // E.g. 4.0.0-alpha2 -> 4.0.1
+        $canditate->setStability('');
+        $canditate->setStabilityVersion(null);
+        $canditate->setPatch($this->getPatch() + 1);
+        return $canditate;
+    }
+}

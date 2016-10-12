@@ -2,36 +2,19 @@
 
 namespace SilverStripe\Cow\Steps\Release;
 
-use Exception;
-use SilverStripe\Cow\Commands\Command;
-use SilverStripe\Cow\Model\Project;
-use SilverStripe\Cow\Steps\Step;
+use SilverStripe\Cow\Model\Modules\Project;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * Run unit tests
  */
-class RunTests extends Step
+class RunTests extends ReleaseStep
 {
     /**
      * @var Project
      */
     protected $project;
-
-    /**
-     * Create branch step
-     *
-     * @param Command $command
-     * @param string $directory Where to translate
-     * @param string|null $branch Branch name, if necessary
-     */
-    public function __construct(Command $command, $directory)
-    {
-        parent::__construct($command);
-
-        $this->project = new Project($directory);
-    }
 
     public function getStepName()
     {
@@ -40,8 +23,20 @@ class RunTests extends Step
 
     public function run(InputInterface $input, OutputInterface $output)
     {
-        $directory = $this->project->getDirectory();
-        $this->log($output, "Running unit tests in <info>{$directory}</info>");
-        $this->runCommand($output, "cd $directory && vendor/bin/phpunit", "Tests failed!");
+        // Check tests exist
+        $tests = $this->getProject()->getTests();
+        if (empty($tests)) {
+            $this->log(
+                $output,
+                "No tests configured for <info>" . $this->getProject()->getName() . '</info>, skipping'
+            );
+            return;
+        }
+
+        $this->log($output, "Running tests for <info>" . $this->getProject()->getName() . '</info>');
+        $directory = $this->getProject()->getDirectory();
+        foreach ($tests as $test) {
+            $this->runCommand($output, "cd $directory && $test", "Tests failed!");
+        }
     }
 }

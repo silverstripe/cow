@@ -2,12 +2,9 @@
 
 namespace SilverStripe\Cow\Commands\Release;
 
-use SilverStripe\Cow\Steps\Release\BuildArchive;
-use SilverStripe\Cow\Steps\Release\PushRelease;
-use SilverStripe\Cow\Steps\Release\TagModules;
-use SilverStripe\Cow\Steps\Release\UploadArchive;
-use SilverStripe\Cow\Steps\Release\Wait;
-use Symfony\Component\Console\Input\InputArgument;
+use Exception;
+use SilverStripe\Cow\Model\Release\LibraryRelease;
+use SilverStripe\Cow\Steps\Release\PublishRelease;
 use Symfony\Component\Console\Input\InputOption;
 
 /**
@@ -23,34 +20,27 @@ class Publish extends Release
 
     protected function configureOptions()
     {
-        $this
-            ->addArgument('version', InputArgument::REQUIRED, 'Exact version tag to release this project as')
-            ->addOption('directory', 'd', InputOption::VALUE_REQUIRED, 'Optional directory to release project from')
-            ->addOption(
-                'aws-profile',
-                null,
-                InputOption::VALUE_REQUIRED,
-                "AWS profile to use for upload",
-                "silverstripe"
-            );
+        parent::configureOptions();
+        $this->addOption(
+            'aws-profile',
+            null,
+            InputOption::VALUE_REQUIRED,
+            "AWS profile to use for upload",
+            "silverstripe"
+        );
     }
 
     protected function fire()
     {
         // Get arguments
-        $version = $this->getInputVersion();
-        $directory = $this->getInputDirectory($version);
-        $awsProfile = $this->getInputAWSProfile();
-        $modules = $this->getReleaseModules($directory);
+        $project = $this->getProject();
+        $releasePlan = $this->getReleasePlan();
 
-        // Tag
-        $tag = new TagModules($this, $version, $directory, $modules);
-        $tag->run($this->input, $this->output);
+        // Does bulk of module publishing, rewrite of dev branches, rewrite of tags, and actual tagging
+        $publish = new PublishRelease($this, $project, $releasePlan);
+        $publish->run($this->input, $this->output);
 
-        // Push tag & branch
-        $push = new PushRelease($this, $directory, $modules);
-        $push->run($this->input, $this->output);
-
+        /*
         // Once pushed, wait until installable
         $wait = new Wait($this, $version);
         $wait->run($this->input, $this->output);
@@ -62,15 +52,29 @@ class Publish extends Release
         // Upload
         $upload = new UploadArchive($this, $version, $directory, $awsProfile);
         $upload->run($this->input, $this->output);
+        */
     }
 
     /**
      * Get the aws profile to use
      *
-     * @return silverstripe
+     * @return string
      */
     public function getInputAWSProfile()
     {
         return $this->input->getOption('aws-profile');
+    }
+
+    /**
+     * @return LibraryRelease
+     * @throws Exception
+     */
+    protected function getReleasePlan()
+    {
+        $plan = $this->getProject()->loadCachedPlan();
+        if (empty($plan)) {
+            throw new Exception("Please run 'cow release' before 'cow release:publish'");
+        }
+        return $plan;
     }
 }

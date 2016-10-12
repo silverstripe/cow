@@ -3,20 +3,21 @@
 namespace SilverStripe\Cow\Commands\Release;
 
 use SilverStripe\Cow\Commands\Command;
-use SilverStripe\Cow\Model\ReleaseVersion;
-use SilverStripe\Cow\Steps\Release\CreateBranch;
+use SilverStripe\Cow\Model\Modules\Project;
+use SilverStripe\Cow\Model\Release\Version;
+use SilverStripe\Cow\Steps\Release\RewriteReleaseBranches;
 use SilverStripe\Cow\Steps\Release\CreateChangelog;
 use SilverStripe\Cow\Steps\Release\CreateProject;
+use SilverStripe\Cow\Steps\Release\PlanRelease;
 use SilverStripe\Cow\Steps\Release\RunTests;
 use SilverStripe\Cow\Steps\Release\UpdateTranslations;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Process\Exception\InvalidArgumentException;
+use InvalidArgumentException;
+use Symfony\Component\Console\Output\Output;
 
 /**
  * Execute each release step in order to publish a new version
- *
- * @author dmooyman
  */
 class Release extends Command
 {
@@ -24,129 +25,106 @@ class Release extends Command
 
     protected $description = 'Execute each release step in order to publish a new version';
 
-    const BRANCH_AUTO = 'auto';
-
     protected function configureOptions()
     {
         $this
             ->addArgument('version', InputArgument::REQUIRED, 'Exact version tag to release this project as')
-            ->addOption('from', 'f', InputOption::VALUE_REQUIRED, 'Version to generate changelog from')
-            ->addOption('directory', 'd', InputOption::VALUE_REQUIRED, 'Optional directory to release project from')
-            ->addOption('security', 's', InputOption::VALUE_NONE, 'Update git remotes to point to security project')
-            ->addOption('branch', 'b', InputOption::VALUE_REQUIRED, 'Branch each module to this')
-            ->addOption('branch-auto', 'a', InputOption::VALUE_NONE, 'Automatically branch to major.minor.patch');
+            ->addArgument('recipe', InputArgument::OPTIONAL, 'Recipe to release', 'silverstripe/installer')
+            ->addOption('repository', "r", InputOption::VALUE_REQUIRED, "Custom repository url")
+            ->addOption('directory', 'd', InputOption::VALUE_REQUIRED, 'Optional directory to release project from');
     }
 
     protected function fire()
     {
         // Get arguments
         $version = $this->getInputVersion();
-        $fromVersion = $this->getInputFromVersion($version);
-        $directory = $this->getInputDirectory($version);
-        $branch = $this->getInputBranch($version);
+        $recipe = $this->getInputRecipe();
+        $directory = $this->getInputDirectory();
+        $repository = $this->getInputRepository();
 
         // Make the directory
-        $project = new CreateProject($this, $version, $directory);
-        $project->run($this->input, $this->output);
+        $createProject = new CreateProject($this, $version, $recipe, $directory, $repository);
+        $createProject->run($this->input, $this->output);
+        $project = $this->getProject();
 
-        // Once the project is setup, we can extract the module list to publish
-        $modules = $this->getReleaseModules($directory);
+        // Build and confirm release plan
+        $buildPlan = new PlanRelease($this, $project, $version);
+        $buildPlan->run($this->input, $this->output);
+        $releasePlan = $buildPlan->getReleasePlan();
 
-        // Change to the correct temp branch (if given)
-        $branch = new CreateBranch($this, $directory, $branch, $modules);
-        $branch->run($this->input, $this->output);
+        // Branch all modules properly
+        $branchAlias = new RewriteReleaseBranches($this, $project, $releasePlan);
+        $branchAlias->run($this->input, $this->output);
 
         // Update all translations
-        $translate = new UpdateTranslations($this, $directory, $modules);
+        $translate = new UpdateTranslations($this, $project, $releasePlan);
         $translate->run($this->input, $this->output);
 
         // Run tests
-        $test = new RunTests($this, $directory);
+        $test = new RunTests($this, $project);
         $test->run($this->input, $this->output);
 
         // Generate changelog
-        $changelogs = new CreateChangelog($this, $version, $fromVersion, $directory, $modules);
+        $changelogs = new CreateChangelog($this, $project, $releasePlan);
         $changelogs->run($this->input, $this->output);
+
+
 
         // Output completion
         $this->output->writeln("<info>Success!</info> Release has been updated.");
+        $command = $this->getPublishCommand($version, $project);
         $this->output->writeln(
-            "Please check the changes made by this command, and run <info>cow release:publish</info>"
+            "Please check the changes made by this command, and run <info>{$command}</info>"
         );
     }
 
     /**
      * Get the version to release
      *
-     * @return ReleaseVersion
+     * @return Version
      */
     protected function getInputVersion()
     {
         // Version
         $value = $this->input->getArgument('version');
-        return new ReleaseVersion($value);
-    }
-
-    /**
-     * Determine the branch name that should be used
-     *
-     * @param ReleaseVersion $version
-     * @return string|null
-     */
-    protected function getInputBranch(ReleaseVersion $version)
-    {
-        $branch = $this->input->getOption('branch');
-        if ($branch) {
-            return $branch;
-        }
-
-        // If not explicitly specified, automatically select
-        if ($this->input->getOption('branch-auto')) {
-            return $version->getValueStable();
-        }
-        return null;
-    }
-
-    /**
-     * Determine the 'from' version for generating changelogs
-     *
-     * @param ReleaseVersion $version
-     * @return ReleaseVersion
-     */
-    protected function getInputFromVersion(ReleaseVersion $version)
-    {
-        $value = $this->input->getOption('from');
-        if ($value) {
-            return new ReleaseVersion($value);
-        } else {
-            return $version->getPriorVersion();
-        }
+        return new Version($value);
     }
 
     /**
      * Get the directory the project is, or will be in
      *
-     * @param ReleaseVersion $version
      * @return string
      */
-    protected function getInputDirectory(ReleaseVersion $version)
+    protected function getInputDirectory()
     {
         $directory = $this->input->getOption('directory');
         if (!$directory) {
-            $directory = $this->pickDirectory($version);
+            $directory = $this->pickDirectory();
         }
         return $directory;
     }
 
     /**
-     * Guess a directory to install/read the given version
+     * Get custom repository
      *
-     * @param ReleaseVersion $version
      * @return string
      */
-    protected function pickDirectory(ReleaseVersion $version)
+    protected function getInputRepository()
     {
-        $filename = DIRECTORY_SEPARATOR . 'release-' . $version->getValue();
+        return $this->input->getOption('repository');
+    }
+
+    /**
+     * Guess a directory to install/read the given version
+     *
+     * @return string
+     */
+    protected function pickDirectory()
+    {
+        $version = $this->getInputVersion();
+        $recipe = $this->getInputRecipe();
+
+        $filename = DIRECTORY_SEPARATOR . 'release-' . str_replace('/', '_', $recipe) . '-'. $version->getValue();
         $cwd = getcwd();
 
         // Check if we are already in this directory
@@ -158,45 +136,51 @@ class Release extends Command
     }
 
     /**
-     * Determine if the release selected is a security one
+     * Gets recipe name to release
      *
-     * @return bool
-     * @throws InvalidArgumentException
+     * @return string
      */
-    protected function getInputSecurity()
+    protected function getInputRecipe()
     {
-        $security = $this->input->getOption('security');
-        if ($security) {
-            throw new InvalidArgumentException('--security flag not yet implemented');
+        $recipe = $this->input->getArgument('recipe');
+        if (!preg_match('#(\w+)/(\w+)#', $recipe)) {
+            throw new InvalidArgumentException("Invalid recipe composer name $recipe");
         }
-        return (bool)$security;
+        return $recipe;
     }
 
     /**
-     * Get modules to include in this release. Skips those not in the project's composer.json
+     * Get installed project
      *
-     * @param string $directory where the project is setup
-     * @return array
+     * @return Project
      */
-    protected function getReleaseModules($directory)
+    protected function getProject()
     {
-        $path = realpath($directory);
-        $composerPath = realpath($path . '/composer.json');
-        if (empty($composerPath)) {
-            throw new \InvalidArgumentException("Project not installed at \"{$path}\"");
-        }
-        $composer = json_decode(file_get_contents($composerPath), true);
+        $directory = $this->getInputDirectory();
+        return new Project($directory);
+    }
 
-        $modules = array('installer');
-        foreach ($composer['require'] as $module => $version) {
-            // Only include self.version modules
-            if ($version !== 'self.version') {
-                continue;
-            }
-
-            list($vendor, $module) = explode('/', $module);
-            $modules[] = $module;
+    /**
+     * Get command to suggest to publish this release
+     *
+     * @param Version $version
+     * @param Project $project
+     * @return string Command name
+     */
+    protected function getPublishCommand($version, $project)
+    {
+        $command = 'cow release:publish ' . $version->getValue() . ' ' . $project->getName();
+        switch ($this->output->getVerbosity()) {
+            case Output::VERBOSITY_DEBUG:
+                $command .= ' -vvv';
+                break;
+            case Output::VERBOSITY_VERY_VERBOSE:
+                $command .= ' -vv';
+                break;
+            case Output::VERBOSITY_VERBOSE:
+                $command .= ' -v';
+                break;
         }
-        return $modules;
+        return $command;
     }
 }

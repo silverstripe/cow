@@ -1,7 +1,8 @@
 <?php
 
-namespace SilverStripe\Cow\Model;
+namespace SilverStripe\Cow\Model\Changelog;
 
+use Generator;
 use Gitonomy\Git\Exception\ReferenceNotFoundException;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -10,18 +11,6 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class Changelog
 {
-    /**
-     * List of source modules
-     *
-     * @var Module[]
-     */
-    protected $modules;
-
-    /**
-     * @var ReleaseVersion
-     */
-    protected $fromVersion;
-
     /**
      * Groups changes by type (e.g. bug, enhancement, etc)
      */
@@ -33,36 +22,64 @@ class Changelog
     const FORMAT_FLAT = 'flat';
 
     /**
+     * @var ChangelogLibrary
+     */
+    protected $rootLibrary;
+
+    /**
+     * @return ChangelogLibrary
+     */
+    public function getRootLibrary()
+    {
+        return $this->rootLibrary;
+    }
+
+    /**
+     * @param ChangelogLibrary $rootLibrary
+     * @return $this
+     */
+    public function setRootLibrary($rootLibrary)
+    {
+        $this->rootLibrary = $rootLibrary;
+        return $this;
+    }
+
+    /**
      * Create a new changelog
      *
-     * @param Module[] $modules Source of modules to generate changelog from
-     * @param ReleaseVersion $fromVersion
+     * @param ChangelogLibrary $rootLibrary Root library to generate changelog for
      */
-    public function __construct(array $modules, ReleaseVersion $fromVersion)
+    public function __construct(ChangelogLibrary $rootLibrary)
     {
-        $this->modules = $modules;
-        $this->fromVersion = $fromVersion;
+        $this->rootLibrary = $rootLibrary;
     }
 
     /**
      * Get the list of changes for this module
      *
      * @param OutputInterface $output
-     * @param Module $module
+     * @param ChangelogLibrary $changelogLibrary
      * @return array
      */
-    protected function getModuleLog(OutputInterface $output, Module $module)
+    protected function getLibraryLog(OutputInterface $output, ChangelogLibrary $changelogLibrary)
     {
         $items = array();
 
         // Get raw log
-        $fromVersion = $this->fromVersion->getValue();
-        $range = $fromVersion."..HEAD";
+        $fromVersion = $changelogLibrary->getPriorVersion()->getValue();
+        $toVersion = $changelogLibrary->getRelease()->getIsNewRelease()
+            ? 'HEAD' // Since it won't have been tagged yet, we use the current branch head
+            : $changelogLibrary->getRelease()->getVersion()->getValue();
+        $range = $fromVersion."..".$toVersion;
         try {
-            $log = $module->getRepository()->getLog($range);
+            $log = $changelogLibrary
+                ->getRelease()
+                ->getLibrary()
+                ->getRepository()
+                ->getLog($range);
 
             foreach ($log->getCommits() as $commit) {
-                $change = new ChangelogItem($module, $commit);
+                $change = new ChangelogItem($changelogLibrary, $commit);
 
                 // Skip ignored items
                 if (!$change->isIgnored()) {
@@ -70,9 +87,12 @@ class Changelog
                 }
             }
         } catch (ReferenceNotFoundException $ex) {
-            $moduleName = $module->getName();
+            $moduleName = $changelogLibrary
+                ->getRelease()
+                ->getLibrary()
+                ->getName();
             $output->writeln(
-                "<error>Module {$moduleName} does not have from-version {$fromVersion}; "
+                "<error>Could not generate git diff for {$moduleName} for range {$range}; "
                     . "Skipping changelog for this module</error>"
             );
         }
@@ -101,8 +121,9 @@ class Changelog
     protected function getChanges(OutputInterface $output)
     {
         $changes = array();
-        foreach ($this->getModules() as $module) {
-            $moduleChanges = $this->getModuleLog($output, $module);
+        $libraries = $this->getRootLibrary()->getAllItems(true);
+        foreach ($libraries as $library) {
+            $moduleChanges = $this->getLibraryLog($output, $library);
             $changes = array_merge($changes, $moduleChanges);
         }
 
@@ -161,24 +182,6 @@ class Changelog
      * @var string
      */
     protected $lineFormat = null;
-
-    /**
-     * @return ReleaseVersion
-     */
-    public function getFromVersion()
-    {
-        return $this->fromVersion;
-    }
-
-    /**
-     * @param ReleaseVersion $fromVersion
-     * @return $this
-     */
-    public function setFromVersion(ReleaseVersion $fromVersion)
-    {
-        $this->fromVersion = $fromVersion;
-        return $this;
-    }
 
     /**
      * @return string
@@ -291,15 +294,5 @@ class Changelog
             }
         });
         return $commits;
-    }
-
-    /**
-     * Get modules for this changelog
-     *
-     * @return Module[]
-     */
-    protected function getModules()
-    {
-        return $this->modules;
     }
 }

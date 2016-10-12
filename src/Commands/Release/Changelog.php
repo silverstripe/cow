@@ -3,6 +3,7 @@
 namespace SilverStripe\Cow\Commands\Release;
 
 use SilverStripe\Cow\Steps\Release\CreateChangelog;
+use SilverStripe\Cow\Steps\Release\PlanRelease;
 
 /**
  * Description of Create
@@ -23,12 +24,15 @@ class Changelog extends Release
     {
         // Get arguments
         $version = $this->getInputVersion();
-        $fromVersion = $this->getInputFromVersion($version);
-        $directory = $this->getInputDirectory($version);
-        $modules = $this->getReleaseModules($directory);
+        $project = $this->getProject();
 
-        // Steps
-        $step = new CreateChangelog($this, $version, $fromVersion, $directory, $modules);
-        $step->run($this->input, $this->output);
+        // Build and confirm release plan
+        $buildPlan = new PlanRelease($this, $project, $version);
+        $buildPlan->run($this->input, $this->output);
+        $releasePlan = $buildPlan->getReleasePlan();
+
+        // Generate changelog
+        $changelogs = new CreateChangelog($this, $project, $releasePlan);
+        $changelogs->run($this->input, $this->output);
     }
 }

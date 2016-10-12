@@ -2,9 +2,13 @@
 
 namespace SilverStripe\Cow\Steps\Release;
 
+use Exception;
+use Generator;
 use InvalidArgumentException;
 use SilverStripe\Cow\Commands\Command;
-use SilverStripe\Cow\Model\Module;
+use SilverStripe\Cow\Model\Modules\Module;
+use SilverStripe\Cow\Model\Modules\Project;
+use SilverStripe\Cow\Model\Release\LibraryRelease;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -24,14 +28,14 @@ use Symfony\Component\Console\Output\OutputInterface;
  *      `tx push -s`
  *  - Commit changes to source control (without push)
  */
-class UpdateTranslations extends ModuleStep
+class UpdateTranslations extends ReleaseStep
 {
     /**
      * Min tx client version
 
      * @var string
      */
-    protected $txVersion = '0.11';
+    protected $txVersion = '0.12';
 
     /**
      * Min % difference required for tx updates
@@ -45,7 +49,7 @@ class UpdateTranslations extends ModuleStep
      *
      * @var bool
      */
-    protected $push;
+    protected $doPush;
 
     /**
      * Map of file paths to original JS master files.
@@ -61,21 +65,15 @@ class UpdateTranslations extends ModuleStep
     /**
      * Create a new translation step
      *
-     * @param Command $command
-     * @param string $directory Where to translate
-     * @param array $modules Optional list of modules to limit translation to
-     * @param bool $listIsExclusive If this list is exclusive. If false, this is inclusive
+     * @param Command $command Parent command
+     * @param Project $project Root project
+     * @param LibraryRelease $plan
      * @param bool $doPush Do git push at end
      */
-    public function __construct(
-        Command $command,
-        $directory,
-        $modules = array(),
-        $listIsExclusive = false,
-        $doPush = false
-    ) {
-        parent::__construct($command, $directory, $modules, $listIsExclusive);
-        $this->push = $doPush;
+    public function __construct(Command $command, Project $project, LibraryRelease $plan, $doPush = false)
+    {
+        parent::__construct($command, $project, $plan);
+        $this->setDoPush($doPush);
     }
 
     public function getStepName()
@@ -85,11 +83,14 @@ class UpdateTranslations extends ModuleStep
 
     public function run(InputInterface $input, OutputInterface $output)
     {
-        $modules = $this->getModules();
-        $this->log($output, sprintf("Updating translations for %d module(s)", count($modules)));
-        if ($this->getVersionConstraint()) {
-            $this->log($output, sprintf("Note: Modules filtered by version %s", $this->getVersionConstraint()));
+        $modules = iterator_to_array($this->getTranslatableModules(), false);
+        $count = count($modules);
+        if ($count === 0) {
+            $this->log($output, "No modules require translation: skipping");
+            return;
         }
+        
+        $this->log($output, "Updating translations for {$count} module(s)");
         $this->checkVersion($output);
         $this->storeJavascript($output, $modules);
         $this->pullSource($output, $modules);
@@ -134,12 +135,12 @@ class UpdateTranslations extends ModuleStep
         // Backup files prior to replacing local copies with transifex master
         $this->originalJSMasters = [];
         foreach ($modules as $module) {
-            $jsPath = $module->getJSLangDirectory();
+            $jsPath = $module->getJSLangDirectories();
             foreach ((array)$jsPath as $path) {
                 $masterPath = "{$path}/src/en.js";
+                $this->log($output, "Backing up <info>$masterPath</info>");
                 if (file_exists($masterPath)) {
-                    $masterJSON = json_decode(file_get_contents($masterPath), true);
-                    $this->checkJsonDecode($masterPath);
+                    $masterJSON = $this->decodeJSONFile($masterPath);
                     $this->originalJSMasters[$masterPath] = $masterJSON;
                 }
             }
@@ -157,10 +158,9 @@ class UpdateTranslations extends ModuleStep
     {
         if (json_last_error()) {
             $message = json_last_error_msg();
-            throw new \Exception("Error json decoding file {$path}: {$message}");
+            throw new Exception("Error json decoding file {$path}: {$message}");
         }
     }
-
 
     /**
      * Merge back master files with any local contents
@@ -176,7 +176,7 @@ class UpdateTranslations extends ModuleStep
         $this->log($output, "Merging local javascript masters");
         foreach ($this->originalJSMasters as $path => $contentJSON) {
             if (file_exists($path)) {
-                $masterJSON = json_decode(file_get_contents($path), true);
+                $masterJSON = $this->decodeJSONFile($path);
                 $contentJSON = array_merge($masterJSON, $contentJSON);
             }
             // Re-order values
@@ -196,9 +196,12 @@ class UpdateTranslations extends ModuleStep
      */
     protected function pullSource(OutputInterface $output, $modules)
     {
-        $this->log($output, "Pulling sources from transifex (min %{$this->txMinimumPerc} delta)");
-
         foreach ($modules as $module) {
+            $name = $module->getName();
+            $this->log(
+                $output,
+                "Pulling sources from transifex for <info>{$name}</info> (min %{$this->txMinimumPerc} delta)"
+            );
             // Set mtime to a year ago so that transifex will see these as obsolete
             $touchCommand = sprintf(
                 'find %s -type f \( -name "*.yml" \) -exec touch -t %s {} \;',
@@ -230,7 +233,7 @@ class UpdateTranslations extends ModuleStep
         // Get code dirs for each module
         $dirs = array();
         foreach ($modules as $module) {
-            $dirs[] = basename($module->getMainDirectory());
+            $dirs[] = $module->getRelativeMainDirectory();
         }
 
         $sakeCommand = sprintf(
@@ -254,7 +257,7 @@ class UpdateTranslations extends ModuleStep
         $count = 0;
         foreach ($modules as $module) {
             $base = $module->getMainDirectory();
-            $jsPath = $module->getJSLangDirectory();
+            $jsPath = $module->getJSLangDirectories();
             foreach ((array)$jsPath as $path) {
                 $count += $this->generateJavascriptInDirectory($output, $base, $path);
             }
@@ -353,7 +356,7 @@ TMPL;
             $repo = $module->getRepository();
 
             // Add all changes
-            $jsPath = $module->getJSLangDirectory();
+            $jsPath = $module->getJSLangDirectories();
             $langPath = $module->getLangDirectory();
             foreach (array_merge((array)$jsPath, (array)$langPath) as $path) {
                 if (is_dir($path)) {
@@ -369,7 +372,7 @@ TMPL;
             }
 
             // Do push if selected
-            if ($this->push) {
+            if ($this->doPush) {
                 $this->log($output, "Pushing upstream for module " . $module->getName());
                 $repo->run("push", array("origin"));
             }
@@ -377,18 +380,48 @@ TMPL;
     }
 
     /**
-     * Get the list of module objects to translate
-     *
-     * @return Module[]
+     * @return bool
      */
-    protected function getModules()
+    public function isDoPush()
     {
-        $modules = parent::getModules();
+        return $this->doPush;
+    }
 
-        // Get only modules with translations
-        return array_filter($modules, function (Module $module) {
-            // Automatically skip un-translateable modules
-            return $module->isTranslatable();
-        });
+    /**
+     * @param bool $doPush
+     * @return $this
+     */
+    public function setDoPush($doPush)
+    {
+        $this->doPush = $doPush;
+        return $this;
+    }
+
+    /**
+     * @return Module[]|Generator
+     */
+    public function getTranslatableModules()
+    {
+        // Don't translate upgrade-only
+        foreach ($this->getNewReleases() as $release) {
+            // Only translate modules with .tx directories
+            $library = $release->getLibrary();
+            if ($library instanceof Module && $library->isTranslatable()) {
+                yield $library;
+            }
+        }
+    }
+
+    /**
+     * Decode json file
+     *
+     * @param string $path
+     * @return array
+     */
+    protected function decodeJSONFile($path)
+    {
+        $masterJSON = json_decode(file_get_contents($path), true);
+        $this->checkJsonDecode($path);
+        return $masterJSON;
     }
 }
