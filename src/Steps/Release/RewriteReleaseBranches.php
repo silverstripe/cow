@@ -129,7 +129,6 @@ class RewriteReleaseBranches extends ReleaseStep
     protected function canCheckout($currentBranch, Version $version)
     {
         // Get expected major and minor branches
-        $majorBranch = $version->getMajor();
         $minorBranch = $version->getMajor() . "." . $version->getMinor();
 
         // Already on ideal branch
@@ -137,17 +136,12 @@ class RewriteReleaseBranches extends ReleaseStep
             return false;
         }
 
-        // Branch from 3 -> 3.1
-        if (empty($currentBranch) || $currentBranch === $majorBranch) {
-            return true;
-        }
-
-        // Branch from master -> 3 and 3.1 if doing beta / rc / stable release
+        // Branch if doing beta / rc / stable release
         if ($version->isStable() || in_array($version->getStability(), ['beta', 'rc'])) {
             return true;
         }
 
-        return null;
+        return false;
     }
 
     /**
