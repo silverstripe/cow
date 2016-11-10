@@ -91,9 +91,11 @@ class UpdateTranslations extends ReleaseStep
         }
         
         $this->log($output, "Updating translations for {$count} module(s)");
-        $this->checkVersion($output);
+        $this->checkTransifexVersion($output);
+        $this->checkYamlCleanDependency($output);
         $this->storeJavascript($output, $modules);
         $this->pullSource($output, $modules);
+        $this->cleanYaml($output, $modules);
         $this->mergeJavascriptMasters($output);
         $this->collectStrings($output, $modules);
         $this->generateJavascript($output, $modules);
@@ -108,7 +110,7 @@ class UpdateTranslations extends ReleaseStep
      * @param OutputInterface $output
      * @throws InvalidArgumentException
      */
-    protected function checkVersion(OutputInterface $output)
+    protected function checkTransifexVersion(OutputInterface $output)
     {
         $error = "translate requires transifex {$this->txVersion} at least. "
             . "Run 'pip install transifex-client==0.11b3' to update.";
@@ -121,6 +123,22 @@ class UpdateTranslations extends ReleaseStep
         }
 
         $this->log($output, "Using transifex CLI version: $result");
+    }
+
+    /**
+     * Test that yamlclean ruby gem is installed
+     *
+     * @param OutputInterface $output
+     * @throws InvalidArgumentException
+     */
+    protected function checkYamlCleanDependency(OutputInterface $output)
+    {
+        $error = "translate requires the yamlclean ruby gem. Run 'gem install yamlclean'";
+        try {
+            $this->runCommand($output, 'yamlclean');
+        } catch (Exception $e) {
+             throw new InvalidArgumentException($error);
+        }
     }
 
     /**
@@ -217,6 +235,31 @@ class UpdateTranslations extends ReleaseStep
                 $this->txMinimumPerc
             );
             $this->runCommand($output, $pullCommand);
+        }
+    }
+
+    /**
+     * Tidy yaml files using yamlclean ruby gem
+     *
+     * @param OutputInterface $output
+     * @param Module[] $modules List of modules
+     */
+    protected function cleanYaml(OutputInterface $output, $modules)
+    {
+        foreach ($modules as $module) {
+            $name = $module->getName();
+            $this->log(
+                $output,
+                "Cleaning YAML sources for <info>{$name}</info>"
+            );
+
+            foreach (glob($module->getLangDirectory()."/*.yml") as $sourceFile) {
+                $cleanCommand = sprintf(
+                    'echo "$(yamlclean %1$s)" > %1$s',
+                    $sourceFile
+                );
+                $this->runCommand($output, $cleanCommand);
+            }
         }
     }
 
