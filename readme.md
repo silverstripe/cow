@@ -18,6 +18,15 @@ for this. You'll also need the aws cli installed.
 
 If you're feeling lonely, or just want to test your install, you can run `cow moo`.
 
+## Dependencies
+
+Cow also depends on transifex-client and yamlclean for localisation.
+
+See [the transifex client docs](https://github.com/transifex/transifex-client) for instructions on
+installing transifex-client. Cow requires at least version 0.12.
+
+Install yamlclean gem using `gem install yamlclean`.
+
 ## Commands
 
 Cow is a collection of different tools (steps) grouped by top level commands. It is helpful to think about
