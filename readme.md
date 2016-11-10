@@ -20,12 +20,11 @@ If you're feeling lonely, or just want to test your install, you can run `cow mo
 
 ## Dependencies
 
-Cow also depends on transifex-client and yamlclean for localisation.
-
-See [the transifex client docs](https://github.com/transifex/transifex-client) for instructions on
-installing transifex-client. Cow requires at least version 0.12.
-
-Install yamlclean gem using `gem install yamlclean`.
+* See [the transifex client docs](https://github.com/transifex/transifex-client) for instructions on
+  installing transifex-client. Cow requires at least version 0.12.
+* The yamlclean ruby gem is also required for localisation. Install yamlclean gem using `gem install yamlclean`.
+* For uploading of archive to s3 you must also install the
+  [AWS CLI tools](http://docs.aws.amazon.com/cli/latest/userguide/installing.html).
 
 ## Commands
 
