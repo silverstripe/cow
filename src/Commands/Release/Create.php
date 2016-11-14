@@ -5,9 +5,7 @@ namespace SilverStripe\Cow\Commands\Release;
 use SilverStripe\Cow\Steps\Release\CreateProject;
 
 /**
- * Description of Create
- *
- * @author dmooyman
+ * Creates a new release project
  */
 class Create extends Release
 {
