@@ -839,9 +839,13 @@ class Library
     public function loadCachedPlan()
     {
         // Check cached plan file
-        $path = $this->getDirectory() . '/.cow.plan.json';
+        $path = $this->getDirectory() . '/.cow.pat.json';
         if (!file_exists($path)) {
-            return null;
+            // Check old name
+            $path = $this->getDirectory() . '/.cow.plan.json';
+            if (!file_exists($path)) {
+                return null;
+            }
         }
         $serialisedPlan = Config::loadFromFile($path);
         $result = $this->unserialisePlan($serialisedPlan);
@@ -855,7 +859,7 @@ class Library
      */
     public function saveCachedPlan(LibraryRelease $plan)
     {
-        $path = $this->getDirectory() . '/.cow.plan.json';
+        $path = $this->getDirectory() . '/.cow.pat.json';
         $data = $this->serialisePlan($plan);
         Config::saveToFile($path, $data);
     }
