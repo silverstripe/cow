@@ -11,6 +11,7 @@ use SilverStripe\Cow\Model\Modules\Project;
 use SilverStripe\Cow\Model\Release\LibraryRelease;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * Synchronise all translations with transifex, merging these with strings detected in code files
@@ -89,10 +90,9 @@ class UpdateTranslations extends ReleaseStep
             $this->log($output, "No modules require translation: skipping");
             return;
         }
-        
+
         $this->log($output, "Updating translations for {$count} module(s)");
         $this->checkTransifexVersion($output);
-        $this->checkYamlCleanDependency($output);
         $this->storeJavascript($output, $modules);
         $this->pullSource($output, $modules);
         $this->cleanYaml($output, $modules);
@@ -123,22 +123,6 @@ class UpdateTranslations extends ReleaseStep
         }
 
         $this->log($output, "Using transifex CLI version: $result");
-    }
-
-    /**
-     * Test that yamlclean ruby gem is installed
-     *
-     * @param OutputInterface $output
-     * @throws InvalidArgumentException
-     */
-    protected function checkYamlCleanDependency(OutputInterface $output)
-    {
-        $error = "translate requires the yamlclean ruby gem. Run 'gem install yamlclean'";
-        try {
-            $this->runCommand($output, 'yamlclean');
-        } catch (Exception $e) {
-             throw new InvalidArgumentException($error);
-        }
     }
 
     /**
@@ -253,13 +237,18 @@ class UpdateTranslations extends ReleaseStep
                 "Cleaning YAML sources for <info>{$name}</info>"
             );
 
+            $cleaned = 0;
             foreach (glob($module->getLangDirectory()."/*.yml") as $sourceFile) {
-                $cleanCommand = sprintf(
-                    'echo "$(yamlclean %1$s)" > %1$s',
-                    $sourceFile
-                );
-                $this->runCommand($output, $cleanCommand);
+                $dirty = file_get_contents($sourceFile);
+                $sourceData = Yaml::parse($dirty);
+                $cleaned = Yaml::dump($sourceData, 9999, 2);
+                if ($dirty !== $cleaned) {
+                    $cleaned++;
+                    file_put_contents($sourceFile, $cleaned);
+                }
             }
+
+            $this->log($output, "<info>{$cleaned}</info> yml files cleaned");
         }
     }
 
