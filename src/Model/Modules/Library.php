@@ -4,6 +4,7 @@ namespace SilverStripe\Cow\Model\Modules;
 
 use Exception;
 use Generator;
+use Gitonomy\Git\Exception\ProcessException;
 use Gitonomy\Git\Reference\Branch;
 use Gitonomy\Git\Repository;
 use InvalidArgumentException;
@@ -430,12 +431,23 @@ class Library
      *
      * @param OutputInterface $output
      * @param Version $version
+     * @throws ProcessException
      */
     public function resetToTag(OutputInterface $output, Version $version)
     {
         $repository = $this->getRepository($output);
         $tag = $version->getValue();
-        $repository->run('checkout', [ "refs/tags/{$tag}" ]);
+        try {
+            $repository->run('checkout', ["refs/tags/{$tag}"]);
+        } catch (ProcessException $ex) {
+            // Fall back to `v` prefixed tag. E.g. gridfield-bulk-editing-tools uses this prefix
+            try {
+                $repository->run('checkout', ["refs/tags/v{$tag}"]);
+            } catch (ProcessException $vex) {
+                // Throw original exception
+                throw $ex;
+            }
+        }
     }
 
     /**
