@@ -341,6 +341,10 @@ class Library
         }
         $repo = $this->getRepository($output);
 
+        // Set CWD to work-around git crashing while stashing
+        $dir = getcwd();
+        chdir($this->getDirectory());
+
         // Stash changes
         $status = $repo->run('status');
         $hasChanges = stripos($status, 'Changes to be committed:') || stripos($status, 'Changes not staged for commit:');
@@ -356,6 +360,7 @@ class Library
             if ($hasChanges) {
                 $repo->run('stash', ['pop']);
             }
+            chdir($dir);
         }
     }
 
