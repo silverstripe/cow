@@ -339,10 +339,24 @@ class Library
             // No remote branch to rebase with
             return;
         }
+        $repo = $this->getRepository($output);
+
+        // Stash changes
+        $status = $repo->run('status');
+        $hasChanges = stripos($status, 'Changes to be committed:') || stripos($status, 'Changes not staged for commit:');
+        if ($hasChanges) {
+            $repo->run('stash');
+        }
 
         // Pull
-        $repo = $this->getRepository($output);
-        $repo->run('pull', [$remote, $branch, '--rebase']);
+        try {
+            $repo->run('pull', [$remote, $branch, '--rebase']);
+        } finally {
+            // Restore locale changes
+            if ($hasChanges) {
+                $repo->run('stash', ['pop']);
+            }
+        }
     }
 
     /**
