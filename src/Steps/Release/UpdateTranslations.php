@@ -237,18 +237,18 @@ class UpdateTranslations extends ReleaseStep
                 "Cleaning YAML sources for <info>{$name}</info>"
             );
 
-            $cleaned = 0;
+            $num = 0;
             foreach (glob($module->getLangDirectory()."/*.yml") as $sourceFile) {
                 $dirty = file_get_contents($sourceFile);
                 $sourceData = Yaml::parse($dirty);
                 $cleaned = Yaml::dump($sourceData, 9999, 2);
                 if ($dirty !== $cleaned) {
-                    $cleaned++;
+                    $num++;
                     file_put_contents($sourceFile, $cleaned);
                 }
             }
 
-            $this->log($output, "<info>{$cleaned}</info> yml files cleaned");
+            $this->log($output, "<info>{$num}</info> yml files cleaned");
         }
     }
 
