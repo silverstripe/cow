@@ -139,21 +139,8 @@ class PublishRelease extends ReleaseStep
      */
     protected function stabiliseDependencyRequirement(OutputInterface $output, LibraryRelease $item, $constraintType)
     {
-        // Rewrite requirement for tag
-        $childRequirement = $item->getVersion()->getValue();
-        if ($item->getVersion()->isStable()) {
-            $childRequirement .= '@stable';
-        }
-
-        // Add stability variability
-        switch ($constraintType) {
-            case Library::DEPENDENCY_LOOSE:
-                $childRequirement = "~{$childRequirement}";
-                break;
-            case Library::DEPENDENCY_SEMVER:
-                $childRequirement = "^{$childRequirement}";
-                break;
-        }
+        // Get constraint for this version
+        $childRequirement = $item->getVersion()->getConstraint($constraintType);
 
         // Notify of change
         $childName = $item->getLibrary()->getName();

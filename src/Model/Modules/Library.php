@@ -347,9 +347,10 @@ class Library
 
         // Stash changes
         $status = $repo->run('status');
-        $hasChanges = stripos($status, 'Changes to be committed:') || stripos($status, 'Changes not staged for commit:');
+        $hasChanges = stripos($status, 'Changes to be committed:')
+            || stripos($status, 'Changes not staged for commit:');
         if ($hasChanges) {
-            $repo->run('stash');
+            $repo->run('stash', ['-u']);
         }
 
         // Pull
@@ -872,7 +873,8 @@ class Library
         // Check cached plan file
         $path = $this->getDirectory() . '/.cow.pat.json';
         if (!file_exists($path)) {
-            // Check old name
+            // Note: .cow.pat.json used to be called .cow.plan.json
+            // Automatically detect legacy files and load as a fallback
             $path = $this->getDirectory() . '/.cow.plan.json';
             if (!file_exists($path)) {
                 return null;
