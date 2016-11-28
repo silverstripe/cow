@@ -161,16 +161,20 @@ class PlanRelease extends Step
 
         // Get all stable tags that match the given composer constraint
         $candidates = $constraint->filterVersions($tags);
-        foreach ($candidates as $tag => $version) {
-            if (!$version->isStable()) {
-                unset($candidates[$tag]);
+
+        // If releasing a stable version, remove all unstable dependencies
+        if ($parentRelease->getVersion()->isStable()) {
+            foreach ($candidates as $tag => $version) {
+                if (!$version->isStable()) {
+                    unset($candidates[$tag]);
+                }
             }
         }
 
         // Check if we have any candidates left
         if (empty($candidates)) {
             throw new Exception(
-                "Library " . $childModule->getName() . " has no available stable tags that matches "
+                "Library " . $childModule->getName() . " has no available tags that matches "
                 . $constraint->getValue()
                 . ". Please remove upgrade-only for this module, or tag a new release."
             );

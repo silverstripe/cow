@@ -4,6 +4,7 @@ namespace SilverStripe\Cow\Model\Modules;
 
 use Exception;
 use Generator;
+use Gitonomy\Git\Exception\ProcessException;
 use Gitonomy\Git\Reference\Branch;
 use Gitonomy\Git\Repository;
 use InvalidArgumentException;
@@ -338,10 +339,30 @@ class Library
             // No remote branch to rebase with
             return;
         }
+        $repo = $this->getRepository($output);
+
+        // Set CWD to work-around git crashing while stashing
+        $dir = getcwd();
+        chdir($this->getDirectory());
+
+        // Stash changes
+        $status = $repo->run('status');
+        $hasChanges = stripos($status, 'Changes to be committed:')
+            || stripos($status, 'Changes not staged for commit:');
+        if ($hasChanges) {
+            $repo->run('stash', ['-u']);
+        }
 
         // Pull
-        $repo = $this->getRepository($output);
-        $repo->run('pull', [$remote, $branch, '--rebase']);
+        try {
+            $repo->run('pull', [$remote, $branch, '--rebase']);
+        } finally {
+            // Restore locale changes
+            if ($hasChanges) {
+                $repo->run('stash', ['pop']);
+            }
+            chdir($dir);
+        }
     }
 
     /**
@@ -430,12 +451,23 @@ class Library
      *
      * @param OutputInterface $output
      * @param Version $version
+     * @throws ProcessException
      */
     public function resetToTag(OutputInterface $output, Version $version)
     {
         $repository = $this->getRepository($output);
         $tag = $version->getValue();
-        $repository->run('checkout', [ "refs/tags/{$tag}" ]);
+        try {
+            $repository->run('checkout', ["refs/tags/{$tag}"]);
+        } catch (ProcessException $ex) {
+            // Fall back to `v` prefixed tag. E.g. gridfield-bulk-editing-tools uses this prefix
+            try {
+                $repository->run('checkout', ["refs/tags/v{$tag}"]);
+            } catch (ProcessException $vex) {
+                // Throw original exception
+                throw $ex;
+            }
+        }
     }
 
     /**
@@ -839,9 +871,14 @@ class Library
     public function loadCachedPlan()
     {
         // Check cached plan file
-        $path = $this->getDirectory() . '/.cow.plan.json';
+        $path = $this->getDirectory() . '/.cow.pat.json';
         if (!file_exists($path)) {
-            return null;
+            // Note: .cow.pat.json used to be called .cow.plan.json
+            // Automatically detect legacy files and load as a fallback
+            $path = $this->getDirectory() . '/.cow.plan.json';
+            if (!file_exists($path)) {
+                return null;
+            }
         }
         $serialisedPlan = Config::loadFromFile($path);
         $result = $this->unserialisePlan($serialisedPlan);
@@ -855,7 +892,7 @@ class Library
      */
     public function saveCachedPlan(LibraryRelease $plan)
     {
-        $path = $this->getDirectory() . '/.cow.plan.json';
+        $path = $this->getDirectory() . '/.cow.pat.json';
         $data = $this->serialisePlan($plan);
         Config::saveToFile($path, $data);
     }

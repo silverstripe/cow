@@ -62,6 +62,7 @@ it will install to the path specified by `./release-<version>` in the current di
 `release` actually has several sub-commands which can be run independently. These are as below:
 
 * `release:create` creates the project folder
+* `release:plan` Initiates release planning tool to preview release dependency versions
 * `release:branch` Will (if needed) branch all modules
 * `release:translate` Updates translations and commits this to source control
 * `release:test` Run unit tests

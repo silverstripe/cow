@@ -4,6 +4,7 @@ namespace SilverStripe\Cow\Model\Release;
 
 use InvalidArgumentException;
 use LogicException;
+use SilverStripe\Cow\Model\Modules\Library;
 
 /**
  * Represents a version for a release
@@ -443,5 +444,36 @@ class Version
         $canditate->setStabilityVersion(null);
         $canditate->setPatch($this->getPatch() + 1);
         return $canditate;
+    }
+
+    /**
+     * Get composer constraint for this version with the given constraint type
+     *
+     * @param string $constraintType
+     * @return string
+     */
+    public function getConstraint($constraintType)
+    {
+        // Rewrite requirement for tag
+        $numericVersion = $this->getValueStable();
+        $stability = $this->getStability() ?: 'stable';
+
+        // Add stability variability
+        switch ($constraintType) {
+            case Library::DEPENDENCY_LOOSE:
+                $childRequirement = "~{$numericVersion}@{$stability}";
+                break;
+            case Library::DEPENDENCY_SEMVER:
+                $childRequirement = "^{$numericVersion}@{$stability}";
+                break;
+            case Library::DEPENDENCY_EXACT:
+            default:
+                $childRequirement = $this->getValue();
+                if ($this->isStable()) {
+                    $childRequirement .= '@stable';
+                }
+                break;
+        }
+        return $childRequirement;
     }
 }

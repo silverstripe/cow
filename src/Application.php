@@ -24,6 +24,7 @@ class Application extends Console\Application
 
         // Release sub-commands
         $commands[] = new Commands\Release\Create();
+        $commands[] = new Commands\Release\Plan();
         $commands[] = new Commands\Release\Branch();
         $commands[] = new Commands\Release\Translate();
         $commands[] = new Commands\Release\Test();
