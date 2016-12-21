@@ -154,7 +154,11 @@ class ComposerConstraint
         );
 
         // Semver to
-        if ($parsed['type'] === '^') {
+        if (empty($parsed['type'])) {
+            // x.y.z@stable
+            $to = $from;
+        } elseif ($parsed['type'] === '^') {
+            // ^x.y.z
             $to = $parsed['major'] . '.99999.99999';
         } elseif (isset($parsed['patch']) && strlen($parsed['patch'])) {
             // ~x.y.z
@@ -201,7 +205,7 @@ class ComposerConstraint
 
         // Match semver constraint
         $valid = preg_match(
-            '/^(?<type>[~^])(?<major>\d+)(\\.(?<minor>\d+)(\\.(?<patch>\\d+))?)?'
+            '/^(?<type>[~^]?)(?<major>\d+)(\\.(?<minor>\d+)(\\.(?<patch>\\d+))?)?'
             . '([-@](?<stability>rc|alpha|beta|stable)(?<stabilityVersion>\d+)?)?$/',
             $version,
             $matches
