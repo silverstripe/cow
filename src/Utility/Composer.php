@@ -19,7 +19,7 @@ class Composer
     public static function getLibraryVersions(CommandRunner $runner, $library)
     {
         $error = "Could not parse available versions from command \"composer show {$library}\"";
-        $result = $runner->runCommand(["composer", "global", "show", $library, "--all"], $error);
+        $result = $runner->runCommand(["composer", "global", "show", $library, "--all", "--no-ansi"], $error);
 
         if (empty($result) || !preg_match('/^versions\s*:\s*(?<versions>(\S.+\S))\s*$/m', $result, $matches)) {
             throw new InvalidArgumentException($error);
