@@ -306,7 +306,7 @@ class PlanRelease extends Step
 
         // Prompt user with query to modify this plan
         $question = new ChoiceQuestion(
-            "{$message}; Please confirm any manual changes below:",
+            "{$message}; Please confirm any manual changes below, or type a module name to edit the tag:",
             array_merge(
                 ["continue" => "continue"],
                 $releaseLines
