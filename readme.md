@@ -80,16 +80,15 @@ This command has these options:
 
 * `-vvv` to ensure all underlying commands are echoed
 * `--directory <directory>` to specify the folder to look for the project created in the prior step. As with
-  above, it will be guessed if omitted. You can run this command in the `./release-<version>` directory and 
+  above, it will be guessed if omitted. You can run this command in the `./release-<version>` directory and
   omit this option.
 * `--aws-profile <profile>` to specify the AWS profile name for uploading releases to s3. Check with
-  damian@silverstripe.com if you don't have an AWS key setup. 
+  damian@silverstripe.com if you don't have an AWS key setup.
 
 The release process, as with the initial `cow release` command, will actually be composed of several sub-commands,
 each of which could be run separately.
 
-* `release:tag` Add annotated tags to each module
-* `release:push` Push branch and tag up to origin
+* `release:tag` Add annotated tags to each module and pushes
 * `release:archive` Generate tar.gz and zip archives of this release
 * `release:upload` Upload archived projects to silverstripe.org
 

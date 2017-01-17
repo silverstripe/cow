@@ -2,12 +2,10 @@
 
 namespace SilverStripe\Cow\Commands\Release;
 
-use SilverStripe\Cow\Steps\Release\TagModules;
+use SilverStripe\Cow\Steps\Release\PublishRelease;
 
 /**
- * Create a new branch
- *
- * @author dmooyman
+ * Perform tagging and push of release
  */
 class Tag extends Publish
 {
@@ -16,17 +14,16 @@ class Tag extends Publish
      */
     protected $name = 'release:tag';
 
-    protected $description = 'Tag all modules';
+    protected $description = 'Tag modules and push';
 
     protected function fire()
     {
         // Get arguments
-        $version = $this->getInputVersion();
-        $directory = $this->getInputDirectory($version);
-        $modules = $this->getReleaseModules($directory);
+        $project = $this->getProject();
+        $releasePlan = $this->getReleasePlan();
 
-        // Steps
-        $step = new TagModules($this, $version, $directory, $modules);
-        $step->run($this->input, $this->output);
+        // Does bulk of module publishing, rewrite of dev branches, rewrite of tags, and actual tagging
+        $publish = new PublishRelease($this, $project, $releasePlan);
+        $publish->run($this->input, $this->output);
     }
 }

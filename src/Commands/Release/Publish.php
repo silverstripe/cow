@@ -40,6 +40,8 @@ class Publish extends Release
         $publish = new PublishRelease($this, $project, $releasePlan);
         $publish->run($this->input, $this->output);
 
+        // @todo - Implement archive / upload steps
+
         /*
         // Once pushed, wait until installable
         $wait = new Wait($this, $version);
