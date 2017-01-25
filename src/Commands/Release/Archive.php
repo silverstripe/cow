@@ -20,6 +20,11 @@ class Archive extends Publish
 
     protected function fire()
     {
+        throw new \Exception("Not implemented");
+
+        // @todo - Implement archive / upload steps
+
+        /*
         // Get arguments
         $version = $this->getInputVersion();
         $recipe = $this->getInputRecipe();
@@ -27,6 +32,6 @@ class Archive extends Publish
 
         // Steps
         $step = new BuildArchive($this, $version, $directory);
-        $step->run($this->input, $this->output);
+        $step->run($this->input, $this->output);*/
     }
 }

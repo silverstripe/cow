@@ -20,6 +20,11 @@ class Upload extends Publish
 
     protected function fire()
     {
+        throw new \Exception("Not implemented");
+
+        // @todo - Implement archive / upload steps
+
+        /*
         // Get arguments
         $version = $this->getInputVersion();
         $directory = $this->getInputDirectory($version);
@@ -27,6 +32,6 @@ class Upload extends Publish
 
         // Steps
         $step = new UploadArchive($this, $version, $directory, $awsProfile);
-        $step->run($this->input, $this->output);
+        $step->run($this->input, $this->output);*/
     }
 }
