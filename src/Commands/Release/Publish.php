@@ -54,7 +54,7 @@ class Publish extends Release
         $push->run($this->input, $this->output);
 
         // Once pushed, wait until installable
-        $wait = new Wait($this, $version);
+        $wait = new Wait($this, $version, $directory);
         $wait->run($this->input, $this->output);
 
         // Create packages

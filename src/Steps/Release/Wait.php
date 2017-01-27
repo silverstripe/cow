@@ -32,14 +32,17 @@ class Wait extends Step
      */
     protected $version;
 
+    protected $directory;
+
     /**
      * @param Command $command
      * @param ReleaseVersion $version
      */
-    public function __construct(Command $command, ReleaseVersion $version)
+    public function __construct(Command $command, ReleaseVersion $version, $directory = '.')
     {
         parent::__construct($command);
         $this->version = $version;
+        $this->directory = $directory;
     }
 
     /**
@@ -52,16 +55,16 @@ class Wait extends Step
     {
         $version = $this->version->getValue();
         $this->log($output, "Waiting for version {$version} to be available via packagist");
-        $this->waitLoop($output);
+        $this->waitLoop($input, $output);
         $this->log($output, "Version {$version} is now available");
     }
 
-    protected function waitLoop(OutputInterface $output)
+    protected function waitLoop(InputInterface $input, OutputInterface $output)
     {
         $start = time();
         $version = $this->version->getValue();
         while ($start + $this->timeout >= time()) {
-            $versions = $this->getAvailableVersions($output);
+            $versions = $this->getAvailableVersions($input, $output);
             if (in_array($version, $versions)) {
                 return;
             }
