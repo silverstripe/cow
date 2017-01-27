@@ -23,9 +23,10 @@ class Create extends Release
         $version = $this->getInputVersion();
         $directory = $this->getInputDirectory($version);
         $security = $this->getInputSecurity();
+        $repo = $this->input->getOption('repository');
 
         // Steps
-        $step = new CreateProject($this, $version, $directory);
+        $step = new CreateProject($this, $version, $directory, $repo);
         $step->run($this->input, $this->output);
     }
 }

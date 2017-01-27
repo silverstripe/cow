@@ -9,6 +9,7 @@ use SilverStripe\Cow\Model\ReleaseVersion;
 use SilverStripe\Cow\Steps\Step;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Process\ProcessBuilder;
 
 /**
  * Generate a new archive file for cms, framework in tar.gz and zip formats
@@ -67,7 +68,7 @@ class BuildArchive extends Step
     public function run(InputInterface $input, OutputInterface $output)
     {
         $this->log($output, "Generating new archive files");
-        $path = $this->createProject($output);
+        $path = $this->createProject($input, $output);
         $this->buildFiles($output, $path);
         $this->log($output, 'Archive complete');
     }
@@ -157,7 +158,7 @@ class BuildArchive extends Step
      * @param OutputInterface $output
      * @return string Path to temporary project
      */
-    protected function createProject(OutputInterface $output)
+    protected function createProject(InputInterface $input, OutputInterface $output)
     {
         // Get files
         $version = $this->getVersion()->getValue();
@@ -178,12 +179,52 @@ class BuildArchive extends Step
         $version = $this->version->getValue();
         $this->log($output, "Installing version {$version}");
         $pathArg = escapeshellarg($path);
-        $this->runCommand(
-            $output,
-            "cd {$pathArg} && php composer.phar create-project silverstripe/installer "
-            . "./{$cmsArchive} {$version} --prefer-dist --no-dev",
-            "Could not install version {$version} from composer"
+        $command = array(
+            'php',
+            'composer.phar',
+            'create-project',
+            'silverstripe/installer',
+            $cmsArchive,
+            $version,
+            '--prefer-dist',
+            '--no-dev',
+            '--ignore-platform-reqs',
         );
+        if ($repo = $input->getOption('repository')) {
+            $command[] = sprintf('--repository=%s', $repo);
+            $command[] = '--no-install';
+        }
+        $process = ProcessBuilder::create($command)->setWorkingDirectory($path)->getProcess();
+        try {
+            $this->runCommand(
+                $output,
+                $process,
+                "Could not install version {$version} from composer"
+            );
+        } catch (Exception $e) {
+            if (!$repo) {
+                throw $e;
+            }
+        }
+
+        if ($repo) {
+            $composerJSON = file_get_contents("{$path}/{$cmsArchive}/composer.json");
+            $composerJSON = str_replace('"self.version"', sprintf('"%s"', $version), $composerJSON);
+            $this->unlink("{$path}/{$cmsArchive}/composer.json");
+            $this->write("{$path}/{$cmsArchive}/composer.json", $composerJSON);
+            $this->copy("{$path}/{$cmsArchive}/composer.json", "{$path}/{$cmsArchive}/composer.json.bu");
+            if (file_exists($repo)) {
+                $repo = 'file://' . $repo;
+            }
+            $this->runCommand(
+                $output,
+                array('composer', 'config', 'repositories.repo', 'composer', $repo, '-d', "{$path}/{$cmsArchive}")
+            );
+            $this->runCommand(
+                $output,
+                array('composer', 'update', '--ignore-platform-reqs', '--prefer-dist', '--no-dev', '-d', "{$path}/{$cmsArchive}")
+            );
+        }
 
         // Copy composer.phar to the project
         // Write version info to the core folders (shouldn't be in version control)
@@ -212,6 +253,11 @@ class BuildArchive extends Step
             $this->unlink("{$archivePath}/reports/tests/");
             $this->unlink("{$archivePath}/siteconfig/tests/");
             $this->unlink("{$archivePath}/framework/docs/");
+            if ($repo) {
+                $this->unlink("{$archivePath}/composer.json");
+                $this->copy("{$archivePath}/composer.json.bu", "{$archivePath}/composer.json");
+                $this->unlink("{$archivePath}/composer.json.bu");
+            }
         }
 
         // Remove Page.php from framework-only module

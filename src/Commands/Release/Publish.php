@@ -26,6 +26,7 @@ class Publish extends Release
         $this
             ->addArgument('version', InputArgument::REQUIRED, 'Exact version tag to release this project as')
             ->addOption('directory', 'd', InputOption::VALUE_REQUIRED, 'Optional directory to release project from')
+			->addOption('repository', 'r', InputOption::VALUE_REQUIRED, 'Use a custom repository for the composer project')
             ->addOption(
                 'aws-profile',
                 null,

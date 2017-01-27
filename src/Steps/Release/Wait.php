@@ -92,10 +92,11 @@ class Wait extends Step
      * @return array
      * @throws Exception
      */
-    protected function getAvailableVersions(OutputInterface $output)
+    protected function getAvailableVersions(InputInterface $input, OutputInterface $output)
     {
         $error = "Could not parse available versions from command \"composer show {$this->package}\"";
-        $output = $this->runCommand($output, array("composer", "show", $this->package, "--all"), $error);
+        $command = array("composer", "show", $this->package, "--all", '-d', $this->directory);
+        $output = $this->runCommand($output, $command, $error);
 
         // Parse output
         if ($output && preg_match('/^versions\s*:\s*(?<versions>(\S.+\S))\s*$/m', $output, $matches)) {
