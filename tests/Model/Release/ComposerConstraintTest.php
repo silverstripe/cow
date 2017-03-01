@@ -112,6 +112,14 @@ class ComposerConstraintTest extends PHPUnit_Framework_TestCase
         $constraint = new ComposerConstraint('4.*-dev');
         $this->assertEquals('4.0.0-alpha1', $constraint->getMinVersion()->getValue());
         $this->assertEquals('4.99999.99999', $constraint->getMaxVersion()->getValue());
+
+        $constraint = new ComposerConstraint('^4@dev');
+        $this->assertEquals('4.0.0-alpha1', $constraint->getMinVersion()->getValue());
+        $this->assertEquals('4.99999.99999', $constraint->getMaxVersion()->getValue());
+
+        $constraint = new ComposerConstraint('^4.1@dev');
+        $this->assertEquals('4.1.0-alpha1', $constraint->getMinVersion()->getValue());
+        $this->assertEquals('4.99999.99999', $constraint->getMaxVersion()->getValue());
     }
 
     public function testParseSelfVersion()
@@ -182,6 +190,12 @@ class ComposerConstraintTest extends PHPUnit_Framework_TestCase
             ['2.2.3', '3.x-dev', '2.2.x-dev'],
             ['3.1.3', '~3.2.0', '~3.1.0'],
             ['3.1.3', '^3.2.0', '^3.1'],
+
+            // @stability versions
+            ['3.2.3', '^3.1@dev', '^3.1@dev'],
+            ['3.1.3', '^3.2@dev', '^3.1@dev'],
+            ['3.1.3-beta1', '^3.2', '^3.1'],
+            ['3.1.3', '^2.2@dev', '^3.1@dev'],
         ];
     }
 
