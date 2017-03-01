@@ -138,12 +138,12 @@ class ComposerConstraint
             );
         }
 
-        // From version ignores modifier, includes alpha1 tag. :)
-        if (empty($parsed['stability'])) {
+        // Parse from stability
+        if (empty($parsed['minStability'])) {
             $fromStability = '';
         } else {
             $fromStabilityVersion = isset($parsed['stabilityVersion']) ? $parsed['stabilityVersion'] : '';
-            $fromStability = '-' . $parsed['stability'] . $fromStabilityVersion;
+            $fromStability = '-' . $parsed['minStability'] . $fromStabilityVersion;
         }
         $from = sprintf(
             "%d.%d.%d%s",
@@ -197,7 +197,8 @@ class ComposerConstraint
                 'major' => $matches['major'],
                 'minor' => $minor,
                 'patch' => $patch,
-                'stability' => 'alpha', // treat x-dev dependencies as matching min-alpha1 stability (lowest)
+                'stability' => '',
+                'minStability' => 'alpha',  // treat x-dev dependencies as matching min-alpha1 stability (lowest)
                 'stabilityVersion' => '1',
                 'dev' => $matches['dev']
             ];
@@ -206,7 +207,7 @@ class ComposerConstraint
         // Match semver constraint
         $valid = preg_match(
             '/^(?<type>[~^]?)(?<major>\d+)(\\.(?<minor>\d+)(\\.(?<patch>\\d+))?)?'
-            . '([-@](?<stability>rc|alpha|beta|stable)(?<stabilityVersion>\d+)?)?$/',
+            . '([-@](?<stability>rc|alpha|beta|stable|dev)(?<stabilityVersion>\d+)?)?$/',
             $version,
             $matches
         );
@@ -214,16 +215,21 @@ class ComposerConstraint
             return false;
         }
 
-        // Parse @stability min constraint
-        $stability = isset($matches['stability']) ? $matches['stability'] : 'alpha';
-        if ($stability === 'stable') {
-            $stability = '';
+        // map literal 'stabilty' to effective 'minStability'
+        $minStability = isset($matches['stability']) ? $matches['stability'] : 'alpha';
+        switch ($minStability) {
+            case 'stable':
+                $minStability = '';
+                break;
+            case 'dev':
+                $minStability = 'alpha';
+                break;
         }
-        $stabilityVersion = ($stability && isset($matches['stabilityVersion']))
+        $stabilityVersion = ($minStability && isset($matches['stabilityVersion']))
             ? $matches['stabilityVersion']
             : '1';
         return array_merge($matches, [
-            'stability' => $stability,
+            'minStability' => $minStability,
             'stabilityVersion' => $stabilityVersion,
         ]);
     }
@@ -274,7 +280,10 @@ class ComposerConstraint
     }
 
     /**
-     * Rewrite this constraint to support the given version
+     * Rewrite this constraint to support the given version.
+     * Useful when we have chosen a new release version that the underlying
+     * composer constraint doesn't support, so bump it up automatically.
+     * (Note: Normally only bumps up, not down, but supports both).
      *
      * @param Version $version
      * @return ComposerConstraint|null The new constraint, or null if this cannot be automatically done.
@@ -312,6 +321,10 @@ class ComposerConstraint
         } else {
             // e.g. ~4.0.1 -> ~4.1.0
             $value = $parts['type'] . $version->getMajor() . '.' . $version->getMinor() . '.0';
+        }
+        // Maintain stability
+        if (!empty($parts['stability'])) {
+            $value .= '@' . $parts['stability'];
         }
         return new ComposerConstraint($value);
     }
