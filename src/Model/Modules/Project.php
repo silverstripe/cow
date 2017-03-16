@@ -29,7 +29,8 @@ class Project extends Module
      */
     public static function isProjectPath($directory)
     {
-        return static::isLibraryPath($directory) && file_exists($directory . '/mysite');
+        // Note: Support modules without mysite
+        return static::isLibraryPath($directory);
     }
 
     /**
