@@ -107,6 +107,19 @@ class ChangelogItem
     }
 
     /**
+     * Get details this commit uses to distinguish itself from other duplicate commits.
+     * Used to prevent duplicates of the same commit being added from multiple merges, which
+     * typically only differ based on SHA.
+     *
+     * @return string
+     */
+    public function getDistinctDetails()
+    {
+        // Date, author, and message
+        return $this->getAuthor() . '-' . $this->getDate()->format('Y-m-d') . '-' . $this->getRawMessage();
+    }
+
+    /**
      * Get the raw commit
      *
      * @return Commit

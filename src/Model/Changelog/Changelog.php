@@ -81,9 +81,10 @@ class Changelog
             foreach ($log->getCommits() as $commit) {
                 $change = new ChangelogItem($changelogLibrary, $commit);
 
-                // Skip ignored items
-                if (!$change->isIgnored()) {
-                    $items[] = $change;
+                // Detect duplicates and skip ignored items
+                $key = $change->getDistinctDetails();
+                if (!$change->isIgnored() && !isset($items[$key])) {
+                    $items[$key] = $change;
                 }
             }
         } catch (ReferenceNotFoundException $ex) {
@@ -96,7 +97,7 @@ class Changelog
                     . "Skipping changelog for this module</error>"
             );
         }
-        return $items;
+        return array_values($items);
     }
 
     /**
