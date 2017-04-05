@@ -136,6 +136,11 @@ class RewriteReleaseBranches extends ReleaseStep
             return false;
         }
 
+        // Don't branch on version < 1.0 (even stable)
+        if ($version->getMajor() < 1) {
+            return false;
+        }
+
         // Branch if doing beta / rc / stable release
         if ($version->isStable() || in_array($version->getStability(), ['beta', 'rc'])) {
             return true;
