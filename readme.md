@@ -7,6 +7,7 @@ The ineptly named tool which may one day supercede the older [build tools](https
 You can install this globally with the following commands
 
 ```
+composer global config minimum-stability dev
 composer global require silverstripe/cow dev-master
 echo 'export PATH=$PATH:~/.composer/vendor/bin/'  >> ~/.bash_profile
 ```
