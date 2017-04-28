@@ -35,4 +35,18 @@ class StepCommandRunner implements CommandRunner
     {
         return $this->step->runCommand($this->output, $command, $error, $exceptionOnError);
     }
+
+    /*
+     * Log a message with an optional format wrapper
+     *
+     * @param string $message
+     * @param string $format
+     * @param int $verbosity Min verbosity
+     */
+    public function log($message, $format = '', $verbosity = OutputInterface::VERBOSITY_NORMAL)
+    {
+        if ($this->output->getVerbosity() >= $verbosity) {
+            $this->step->log($this->output, $message, $format);
+        }
+    }
 }

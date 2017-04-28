@@ -31,13 +31,7 @@ class Config
      */
     public static function saveToFile($path, $data)
     {
-        $content = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-
-        // Make sure errors are reported
-        if (json_last_error()) {
-            throw new Exception(json_last_error_msg());
-        }
-
+        $content = self::encodeContents($data);
         file_put_contents($path, $content);
     }
 
@@ -55,5 +49,23 @@ class Config
             throw new Exception(json_last_error_msg());
         }
         return $result;
+    }
+
+    /**
+     * JSON encode the given data
+     *
+     * @param array $data
+     * @return string
+     * @throws Exception
+     */
+    public static function encodeContents($data)
+    {
+        $content = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+        // Make sure errors are reported
+        if (json_last_error()) {
+            throw new Exception(json_last_error_msg());
+        }
+        return $content;
     }
 }

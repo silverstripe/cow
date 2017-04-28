@@ -2,6 +2,7 @@
 
 namespace SilverStripe\Cow\Utility;
 
+use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Process;
 
 /**
@@ -21,4 +22,13 @@ interface CommandRunner
      * @throw Exception
      */
     public function runCommand($command, $error = null, $exceptionOnError = true);
+
+    /*
+     * Log a message with an optional format wrapper
+     *
+     * @param string $message
+     * @param string $format
+     * @param int $verbosity Min verbosity
+     */
+    public function log($message, $format = '', $verbosity = OutputInterface::VERBOSITY_NORMAL);
 }

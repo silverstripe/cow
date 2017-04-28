@@ -34,7 +34,7 @@ class Module extends Library
         $dirs = [];
         foreach ($sources as $source) {
             // Strip out /src/ dir and trailing file.js
-            if (preg_match('#^(?<dir>.+)\\/src\\/(?<file>[^\\/]+)\\.js$#', $source, $matches)) {
+            if (preg_match('#^(?<dir>.+)\\/src\\/(?<file>[^\\/]+)\\.js(on)?$#', $source, $matches)) {
                 $dirs[] = $this->getDirectory() . '/' . $matches['dir'];
             }
         }
