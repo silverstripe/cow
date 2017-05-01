@@ -205,13 +205,26 @@ class UpdateTranslations extends ReleaseStep
                 $output,
                 "Pulling sources from transifex for <info>{$name}</info> (min %{$this->txMinimumPerc} delta)"
             );
+
             // Set mtime to a year ago so that transifex will see these as obsolete
-            $touchCommand = sprintf(
-                'find %s -type f \( -name "*.yml" \) -exec touch -t %s {} \;',
-                $module->getLangDirectory(),
-                date('YmdHi.s', strtotime('-1 year'))
-            );
-            $this->runCommand($output, $touchCommand);
+            $ymlLang = $module->getLangDirectory();
+            if ($ymlLang) {
+                $touchCommand = sprintf(
+                    'find %s -type f \( -name "*.yml" \) -exec touch -t %s {} \;',
+                    $ymlLang,
+                    date('YmdHi.s', strtotime('-1 year'))
+                );
+                $this->runCommand($output, $touchCommand);
+            }
+            $jsLangDirs = $module->getJSLangDirectories();
+            foreach ($jsLangDirs as $jsLangDir) {
+                $touchCommand = sprintf(
+                    'find %s -type f \( -name "*.js*" \) -exec touch -t %s {} \;',
+                    $jsLangDir,
+                    date('YmdHi.s', strtotime('-1 year'))
+                );
+                $this->runCommand($output, $touchCommand);
+            }
 
             // Run tx pull
             $pullCommand = sprintf(
