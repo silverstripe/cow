@@ -29,6 +29,13 @@ abstract class Step
 
     abstract public function run(InputInterface $input, OutputInterface $output);
 
+    /*
+     * Log a message with an optional format wrapper
+     *
+     * @param OutputInterface $output
+     * @param string $message
+     * @param string $format
+     */
     public function log(OutputInterface $output, $message, $format = '')
     {
         $name = $this->getStepName();

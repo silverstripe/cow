@@ -37,6 +37,9 @@ class Application extends Console\Application
         $commands[] = new Commands\Release\Release();
         $commands[] = new Commands\Release\Publish();
 
+        // Module commands
+        $commands[] = new Commands\Module\TranslateBuild();
+
         return $commands;
     }
 }
