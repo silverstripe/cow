@@ -24,7 +24,7 @@
     "symfony/yaml": "^2.8",
     "gitonomy/gitlib": "~1.0",
     "psr/log": "^1",
-    "knplabs/github-api": "^2.0",
+    "knplabs/github-api": "^2.1",
     "php-http/guzzle6-adapter": "^1.2@dev"
   },
   "require-dev": {
