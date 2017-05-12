@@ -285,11 +285,10 @@ class PublishRelease extends ReleaseStep
 
         // Create authenticated github client
         $token = $this->getOAUTHToken($output);
-        $client = new GithubClient();
         $httpClient = GuzzleClient::createWithConfig([
             'http_errors' => false // http errors are not runtime errors
         ]);
-        $client->setHttpClient($httpClient);
+        $client = GithubClient::createWithHttpClient($httpClient);
         $client->authenticate($token, null, GithubClient::AUTH_HTTP_TOKEN);
 
         // Cache
