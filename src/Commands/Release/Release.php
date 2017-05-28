@@ -36,6 +36,7 @@ class Release extends Command
             ->addOption('branch', 'b', InputOption::VALUE_REQUIRED, 'Branch each module to this')
             ->addOption('branch-auto', 'a', InputOption::VALUE_NONE, 'Automatically branch to major.minor.patch')
             ->addOption('skip-tests', null, InputOption::VALUE_NONE, 'Skip the tests suite run when performing the release')
+            ->addOption('skip-i18n', null, InputOption::VALUE_NONE, 'Skip the text collection task when performing the release')
             ->addOption('repository', 'r', InputOption::VALUE_REQUIRED, 'Use a custom repository for the composer project');
     }
 
@@ -60,8 +61,10 @@ class Release extends Command
         $branch->run($this->input, $this->output);
 
         // Update all translations
-        $translate = new UpdateTranslations($this, $directory, $modules);
-        $translate->run($this->input, $this->output);
+        if (!$this->input->getOption('skip-i18n')) {
+            $translate = new UpdateTranslations($this, $directory, $modules);
+            $translate->run($this->input, $this->output);
+        }
 
         if (!$this->input->getOption('skip-tests')) {
             // Run tests
