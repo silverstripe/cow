@@ -185,9 +185,13 @@ class CreateChangelog extends ReleaseStep
             // If "to" is stable, then filter out unstable "from"
             // E.g. prefer "3.4.0..3.4.1" over "3.4.0-rc1..3.4.1"
             if ($childNewRelease->getVersion()->isStable()) {
-                $childVersions = Version::filter($childVersions, function (Version $nextTag) {
+                $stableChildVersions = Version::filter($childVersions, function (Version $nextTag) {
                     return $nextTag->isStable();
                 });
+                // Use stable versions if available, or fall back to unstable
+                if (!empty($stableChildVersions)) {
+                    $childVersions = $stableChildVersions;
+                }
             }
 
             // Get smallest matching version
