@@ -196,7 +196,16 @@ class BuildArchive extends Step
         $this->log($output, "Create framework-only project");
         $this->copy("{$path}/{$cmsArchive}/", "{$path}/{$frameworkArchive}/");
         $pathArg = escapeshellarg("{$path}/{$frameworkArchive}");
-        $remove = ['silverstripe/cms', 'silverstripe/siteconfig', 'silverstripe/reports', 'silverstripe/asset-admin', 'silverstripe/graphql'];
+        $remove = [
+            'silverstripe/cms',
+            'silverstripe/siteconfig',
+            'silverstripe/reports',
+            'silverstripe/asset-admin',
+            'silverstripe/campaign-admin',
+            'silverstripe/admin',
+            'silverstripe/graphql',
+            'silverstripe/errorpage'
+        ];
         $this->runCommand(
             $output,
             "cd {$pathArg} && php composer.phar remove " . implode(' ', $remove) . " --update-no-dev",
