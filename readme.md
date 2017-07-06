@@ -7,7 +7,7 @@ The ineptly named tool which may one day supercede the older [build tools](https
 You can install this globally with the following commands
 
 ```
-composer global require silverstripe/cow dev-master
+composer global require silverstripe/cow:dev-master  php-http/guzzle6-adapter:1.2.x-dev
 echo 'export PATH=$PATH:~/.composer/vendor/bin/'  >> ~/.bash_profile
 ```
 
