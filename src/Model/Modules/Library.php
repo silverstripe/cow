@@ -538,16 +538,30 @@ class Library
     }
 
     /**
+     * Get list of archives to create for this release
+     *
+     * @return array
+     */
+    public function getArchives()
+    {
+        $data = $this->getCowData();
+        if (isset($data['archives'])) {
+            return $data['archives'];
+        }
+        return [];
+    }
+
+    /**
      * Gets cow config
      *
      * @array
      */
     public function getCowData()
     {
-        // @todo - Validate against schema
         // http://json-schema.org/examples.html
         $path = $this->getDirectory() . '/.cow.json';
-        return Config::loadFromFile($path);
+        $schemaPath = dirname(dirname(dirname(__DIR__))).'/cow.schema.json';
+        return Config::loadFromFile($path, $schemaPath);
     }
 
     /**

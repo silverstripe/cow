@@ -52,6 +52,22 @@ Basic options are:
     "vendor/bin/phpunit framework/admin/tests",
     "vendor/bin/phpunit framework/tests",
     "vendor/bin/phpunit cms/tests"
+  ],
+  "archives": [
+    {
+      "recipe": "silverstripe/recipe-core",
+      "files": [
+        "SilverStripe-framework-v{version}.zip",
+        "SilverStripe-framework-v{version}.tar.gz",
+      ]
+    },
+    {
+      "recipe": "silverstripe/installer",
+      "files": [
+        "SilverStripe-cms-v{version}.zip",
+        "SilverStripe-cms-v{version}.tar.gz",
+      ]
+    }
   ]
 }
 ```
