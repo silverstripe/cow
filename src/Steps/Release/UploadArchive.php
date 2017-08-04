@@ -14,7 +14,7 @@ use Symfony\Component\Console\Output\OutputInterface;
  *
  * @author dmooyman
  */
-class UploadArchive extends PublishStep
+class UploadArchive extends ReleaseStep
 {
 
     /**
@@ -39,8 +39,12 @@ class UploadArchive extends PublishStep
      * @param LibraryRelease $releasePlan
      * @param string $awsProfile
      */
-    public function __construct(Command $command, Project $project, LibraryRelease $releasePlan = null, $awsProfile = null)
-    {
+    public function __construct(
+        Command $command,
+        Project $project,
+        LibraryRelease $releasePlan = null,
+        $awsProfile = null
+    ) {
         parent::__construct($command, $project, $releasePlan);
         $this->setAwsProfile($awsProfile);
     }

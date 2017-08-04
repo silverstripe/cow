@@ -7,7 +7,7 @@ use SilverStripe\Cow\Model\Release\LibraryRelease;
 use SilverStripe\Cow\Steps\Release\BuildArchive;
 use SilverStripe\Cow\Steps\Release\PublishRelease;
 use SilverStripe\Cow\Steps\Release\UploadArchive;
-use SilverStripe\Cow\Steps\Release\Wait;
+use SilverStripe\Cow\Steps\Release\WaitStep;
 use Symfony\Component\Console\Input\InputOption;
 
 /**
@@ -43,7 +43,7 @@ class Publish extends Release
         $publish->run($this->input, $this->output);
 
         // Once pushed, wait until installable
-        $wait = new Wait($this, $project, $releasePlan);
+        $wait = new WaitStep($this, $project, $releasePlan);
         $wait->run($this->input, $this->output);
 
         // Create packages

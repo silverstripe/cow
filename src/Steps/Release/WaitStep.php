@@ -12,7 +12,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * Creates a new project
  */
-class Wait extends PublishStep
+class WaitStep extends ReleaseStep
 {
     protected $stability = 'dev';
 

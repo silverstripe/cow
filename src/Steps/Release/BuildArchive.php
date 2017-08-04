@@ -12,7 +12,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * Generate a new archive file for cms, framework in tar.gz and zip formats
  */
-class BuildArchive extends PublishStep
+class BuildArchive extends ReleaseStep
 {
     public function getStepName()
     {

@@ -3,7 +3,7 @@
 namespace SilverStripe\Cow\Commands\Release;
 
 use SilverStripe\Cow\Steps\Release\BuildArchive;
-use SilverStripe\Cow\Steps\Release\Wait;
+use SilverStripe\Cow\Steps\Release\WaitStep;
 
 /**
  * Create local archives for this release to upload later to s3
@@ -24,7 +24,7 @@ class Archive extends Publish
         $releasePlan = $this->getReleasePlan();
 
         // Ensure we wait, even if just building archive
-        $wait = new Wait($this, $project, $releasePlan);
+        $wait = new WaitStep($this, $project, $releasePlan);
         $wait->run($this->input, $this->output);
 
         // Create packages

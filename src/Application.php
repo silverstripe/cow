@@ -55,11 +55,9 @@ class Application extends Console\Application
         $commands[] = new Commands\Release\Translate();
         $commands[] = new Commands\Release\Test();
         $commands[] = new Commands\Release\ChangeLog();
-        $commands[] = new Commands\Release\Tag();
-        $commands[] = new Commands\Release\Archive();
-        $commands[] = new Commands\Release\Upload();
 
         // Publish sub-commands
+        $commands[] = new Commands\Release\Tag();
         $commands[] = new Commands\Release\Wait();
         $commands[] = new Commands\Release\Archive();
         $commands[] = new Commands\Release\Upload();
