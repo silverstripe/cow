@@ -5,12 +5,11 @@ namespace SilverStripe\Cow\Commands\Release;
 use Exception;
 use SilverStripe\Cow\Model\Release\LibraryRelease;
 use SilverStripe\Cow\Steps\Release\PublishRelease;
+use SilverStripe\Cow\Steps\Release\Wait;
 use Symfony\Component\Console\Input\InputOption;
 
 /**
- * Description of Create
- *
- * @author dmooyman
+ * Top level publish command
  */
 class Publish extends Release
 {
@@ -40,13 +39,11 @@ class Publish extends Release
         $publish = new PublishRelease($this, $project, $releasePlan);
         $publish->run($this->input, $this->output);
 
-        // @todo - Implement archive / upload steps
-
-        /*
         // Once pushed, wait until installable
-        $wait = new Wait($this, $version);
+        $wait = new Wait($this, $project, $releasePlan);
         $wait->run($this->input, $this->output);
 
+        /*
         // Create packages
         $package = new BuildArchive($this, $version, $directory);
         $package->run($this->input, $this->output);

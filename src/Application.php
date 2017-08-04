@@ -3,13 +3,39 @@
 namespace SilverStripe\Cow;
 
 use SilverStripe\Cow\Commands;
+use SilverStripe\Cow\Utility\Config;
 use Symfony\Component\Console;
 
 class Application extends Console\Application
 {
+    /**
+     * Get version of this module
+     *
+     * @param string $directory
+     * @return string
+     */
+    protected function getVersionInDir($directory)
+    {
+        if (!$directory) {
+            return null;
+        }
+        $installed = $directory . '/vendor/composer/installed.json';
+        if (file_exists($installed)) {
+            $content = Config::loadFromFile($installed);
+            foreach ($content as $library) {
+                if ($library['name'] == 'silverstripe/cow') {
+                    return $library['version'];
+                }
+            }
+        }
+        return $this->getVersionInDir(dirname($directory));
+    }
+
+
     public function getLongVersion()
     {
-        return '<info>cow release tool</info>';
+        $version = $this->getVersionInDir(__DIR__);
+        return "<comment>cow release tool</comment> <info>{$version}</info>";
     }
 
     /**
@@ -36,6 +62,7 @@ class Application extends Console\Application
         // Base release commands
         $commands[] = new Commands\Release\Release();
         $commands[] = new Commands\Release\Publish();
+        $commands[] = new Commands\Release\Wait();
 
         // Module commands
         $commands[] = new Commands\Module\TranslateBuild();
