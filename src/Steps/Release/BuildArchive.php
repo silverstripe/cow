@@ -22,19 +22,19 @@ class BuildArchive extends PublishStep
     public function run(InputInterface $input, OutputInterface $output)
     {
         // Get recipes and their versions to wait for
-        $recipes = $this->getArchives($output);
-        if (empty($recipes)) {
+        $archives = $this->getArchives($output);
+        if (empty($archives)) {
             $this->log($output, "No recipes configured for archive");
             return;
         };
 
         // Genreate all archives
-        $count = count($recipes);
+        $count = count($archives);
         $this->log($output, "Generating archives for {$count} recipes");
-        foreach ($recipes as $recipe) {
+        foreach ($archives as $archive) {
             // Create project
-            $path = $this->createProject($output, $recipe);
-            foreach ($recipe->getFiles() as $file) {
+            $path = $this->createArchiveFiles($output, $archive);
+            foreach ($archive->getFiles() as $file) {
                 // Create file for this project
                 $this->buildFiles($output, $path, $file);
             }
@@ -129,7 +129,7 @@ class BuildArchive extends PublishStep
      * @return string Path to temporary project
      * @throws Exception
      */
-    protected function createProject(OutputInterface $output, Archive $archive)
+    protected function createArchiveFiles(OutputInterface $output, Archive $archive)
     {
         $name = $archive->getRelease()->getLibrary()->getName();
         $version = $archive->getRelease()->getVersion()->getValue();

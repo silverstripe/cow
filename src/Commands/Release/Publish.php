@@ -6,6 +6,7 @@ use Exception;
 use SilverStripe\Cow\Model\Release\LibraryRelease;
 use SilverStripe\Cow\Steps\Release\BuildArchive;
 use SilverStripe\Cow\Steps\Release\PublishRelease;
+use SilverStripe\Cow\Steps\Release\UploadArchive;
 use SilverStripe\Cow\Steps\Release\Wait;
 use Symfony\Component\Console\Input\InputOption;
 
@@ -35,6 +36,7 @@ class Publish extends Release
         // Get arguments
         $project = $this->getProject();
         $releasePlan = $this->getReleasePlan();
+        $awsProfile = $this->getInputAWSProfile();
 
         // Does bulk of module publishing, rewrite of dev branches, rewrite of tags, and actual tagging
         $publish = new PublishRelease($this, $project, $releasePlan);
@@ -48,11 +50,9 @@ class Publish extends Release
         $package = new BuildArchive($this, $project, $releasePlan);
         $package->run($this->input, $this->output);
 
-        /*
         // Upload
-        $upload = new UploadArchive($this, $version, $directory, $awsProfile);
+        $upload = new UploadArchive($this, $project, $releasePlan, $awsProfile);
         $upload->run($this->input, $this->output);
-        */
     }
 
     /**

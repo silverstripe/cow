@@ -20,18 +20,13 @@ class Upload extends Publish
 
     protected function fire()
     {
-        throw new \Exception("Not implemented");
-
-        // @todo - Implement archive / upload steps
-
-        /*
         // Get arguments
-        $version = $this->getInputVersion();
-        $directory = $this->getInputDirectory($version);
+        $project = $this->getProject();
+        $releasePlan = $this->getReleasePlan();
         $awsProfile = $this->getInputAWSProfile();
 
         // Steps
-        $step = new UploadArchive($this, $version, $directory, $awsProfile);
-        $step->run($this->input, $this->output);*/
+        $upload = new UploadArchive($this, $project, $releasePlan, $awsProfile);
+        $upload->run($this->input, $this->output);
     }
 }

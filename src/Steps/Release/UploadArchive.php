@@ -2,10 +2,10 @@
 
 namespace SilverStripe\Cow\Steps\Release;
 
+use BadMethodCallException;
 use SilverStripe\Cow\Commands\Command;
 use SilverStripe\Cow\Model\Modules\Project;
-use SilverStripe\Cow\Model\Release\Version;
-use SilverStripe\Cow\Steps\Step;
+use SilverStripe\Cow\Model\Release\LibraryRelease;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -14,8 +14,9 @@ use Symfony\Component\Console\Output\OutputInterface;
  *
  * @author dmooyman
  */
-class UploadArchive extends Step
+class UploadArchive extends PublishStep
 {
+
     /**
      * Path to upload to
      *
@@ -31,50 +32,17 @@ class UploadArchive extends Step
     protected $awsProfile;
 
     /**
-     * @var \SilverStripe\Cow\Model\Versions\Version
-     */
-    protected $version;
-
-    /**
-     * @var Project
-     */
-    protected $project;
-
-    /**
-     * Upload archives
+     * Construct new upload command
      *
      * @param Command $command
-     * @param Version $version
-     * @param string $directory Where to translate
-     * @param string $awsProfile Name of aws profile to use
+     * @param Project $project
+     * @param LibraryRelease $releasePlan
+     * @param string $awsProfile
      */
-    public function __construct(
-        Command $command,
-        Version $version,
-        $directory = '.',
-        $awsProfile = 'silverstripe'
-    ) {
-        parent::__construct($command);
-
-        $this->version = $version;
-        $this->awsProfile = $awsProfile;
-        $this->project = new Project($directory);
-    }
-
-    /**
-     * @return Project
-     */
-    public function getProject()
+    public function __construct(Command $command, Project $project, LibraryRelease $releasePlan = null, $awsProfile = null)
     {
-        return $this->project;
-    }
-
-    /**
-     * @return \SilverStripe\Cow\Model\Versions\\SilverStripe\Cow\Model\Version
-     */
-    public function getVersion()
-    {
-        return $this->version;
+        parent::__construct($command, $project, $releasePlan);
+        $this->setAwsProfile($awsProfile);
     }
 
     public function getStepName()
@@ -84,21 +52,56 @@ class UploadArchive extends Step
 
     public function run(InputInterface $input, OutputInterface $output)
     {
-        $this->log($output, "Uploading releases to ss.org");
-        foreach ($this->getVersion()->getReleaseFilenames() as $filename) {
-            // Build paths
-            $this->log($output, "Uploading <info>{$filename}</info>");
-            $from = $this->getProject()->getDirectory() . '/' . $filename;
-            $to = $this->basePath . '/' . $filename;
-            $awsProfile = $this->awsProfile;
+        // Get recipes and their versions to wait for
+        $archives = $this->getArchives($output);
+        if (empty($archives)) {
+            $this->log($output, "No recipes configured for archive");
+            return;
+        };
 
-            // Run this
-            $this->runCommand(
-                $output,
-                array("aws", "s3", "cp", $from, $to, "--acl", "public-read", "--profile", $awsProfile),
-                "Error copying release {$filename} to s3"
-            );
+        // Genreate all archives
+        $count = count($archives);
+        $this->log($output, "Uploading releases for {$count} recipes to AWS s3 bucket");
+
+        foreach ($archives as $archive) {
+            foreach ($archive->getFiles() as $file) {
+                $this->log($output, "Uploading <info>{$file}</info>");
+                $from = $this->getProject()->getDirectory() . '/' . $file;
+                if (!file_exists($from)) {
+                    throw new BadMethodCallException("Please run cow release:archive before uploading");
+                }
+
+                // Cop file
+                $to = $this->basePath . '/' . $file;
+                $awsProfile = $this->getAwsProfile();
+
+                // Run this
+                $arguments = ["aws", "s3", "cp", $from, $to, "--acl", "public-read"];
+                if ($awsProfile) {
+                    $arguments[] = "--profile";
+                    $arguments[] = $awsProfile;
+                }
+                $this->runCommand($output, $arguments, "Error copying release {$file} to s3");
+            }
         }
         $this->log($output, 'Upload complete');
+    }
+
+    /**
+     * @return string
+     */
+    public function getAwsProfile()
+    {
+        return $this->awsProfile;
+    }
+
+    /**
+     * @param string $awsProfile
+     * @return $this
+     */
+    public function setAwsProfile($awsProfile)
+    {
+        $this->awsProfile = $awsProfile;
+        return $this;
     }
 }
