@@ -1014,18 +1014,10 @@ class Library
         if (empty($cowData['changelog-path'])) {
             return null;
         }
+        $pattern = $cowData['changelog-path'];
 
-        $path = Format::formatString($cowData['changelog-path'], [
-            'stability' => $version->getStability(),
-            'stabilityVersion' => $version->getStabilityVersion(),
-            'major' => $version->getMajor(),
-            'minor' => $version->getMinor(),
-            'patch' => $version->getPatch(),
-            'version' => $version->getValue(),
-            'versionStable' => $version->getValueStable(),
-        ]);
-        // Collapse duplicate //
-        return str_replace('//', '/', $path);
+        // Substitue version parameters
+        return $version->injectPattern($pattern);
     }
 
     /**

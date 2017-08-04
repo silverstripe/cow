@@ -3,72 +3,42 @@
 namespace SilverStripe\Cow\Steps\Release;
 
 use Exception;
-use SilverStripe\Cow\Commands\Command;
-use SilverStripe\Cow\Model\Modules\Project;
-use SilverStripe\Cow\Model\Release\Version;
-use SilverStripe\Cow\Steps\Step;
+use InvalidArgumentException;
+use SilverStripe\Cow\Model\Release\Archive;
+use SilverStripe\Cow\Utility\Composer;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * Generate a new archive file for cms, framework in tar.gz and zip formats
- *
- * @author dmooyman
  */
-class BuildArchive extends Step
+class BuildArchive extends PublishStep
 {
-    /**
-     * @var \SilverStripe\Cow\Model\Versions\\SilverStripe\Cow\Model\Release\Version
-     */
-    protected $version;
-
-    /**
-     * @var \SilverStripe\Cow\Model\Modules\Project
-     */
-    protected $project;
-
-    /**
-     * Build archives
-     *
-     * @param Command $command
-     * @param \SilverStripe\Cow\Model\Versions\\SilverStripe\Cow\Model\\SilverStripe\Cow\Model\Release\Version $version
-     * @param string $directory Where to translate
-     * @param string $awsProfile Name of aws profile to use
-     */
-    public function __construct(Command $command, Version $version, $directory = '.')
-    {
-        parent::__construct($command);
-
-        $this->version = $version;
-        $this->project = new Project($directory);
-    }
-
-    /**
-     * @return Project
-     */
-    public function getProject()
-    {
-        return $this->project;
-    }
-
-    /**
-     * @return \SilverStripe\Cow\Model\Release\Version
-     */
-    public function getVersion()
-    {
-        return $this->version;
-    }
-
     public function getStepName()
     {
-        return 'archive';
+        return 'release:archive';
     }
 
     public function run(InputInterface $input, OutputInterface $output)
     {
-        $this->log($output, "Generating new archive files");
-        $path = $this->createProject($output);
-        $this->buildFiles($output, $path);
+        // Get recipes and their versions to wait for
+        $recipes = $this->getArchives($output);
+        if (empty($recipes)) {
+            $this->log($output, "No recipes configured for archive");
+            return;
+        };
+
+        // Genreate all archives
+        $count = count($recipes);
+        $this->log($output, "Generating archives for {$count} recipes");
+        foreach ($recipes as $recipe) {
+            // Create project
+            $path = $this->createProject($output, $recipe);
+            foreach ($recipe->getFiles() as $file) {
+                // Create file for this project
+                $this->buildFiles($output, $path, $file);
+            }
+        }
         $this->log($output, 'Archive complete');
     }
 
@@ -155,67 +125,31 @@ class BuildArchive extends Step
      * Build a project of the given version in a temporary folder, and return the path to this
      *
      * @param OutputInterface $output
+     * @param Archive $archive
      * @return string Path to temporary project
+     * @throws Exception
      */
-    protected function createProject(OutputInterface $output)
+    protected function createProject(OutputInterface $output, Archive $archive)
     {
-        // Get files
-        $version = $this->getVersion()->getValue();
-        $cmsArchive = "SilverStripe-cms-v{$version}";
-        $frameworkArchive = "SilverStripe-framework-v{$version}";
+        $name = $archive->getRelease()->getLibrary()->getName();
+        $version = $archive->getRelease()->getVersion()->getValue();
+        $path = $archive->getTempDir();
+        $this->log($output, "Generating archives for <info>{$name}</info> at <comment>{$path}</comment>");
 
-        // Check path exists and is empty
-        $path = sys_get_temp_dir() . '/archiveTask';
-        $this->log($output, "Creating temporary project at {$path}");
+        // Ensure path is empty, but exists
         $this->unlink($path);
-        mkdir($path);
-
-        // Copy composer.phar
-        $this->log($output, "Getting composer.phar");
-        $this->copy('http://getcomposer.org/composer.phar', "{$path}/composer.phar");
+        if (!mkdir($path, 0777, true)) {
+            throw new Exception("Could not create temp dir in $path");
+        }
 
         // Install to this location
-        $version = $this->version->getValue();
         $this->log($output, "Installing version {$version}");
-        $pathArg = escapeshellarg($path);
-        $this->runCommand(
-            $output,
-            "cd {$pathArg} && php composer.phar create-project silverstripe/installer "
-            . "./{$cmsArchive} {$version} --prefer-dist --no-dev",
-            "Could not install version {$version} from composer"
-        );
+        Composer::createProject($this->getCommandRunner($output), $name, $path, $version, null, true);
 
         // Copy composer.phar to the project
         // Write version info to the core folders (shouldn't be in version control)
-        $this->log($output, "Copying additional files");
-        $this->copy("{$path}/composer.phar", "{$path}/{$cmsArchive}/composer.phar");
-        $this->write("{$path}/{$cmsArchive}/framework/silverstripe_version", $version);
-        $this->write("{$path}/{$cmsArchive}/cms/silverstripe_version", $version);
-
-        // Copy to framework folder
-        $this->log($output, "Create framework-only project");
-        $this->copy("{$path}/{$cmsArchive}/", "{$path}/{$frameworkArchive}/");
-        $pathArg = escapeshellarg("{$path}/{$frameworkArchive}");
-        $remove = ['silverstripe/cms', 'silverstripe/siteconfig', 'silverstripe/reports'];
-        $this->runCommand(
-            $output,
-            "cd {$pathArg} && php composer.phar remove " . implode(' ', $remove) . " --update-no-dev",
-            "Could not generate framework only version"
-        );
-
-        // Remove development files not needed in the archive package
-        $this->log($output, "Remove development files");
-        foreach (array("{$path}/{$cmsArchive}", "{$path}/{$frameworkArchive}") as $archivePath) {
-            $this->unlink("{$archivePath}/cms/tests/");
-            $this->unlink("{$archivePath}/framework/tests/");
-            $this->unlink("{$archivePath}/framework/admin/tests/");
-            $this->unlink("{$archivePath}/reports/tests/");
-            $this->unlink("{$archivePath}/siteconfig/tests/");
-            $this->unlink("{$archivePath}/framework/docs/");
-        }
-
-        // Remove Page.php from framework-only module
-        $this->unlink("{$path}/{$frameworkArchive}/mysite/code/Page.php");
+        $this->log($output, "Including composer.phar");
+        $this->copy('http://getcomposer.org/composer.phar', "{$path}/composer.phar");
 
         // Done
         return $path;
@@ -226,29 +160,34 @@ class BuildArchive extends Step
      *
      * @param OutputInterface $output
      * @param string $path Location of project to archive
+     * @param string $file File to generate
      */
-    protected function buildFiles(OutputInterface $output, $path)
+    protected function buildFiles(OutputInterface $output, $path, $file)
     {
-        $version = $this->getVersion()->getValue();
-        $cmsArchive = "SilverStripe-cms-v{$version}";
-        $frameworkArchive = "SilverStripe-framework-v{$version}";
-        $destination = $this->getProject()->getDirectory();
+        $destination = $this->getProject()->getDirectory() . '/' . $file;
+        $this->log($output, "Building <info>$destination</info>");
 
-        // Build each version
-        foreach (array($cmsArchive, $frameworkArchive) as $archive) {
-            $sourceDirArg = escapeshellarg("{$path}/{$archive}/");
+        // Build file command
+        $sourgArg = escapeshellarg($path);
+        $command = $this->getArchiveCommand($file);
+        $destinationArg = escapeshellarg($destination);
+        $this->runCommand($output, "cd {$sourgArg} && {$command} {$destinationArg} .");
+    }
 
-            // Build tar files
-            $tarFile = "{$destination}/{$archive}.tar.gz";
-            $this->log($output, "Building <info>$tarFile</info>");
-            $tarFileArg = escapeshellarg($tarFile);
-            $this->runCommand($output, "cd {$sourceDirArg} && tar -cvzf {$tarFileArg} .");
-
-            // Build zip files
-            $zipFile = "{$destination}/{$archive}.zip";
-            $this->log($output, "Building <info>{$zipFile}</info>");
-            $zipFileArg = escapeshellarg($zipFile);
-            $this->runCommand($output, "cd {$sourceDirArg} && zip -rv {$zipFileArg} .");
+    /**
+     * Get archive command
+     *
+     * @param string $file
+     * @return string
+     */
+    protected function getArchiveCommand($file)
+    {
+        if (preg_match('/[.]zip$/', $file)) {
+            return 'zip -rv';
         }
+        if (preg_match('/[.]tar[.]gz$/', $file)) {
+            return 'tar -cvzf';
+        }
+        throw new InvalidArgumentException("Cannot build archive for file {$file}");
     }
 }

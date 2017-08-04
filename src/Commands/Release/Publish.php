@@ -4,6 +4,7 @@ namespace SilverStripe\Cow\Commands\Release;
 
 use Exception;
 use SilverStripe\Cow\Model\Release\LibraryRelease;
+use SilverStripe\Cow\Steps\Release\BuildArchive;
 use SilverStripe\Cow\Steps\Release\PublishRelease;
 use SilverStripe\Cow\Steps\Release\Wait;
 use Symfony\Component\Console\Input\InputOption;
@@ -43,11 +44,11 @@ class Publish extends Release
         $wait = new Wait($this, $project, $releasePlan);
         $wait->run($this->input, $this->output);
 
-        /*
         // Create packages
-        $package = new BuildArchive($this, $version, $directory);
+        $package = new BuildArchive($this, $project, $releasePlan);
         $package->run($this->input, $this->output);
 
+        /*
         // Upload
         $upload = new UploadArchive($this, $version, $directory, $awsProfile);
         $upload->run($this->input, $this->output);

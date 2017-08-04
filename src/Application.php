@@ -63,6 +63,7 @@ class Application extends Console\Application
         $commands[] = new Commands\Release\Release();
         $commands[] = new Commands\Release\Publish();
         $commands[] = new Commands\Release\Wait();
+        $commands[] = new Commands\Release\Archive();
 
         // Module commands
         $commands[] = new Commands\Module\TranslateBuild();

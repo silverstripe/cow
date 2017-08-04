@@ -3,6 +3,7 @@
 namespace SilverStripe\Cow\Steps\Release;
 
 use Exception;
+use SilverStripe\Cow\Model\Release\Archive;
 use SilverStripe\Cow\Utility\Composer;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputInterface;
@@ -11,7 +12,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * Creates a new project
  */
-class Wait extends ReleaseStep
+class Wait extends PublishStep
 {
     protected $stability = 'dev';
 
@@ -39,24 +40,11 @@ class Wait extends ReleaseStep
     public function run(InputInterface $input, OutputInterface $output)
     {
         // Get recipes and their versions to wait for
-        $recipes = [];
-        foreach ($this->getProject()->getArchives() as $archive) {
-            // Get version from release plan
-            $version = $this->getReleasePlan()->getItem($archive['recipe']);
-            if ($version) {
-                $recipes[$archive['recipe']] = $version->getVersion()->getValue();
-            } else {
-                $this->log(
-                    $output,
-                    "<error>Warning: Archive recipe {$archive['recipe']} is not a part of this release</error>"
-                );
-            }
-        }
+        $recipes = $this->getArchives($output);
         if (empty($recipes)) {
             $this->log($output, "No recipes configured for archive");
             return;
-        }
-
+        };
         $count = count($recipes);
         $this->log($output, "Waiting for {$count} recipes to be available via packagist");
         $this->waitLoop($output, $recipes);
@@ -65,23 +53,28 @@ class Wait extends ReleaseStep
 
     /**
      * @param OutputInterface $output
-     * @param array $recipes List of packages to wait for
+     * @param Archive[] $archives List of packages to wait for
      * @throws Exception
      */
-    protected function waitLoop(OutputInterface $output, array $recipes)
+    protected function waitLoop(OutputInterface $output, array $archives)
     {
         $start = time();
         while (true) {
             // Check all remaining recipes
-            foreach ($recipes as $recipe => $version) {
-                $versions = Composer::getLibraryVersions($this->getCommandRunner($output), $recipe);
+            foreach ($archives as $name => $archive) {
+                $version = $archive->getRelease()->getVersion()->getValue();
+                $this->log(
+                    $output,
+                    "Waiting for recipe <info>$name</info> (<comment>$version</comment>) to be available"
+                );
+                $versions = Composer::getLibraryVersions($this->getCommandRunner($output), $name);
                 if (in_array($version, $versions)) {
-                    unset($recipes[$recipe]);
+                    unset($archives[$name]);
                 }
             }
 
             // Check if we have any recipes still to wait for
-            $count = count($recipes);
+            $count = count($archives);
             if ($count === 0) {
                 return;
             }

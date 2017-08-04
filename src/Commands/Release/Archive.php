@@ -3,11 +3,10 @@
 namespace SilverStripe\Cow\Commands\Release;
 
 use SilverStripe\Cow\Steps\Release\BuildArchive;
+use SilverStripe\Cow\Steps\Release\Wait;
 
 /**
- * Create archives
- *
- * @author dmooyman
+ * Create local archives for this release to upload later to s3
  */
 class Archive extends Publish
 {
@@ -20,18 +19,16 @@ class Archive extends Publish
 
     protected function fire()
     {
-        throw new \Exception("Not implemented");
-
-        // @todo - Implement archive / upload steps
-
-        /*
         // Get arguments
-        $version = $this->getInputVersion();
-        $recipe = $this->getInputRecipe();
-        $directory = $this->getInputDirectory($version, $recipe);
+        $project = $this->getProject();
+        $releasePlan = $this->getReleasePlan();
 
-        // Steps
-        $step = new BuildArchive($this, $version, $directory);
-        $step->run($this->input, $this->output);*/
+        // Ensure we wait, even if just building archive
+        $wait = new Wait($this, $project, $releasePlan);
+        $wait->run($this->input, $this->output);
+
+        // Create packages
+        $package = new BuildArchive($this, $project, $releasePlan);
+        $package->run($this->input, $this->output);
     }
 }
