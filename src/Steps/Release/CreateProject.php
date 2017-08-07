@@ -82,6 +82,16 @@ class CreateProject extends Step
             throw new Exception("Could not create project");
         }
 
+        // Revert composer / recipe-core changes to composer.json
+        $library = $this->getProject();
+        $path = $library->getComposerPath();
+        $repo = $library->getRepository();
+        $status = $repo->run("status", [$path]);
+        if (stripos($status, 'Changes not staged for commit:')) {
+            $this->log($output, "Reverting installer changes to composer.json");
+            $repo->run("checkout", ["--", $path]);
+        }
+
         // Success
         $this->log($output, "Project successfully created!");
     }
