@@ -26,6 +26,8 @@ class Publish extends Release
         $this
             ->addArgument('version', InputArgument::REQUIRED, 'Exact version tag to release this project as')
             ->addOption('directory', 'd', InputOption::VALUE_REQUIRED, 'Optional directory to release project from')
+			->addOption('repository', 'r', InputOption::VALUE_REQUIRED, 'Use a custom repository for the composer project')
+            ->addOption('skip-archive-upload', 's', InputOption::VALUE_NONE, 'Skip uploading to AWS')
             ->addOption(
                 'aws-profile',
                 null,
@@ -52,7 +54,7 @@ class Publish extends Release
         $push->run($this->input, $this->output);
 
         // Once pushed, wait until installable
-        $wait = new Wait($this, $version);
+        $wait = new Wait($this, $version, $directory);
         $wait->run($this->input, $this->output);
 
         // Create packages
@@ -60,8 +62,10 @@ class Publish extends Release
         $package->run($this->input, $this->output);
 
         // Upload
-        $upload = new UploadArchive($this, $version, $directory, $awsProfile);
-        $upload->run($this->input, $this->output);
+        if (!$this->input->getOption('skip-archive-upload')) {
+            $upload = new UploadArchive($this, $version, $directory, $awsProfile);
+            $upload->run($this->input, $this->output);
+        }
     }
 
     /**

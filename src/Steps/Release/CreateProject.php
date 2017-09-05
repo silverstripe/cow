@@ -31,17 +31,24 @@ class CreateProject extends Step
     protected $directory;
 
     /**
+     * @var string
+     */
+    protected $repo;
+
+    /**
      *
      * @param Command $command
      * @param array $version
-     * @param type $directory
+     * @param string $directory
+     * @param string $repo
      */
-    public function __construct(Command $command, ReleaseVersion $version, $directory = '.')
+    public function __construct(Command $command, ReleaseVersion $version, $directory = '.', $repo = null)
     {
         parent::__construct($command);
 
         $this->version = $version;
         $this->directory = $directory ?: '.';
+        $this->repo = $repo;
     }
 
 
@@ -53,6 +60,9 @@ class CreateProject extends Step
      */
     public function run(InputInterface $input, OutputInterface $output)
     {
+        if ($this->repo) {
+            $this->log($output, "Installing with custom repo: <info>{$this->repo}</info>");
+        }
         // Check if output directory already exists
         if (Project::existsIn($this->directory)) {
             $this->log($output, "Project already exists in target directory. Skipping project creation", "error");
@@ -95,9 +105,26 @@ class CreateProject extends Step
     {
         $this->log($output, "Installing version <info>{$version}</info> in <info>{$this->directory}</info>");
         $command = array(
-            "composer", "create-project", "--prefer-source", "--keep-vcs", $this->package, $this->directory, $version
+            "composer", "create-project", "--ignore-platform-reqs", "--prefer-source", "--keep-vcs", $this->package, $this->directory, $version
         );
+        if ($this->repo) {
+            $this->log($output, "Using custom repo <info>{$this->repo}</info>");
+            $command[] = sprintf("--repository=%s", $this->repo);
+            $command[] = '--no-install';
+        }
         $this->runCommand($output, $command, "Could not create project with version {$version}");
+        if ($this->repo) {
+            $repo = $this->repo;
+            if (file_exists($repo)) {
+                $repo = 'file://' . $repo;
+            }
+            $this->runCommand($output, array(
+                'composer', 'config', 'repositories.repo', 'composer', $repo, '-d', $this->directory
+            ));
+            $this->runCommand($output, array(
+                'composer', 'update', '--ignore-platform-reqs', '--prefer-source', '-d', $this->directory
+            ));
+        }
     }
 
     /**
