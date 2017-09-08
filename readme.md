@@ -2,6 +2,8 @@
 
 The ineptly named tool which may one day supercede the older [build tools](https://github.com/silverstripe/silverstripe-buildtools).
 
+![moo](https://media.giphy.com/media/A5pcWMMIEO95S/giphy.gif)
+
 ## Install
 
 You can install this globally with the following commands
