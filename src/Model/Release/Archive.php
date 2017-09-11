@@ -20,15 +20,26 @@ class Archive
     protected $files = [];
 
     /**
+     * Version to use for naming this release
+     * Note: Prefer to use root version (e.g. installer 4.0) instead of library specific version
+     * (recipe-core 1.0)
+     *
+     * @var Version
+     */
+    protected $version = null;
+
+    /**
      * Build a new archive
      *
      * @param LibraryRelease $release
      * @param string[] $files
+     * @param Version $rootVersion Root version to use for naming the file
      */
-    public function __construct(LibraryRelease $release, array $files)
+    public function __construct(LibraryRelease $release, array $files, Version $rootVersion = null)
     {
         $this->release = $release;
         $this->files = $files;
+        $this->setVersion($rootVersion ?: $release->getVersion());
     }
 
     /**
@@ -48,7 +59,7 @@ class Archive
     {
         // Pick temp directory specific to this library / version
         $name = $this->getRelease()->getLibrary()->getName();
-        $version = $this->getRelease()->getVersion()->getValue();
+        $version = $this->getVersion()->getValue();
         return sys_get_temp_dir() . '/cowArchive/' . sha1($name . '-' . $version) . '/';
     }
 
@@ -63,10 +74,27 @@ class Archive
         foreach ($this->files as $filePattern) {
             // Inject version wildcards
             $files[] = $this
-                ->getRelease()
                 ->getVersion()
                 ->injectPattern($filePattern);
         }
         return $files;
+    }
+
+    /**
+     * @param Version $version
+     * @return Archive
+     */
+    public function setVersion(Version $version)
+    {
+        $this->version = $version;
+        return $this;
+    }
+
+    /**
+     * @return Version
+     */
+    public function getVersion()
+    {
+        return $this->version;
     }
 }

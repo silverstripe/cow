@@ -108,11 +108,13 @@ abstract class ReleaseStep extends Step
     protected function getArchives(OutputInterface $output)
     {
         $archives = [];
+        $rootVersion = $this->getReleasePlan()->getVersion();
         foreach ($this->getProject()->getArchives() as $archive) {
             // Get release from release plan
             $release = $this->getReleasePlan()->getItem($archive['recipe']);
             if ($release) {
-                $archives[$archive['recipe']] = new Archive($release, $archive['files']);
+                // Note: Use root version for naming recipe to be consistent
+                $archives[$archive['recipe']] = new Archive($release, $archive['files'], $rootVersion);
             } else {
                 $this->log(
                     $output,
