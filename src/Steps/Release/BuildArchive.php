@@ -138,7 +138,7 @@ class BuildArchive extends ReleaseStep
 
         // Ensure path is empty, but exists
         $this->unlink($path);
-        if (!mkdir($path, 0777, true)) {
+        if (!mkdir($path, 0755, true)) {
             throw new Exception("Could not create temp dir in $path");
         }
 
