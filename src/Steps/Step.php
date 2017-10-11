@@ -20,6 +20,14 @@ abstract class Step
      */
     protected $command;
 
+    /**
+     * Default env vars to set
+     * @var array
+     */
+    protected $envs = [
+        'SS_VENDOR_METHOD' => 'copy', // Ensure that vendor copies, rather than symlinks, assets
+    ];
+
     public function __construct(Command $command)
     {
         $this->setCommand($command);
@@ -107,6 +115,10 @@ abstract class Step
         } else {
             $process = new Process($command);
         }
+
+        // Set all default env vars
+        $process->inheritEnvironmentVariables();
+        $process->setEnv($this->envs);
 
         // Run it
         $process->setTimeout(null);

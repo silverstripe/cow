@@ -4,6 +4,7 @@
 namespace SilverStripe\Cow\Model\Release;
 
 use Generator;
+use SilverStripe\Cow\Commands\Release\Branch;
 use SilverStripe\Cow\Model\Modules\Library;
 
 /**
@@ -17,6 +18,13 @@ class LibraryRelease
      * @var LibraryRelease[]
      */
     protected $items = [];
+
+    /**
+     * Default branching strategy (only valid on root release)
+     *
+     * @var string
+     */
+    protected $branching = null;
 
     /**
      * The module being released
@@ -228,6 +236,29 @@ class LibraryRelease
     public function setChangelog($changelog)
     {
         $this->changelog = $changelog;
+        return $this;
+    }
+
+    /**
+     * Get branching strategy
+     *
+     * @param string $default Default value to get if no value found
+     * @return string
+     */
+    public function getBranching($default = Branch::DEFAULT_OPTION)
+    {
+        return $this->branching ?: $default;
+    }
+
+    /**
+     * Set branching strategy
+     *
+     * @param string $branching
+     * @return $this
+     */
+    public function setBranching($branching)
+    {
+        $this->branching = $branching;
         return $this;
     }
 }

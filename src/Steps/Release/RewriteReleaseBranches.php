@@ -4,6 +4,8 @@
 namespace SilverStripe\Cow\Steps\Release;
 
 use Exception;
+use InvalidArgumentException;
+use SilverStripe\Cow\Commands\Release\Branch;
 use SilverStripe\Cow\Model\Modules\Library;
 use SilverStripe\Cow\Model\Release\LibraryRelease;
 use SilverStripe\Cow\Model\Release\Version;
@@ -33,7 +35,8 @@ class RewriteReleaseBranches extends ReleaseStep
         $this->log($output, "Updating branches and aliases");
 
         $release = $this->getReleasePlan();
-        $this->recursiveBranchLibrary($output, $release);
+        $branching = $release->getBranching();
+        $this->recursiveBranchLibrary($output, $release, $branching);
 
         $this->log($output, "Branches updated");
     }
@@ -43,18 +46,19 @@ class RewriteReleaseBranches extends ReleaseStep
      *
      * @param OutputInterface $output
      * @param LibraryRelease $libraryRelease
+     * @param string $branching Branching strategy
      */
-    protected function recursiveBranchLibrary(OutputInterface $output, LibraryRelease $libraryRelease)
+    protected function recursiveBranchLibrary(OutputInterface $output, LibraryRelease $libraryRelease, $branching)
     {
         // Recursively rewrite and branch child dependencies first
         foreach ($libraryRelease->getItems() as $childLibrary) {
-            $this->recursiveBranchLibrary($output, $childLibrary);
+            $this->recursiveBranchLibrary($output, $childLibrary, $branching);
         }
 
         // Skip if not tagging this library (upgrade only)
         if ($libraryRelease->getIsNewRelease()) {
             // Update this library
-            $this->branchLibrary($output, $libraryRelease);
+            $this->branchLibrary($output, $libraryRelease, $branching);
 
             // Update dev dependencies for the given module
             $this->incrementDevDependencies($output, $libraryRelease);
@@ -68,36 +72,52 @@ class RewriteReleaseBranches extends ReleaseStep
      *
      * @param OutputInterface $output
      * @param LibraryRelease $libraryRelease
+     * @param string $branching Branching strategy
      * @throws Exception
      */
-    protected function branchLibrary(OutputInterface $output, LibraryRelease $libraryRelease)
+    protected function branchLibrary(OutputInterface $output, LibraryRelease $libraryRelease, $branching)
     {
         // Get info on current status
         $library = $libraryRelease->getLibrary();
         $currentBranch = $library->getBranch();
         $libraryName = $library->getName();
 
-        // Guess branches to use
+        // Calculate candidate branch names
         $version = $libraryRelease->getVersion();
-        $canCheckout = $this->canCheckout($currentBranch, $version);
-        if ($canCheckout) {
-            // Check versions to checkout
-            $majorBranch = $libraryRelease->getVersion()->getMajor();
-            $minorBranch = $majorBranch . "." . $libraryRelease->getVersion()->getMinor();
-            $this->log(
-                $output,
-                "Branching library <info>{$libraryName}</info> to <info>{$minorBranch}</info> (new branch)"
-            );
 
-            // Branch both major and minor versions
-            $library->checkout($output, $majorBranch, 'origin', true);
-            $library->checkout($output, $minorBranch, 'origin', true);
-            $this->removeComposerAlias($output, $library);
-        } else {
+        // Calculate branch to switch to
+        $target = $this->getTargetBranch($version, $branching, $currentBranch);
+
+        // Either branch, or simply log current branch
+        if (empty($target) || $target === $currentBranch) {
             $this->log(
                 $output,
                 "Releasing library <info>{$libraryName}</info> from branch <info>{$currentBranch}</info>"
             );
+        } else {
+            // Check versions to checkout
+            $this->log(
+                $output,
+                "Branching library <info>{$libraryName}</info> as <info>{$target}</info> "
+                . "(from <comment>{$currentBranch}</comment>)"
+            );
+
+            // If branching minor version, checkout major as well along the way.
+            // If switching master -> 1.0 it can be better to branch from an existing 1
+            // instead of master
+            $majorBranch = $version->getMajor();
+            $minorBranch = $majorBranch . "." . $version->getMinor();
+            if ($target === $minorBranch) {
+                $library->checkout($output, $majorBranch, 'origin', true);
+            }
+
+            // Checkout branch
+            $library->checkout($output, $target, 'origin', true);
+
+            // If branching to minor version, remove alias
+            if ($target === $minorBranch) {
+                $this->removeComposerAlias($output, $library);
+            }
         }
 
         // Synchronise local branch with upstream
@@ -117,37 +137,6 @@ class RewriteReleaseBranches extends ReleaseStep
         $tagName = $version->getValue();
         $this->log($output, "Checking out library <info>{$libraryName}</info> at existing tag <info>{$tagName}</info>");
         $library->resetToTag($output, $version);
-    }
-
-    /**
-     * Determine if the current branch should be changed
-     *
-     * @param string $currentBranch Note, this can be empty
-     * @param Version $version
-     * @return bool Whether the branch should be changed
-     */
-    protected function canCheckout($currentBranch, Version $version)
-    {
-        // Get expected major and minor branches
-        $minorBranch = $version->getMajor() . "." . $version->getMinor();
-
-        // Already on ideal branch
-        if ($currentBranch === $minorBranch) {
-            return false;
-        }
-
-        // Don't branch on version < 1.0 (even stable)
-        if ($version->getMajor() < 1) {
-            return false;
-        }
-
-        // Temp: Enforce branching if doing stable release only
-        // See https://github.com/silverstripe/cow/issues/53
-        if ($version->isStable()) {
-            return true;
-        }
-
-        return false;
     }
 
     /**
@@ -244,6 +233,48 @@ class RewriteReleaseBranches extends ReleaseStep
             if (stripos($status, 'Changes to be committed:')) {
                 $repo->run("commit", array("-m", "Update development dependencies"));
             }
+        }
+    }
+
+    /**
+     * Get branch to branch to, or null if no branching should occur
+     *
+     * @param Version $version
+     * @param string $branching Branching strategy
+     * @param string $currentBranch
+     * @return string Branch target name
+     */
+    protected function getTargetBranch($version, $branching, $currentBranch)
+    {
+        $majorBranch = $version->getMajor();
+        $minorBranch = $majorBranch . "." . $version->getMinor();
+
+        // If already on minor branch stay on this in all situations
+        if ($currentBranch === $minorBranch) {
+            return null;
+        }
+
+        // Don't branch on pre-1.0 in any situation
+        if ($majorBranch < 1) {
+            return null;
+        }
+
+        // Determine destination branch
+        switch ($branching) {
+            case Branch::NONE:
+                return null;
+            case Branch::MINOR:
+                return $minorBranch;
+            case Branch::MAJOR:
+                return $majorBranch;
+            case Branch::AUTO:
+                // Auto disables branching for unstable tags
+                if (!$version->isStable()) {
+                    return null;
+                }
+                return $minorBranch;
+            default:
+                throw new InvalidArgumentException("Invalid branching strategy $branching");
         }
     }
 }

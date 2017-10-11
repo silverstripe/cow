@@ -4,6 +4,7 @@ namespace SilverStripe\Cow\Steps\Release;
 
 use Exception;
 use SilverStripe\Cow\Commands\Command;
+use SilverStripe\Cow\Commands\Release\Branch;
 use SilverStripe\Cow\Model\Modules\Library;
 use SilverStripe\Cow\Model\Release\LibraryRelease;
 use SilverStripe\Cow\Model\Modules\Project;
@@ -34,6 +35,13 @@ class PlanRelease extends Step
     protected $releasePlan;
 
     /**
+     * Branching strategy
+     *
+     * @var string
+     */
+    protected $branching = null;
+
+    /**
      * @return LibraryRelease
      */
     public function getReleasePlan()
@@ -51,11 +59,20 @@ class PlanRelease extends Step
         return $this;
     }
 
-    public function __construct(Command $command, Project $project, Version $version)
+    /**
+     * Build new plan step
+     *
+     * @param Command $command
+     * @param Project $project
+     * @param Version $version
+     * @param string $branching Override branching strategy
+     */
+    public function __construct(Command $command, Project $project, Version $version, $branching)
     {
         parent::__construct($command);
         $this->setProject($project);
         $this->setVersion($version);
+        $this->setBranching($branching);
     }
 
     public function getStepName()
@@ -85,8 +102,15 @@ class PlanRelease extends Step
     {
         // Load cached value
         $moduleRelease = $this->getProject()->loadCachedPlan();
+        $branching = $this->getBranching();
         if ($moduleRelease) {
             $this->log($output, 'Loading cached release plan from prior session');
+            // Note: Branching can be overridden on the CLI. Save this to cached plan in this case
+            if ($branching && $branching !== $moduleRelease->getBranching()) {
+                $this->log($output, "Updating branching to <info>{$branching}</info>");
+                $moduleRelease->setBranching($branching);
+                $this->getProject()->saveCachedPlan($moduleRelease);
+            }
             $this->setReleasePlan($moduleRelease);
             return;
         }
@@ -95,6 +119,11 @@ class PlanRelease extends Step
         $this->log($output, 'Automatically building a suggested release plan');
         $moduleRelease = new LibraryRelease($this->getProject(), $this->getVersion());
         $this->generateChildReleases($moduleRelease);
+
+        // Set branching if specified on CLI
+        if ($branching) {
+            $moduleRelease->setBranching($branching);
+        }
 
         // Save plan
         $this->getProject()->saveCachedPlan($moduleRelease);
@@ -284,6 +313,28 @@ class PlanRelease extends Step
     }
 
     /**
+     * Get branching strategy
+     *
+     * @return string
+     */
+    public function getBranching()
+    {
+        return $this->branching;
+    }
+
+    /**
+     * Set branching strategy
+     *
+     * @param string $branching
+     * @return $this
+     */
+    public function setBranching($branching)
+    {
+        $this->branching = $branching;
+        return $this;
+    }
+
+    /**
      * Interactively confirm a plan with the user
      *
      * @param OutputInterface $output
@@ -292,12 +343,15 @@ class PlanRelease extends Step
     protected function reviewPlan(OutputInterface $output, InputInterface $input)
     {
         // Get user-descriptive output for plan
-        $releaseLines = $this->getReleaseOptions($this->getReleasePlan());
+        $libraryRelease = $this->getReleasePlan();
+        $branching = $libraryRelease->getBranching();
+        $releaseLines = $this->getReleaseOptions($libraryRelease);
 
         // If not interactive, simply output read-only list of versions
         $message = "The below release plan has been generated for this project";
         if (!$input->isInteractive()) {
             $this->log($output, $message);
+            $this->log($output, "branching (<info>{$branching}</info>)");
             foreach ($releaseLines as $line) {
                 $this->log($output, $line);
             }
@@ -308,7 +362,10 @@ class PlanRelease extends Step
         $question = new ChoiceQuestion(
             "{$message}; Please confirm any manual changes below, or type a module name to edit the tag:",
             array_merge(
-                ["continue" => "continue"],
+                [
+                    "continue" => "continue",
+                    "branching" => "modify branching strategy (<info>{$branching}</info>)",
+                ],
                 $releaseLines
             ),
             "continue"
@@ -316,13 +373,20 @@ class PlanRelease extends Step
         $selectedLibrary = $this->getQuestionHelper()->ask($input, $output, $question);
 
         // Break if plan is accepted
-        if ($selectedLibrary === 'continue') {
-            return;
+        switch ($selectedLibrary) {
+            case 'continue':
+                // Good job!
+                return;
+            case 'branching':
+                // Modify branching strategy
+                $this->reviewBranching($output, $input);
+                break;
+            default:
+                // Modify selected dependency
+                $selectedRelease = $libraryRelease->getItem($selectedLibrary);
+                $this->reviewLibraryVersion($output, $input, $selectedRelease);
+                break;
         }
-
-        // Modify selected dependency
-        $selectedRelease = $this->getReleasePlan()->getItem($selectedLibrary);
-        $this->reviewLibraryVersion($output, $input, $selectedRelease);
 
         // Recursively update plan
         $this->reviewPlan($output, $input);
@@ -379,6 +443,28 @@ class PlanRelease extends Step
             "error"
         );
         $this->reviewLibraryVersion($output, $input, $selectedVersion);
+    }
+
+    /**
+     * Select new branching strategy
+     *
+     * @param OutputInterface $output
+     * @param InputInterface $input
+     */
+    protected function reviewBranching(OutputInterface $output, InputInterface $input)
+    {
+        $current = $this->getReleasePlan()->getBranching();
+        $question = new ChoiceQuestion(
+            "Select branching strategy (current: <info>{$current}</info>)",
+            Branch::OPTIONS,
+            $current
+        );
+        $branching = $this->getQuestionHelper()->ask($input, $output, $question);
+
+        // Update and save update
+        $this->getReleasePlan()->setBranching($branching);
+        $this->setBranching($branching);
+        $this->getProject()->saveCachedPlan($this->getReleasePlan());
     }
 
     /**
