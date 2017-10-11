@@ -2,18 +2,11 @@
 
 namespace SilverStripe\Cow\Commands\Release;
 
-use SilverStripe\Cow\Commands\Command;
-use SilverStripe\Cow\Model\Modules\Project;
-use SilverStripe\Cow\Steps\Release\CreateBranch;
-use SilverStripe\Cow\Steps\Release\RewriteReleaseBranches;
 use SilverStripe\Cow\Steps\Release\PlanRelease;
-use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Console\Input\InputOption;
+use SilverStripe\Cow\Steps\Release\RewriteReleaseBranches;
 
 /**
- * Create a new branch
- *
- * @author dmooyman
+ * Create branches for this release
  */
 class Branch extends Release
 {

@@ -35,13 +35,24 @@ class Composer
      * @param string $directory
      * @param string $version
      * @param string $repository Optional custom repository
+     * @param bool $preferDist Set to true to use dist
      */
-    public static function createProject(CommandRunner $runner, $recipe, $directory, $version, $repository)
-    {
-        $command = [
-            "composer", "create-project", "--prefer-source", "--keep-vcs",
-            $recipe, $directory, $version
-        ];
+    public static function createProject(
+        CommandRunner $runner,
+        $recipe,
+        $directory,
+        $version,
+        $repository = null,
+        $preferDist = false
+    ) {
+        $command = ["composer", "create-project", "--no-interaction", $recipe, $directory, $version];
+        if ($preferDist) {
+            $command[] = "--prefer-dist";
+            $command[] = "--no-dev";
+        } else {
+            $command[] = "--prefer-source";
+            $command[] = "--keep-vcs";
+        }
         if ($repository) {
             $command[] = '--repository';
             $command[] = $repository;
@@ -58,7 +69,7 @@ class Composer
     public static function getOAUTHToken(CommandRunner $runner)
     {
         // try composer stored oauth token
-        $command = [ 'composer', 'config', '-g', 'github-oauth.github.com' ];
+        $command = ['composer', 'config', '-g', 'github-oauth.github.com'];
         $error = "Couldn't determine GitHub oAuth token. Please set GITHUB_API_TOKEN";
         $result = $runner->runCommand($command, $error);
         return trim($result);

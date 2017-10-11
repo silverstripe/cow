@@ -2,16 +2,25 @@ language: php
 
 php: 5.6
 
+dist: trusty
+
 env:
   matrix:
     - PHPUNIT_TEST=1
     - PHPCS_TEST=1
 
 before_script:
-  - composer install --dev --prefer-dist
-  - pyrus install pear/PHP_CodeSniffer
+# php setup
   - phpenv rehash
+  - export PATH=~/.composer/vendor/bin:$PATH
+
+# phpcs setup
+  - if [[ $PHPCS_TEST ]]; then composer global require squizlabs/php_codesniffer:^3 --prefer-dist --no-interaction --no-progress --no-suggest -o; fi
+
+# Install
+  - composer validate
+  - composer install --dev --prefer-dist
 
 script:
-  - "if [ \"$PHPUNIT_TEST\" = \"1\" ]; then vendor/bin/phpunit tests; fi"
-  - "if [ \"$PHPCS_TEST\" = \"1\" ]; then phpcs --standard=PSR2 bin/ src/ tests/; fi"
+  - if [[ $PHPUNIT_TEST ]];  then vendor/bin/phpunit tests; fi
+  - if [[ $PHPCS_TEST ]]; then phpcs --standard=PSR2 bin/ src/ tests/; fi

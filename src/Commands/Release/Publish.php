@@ -4,13 +4,14 @@ namespace SilverStripe\Cow\Commands\Release;
 
 use Exception;
 use SilverStripe\Cow\Model\Release\LibraryRelease;
+use SilverStripe\Cow\Steps\Release\BuildArchive;
 use SilverStripe\Cow\Steps\Release\PublishRelease;
+use SilverStripe\Cow\Steps\Release\UploadArchive;
+use SilverStripe\Cow\Steps\Release\WaitStep;
 use Symfony\Component\Console\Input\InputOption;
 
 /**
- * Description of Create
- *
- * @author dmooyman
+ * Top level publish command
  */
 class Publish extends Release
 {
@@ -35,26 +36,23 @@ class Publish extends Release
         // Get arguments
         $project = $this->getProject();
         $releasePlan = $this->getReleasePlan();
+        $awsProfile = $this->getInputAWSProfile();
 
         // Does bulk of module publishing, rewrite of dev branches, rewrite of tags, and actual tagging
         $publish = new PublishRelease($this, $project, $releasePlan);
         $publish->run($this->input, $this->output);
 
-        // @todo - Implement archive / upload steps
-
-        /*
         // Once pushed, wait until installable
-        $wait = new Wait($this, $version);
+        $wait = new WaitStep($this, $project, $releasePlan);
         $wait->run($this->input, $this->output);
 
         // Create packages
-        $package = new BuildArchive($this, $version, $directory);
+        $package = new BuildArchive($this, $project, $releasePlan);
         $package->run($this->input, $this->output);
 
         // Upload
-        $upload = new UploadArchive($this, $version, $directory, $awsProfile);
+        $upload = new UploadArchive($this, $project, $releasePlan, $awsProfile);
         $upload->run($this->input, $this->output);
-        */
     }
 
     /**

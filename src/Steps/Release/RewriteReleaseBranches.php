@@ -141,8 +141,9 @@ class RewriteReleaseBranches extends ReleaseStep
             return false;
         }
 
-        // Branch if doing beta / rc / stable release
-        if ($version->isStable() || in_array($version->getStability(), ['beta', 'rc'])) {
+        // Temp: Enforce branching if doing stable release only
+        // See https://github.com/silverstripe/cow/issues/53
+        if ($version->isStable()) {
             return true;
         }
 

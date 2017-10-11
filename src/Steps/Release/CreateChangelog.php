@@ -163,12 +163,17 @@ class CreateChangelog extends ReleaseStep
         // Build root release node
         $historicRelease = new ChangelogLibrary($newRelease, $historicVersion);
 
-        // Check all dependencies from this past commit
+        // Check all dependencies from this past commit.
+        // Note that we flatten both current and historic dependecy trees in case dependencies
+        // have been re-arranged since the prior tag.
         $pastComposer = null;
-        foreach ($newRelease->getItems() as $childNewRelease) {
+        foreach ($newRelease->getAllItems() as $childNewRelease) {
             // Lazy-load historic composer content as needed
             if (!isset($pastComposer)) {
-                $pastComposer = $newRelease->getLibrary()->getHistoryComposerData($historicVersion);
+                // Get flat composer history up to 6 levels deep
+                $pastComposer = $newRelease
+                    ->getLibrary()
+                    ->getHistoryComposerData($historicVersion->getValue(), true, 6);
             }
 
             // Check if this release has a historic tag.
@@ -208,8 +213,8 @@ class CreateChangelog extends ReleaseStep
                 continue;
             }
 
-            // Recursively generate historic tree
-            $childChangelog = $this->getChangelogLibrary($childNewRelease, $childHistoricVersion);
+            // Add this module as a changelog
+            $childChangelog = new ChangelogLibrary($childNewRelease, $childHistoricVersion);
             $historicRelease->addItem($childChangelog);
         }
 

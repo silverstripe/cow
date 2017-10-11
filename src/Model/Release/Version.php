@@ -5,6 +5,7 @@ namespace SilverStripe\Cow\Model\Release;
 use InvalidArgumentException;
 use LogicException;
 use SilverStripe\Cow\Model\Modules\Library;
+use SilverStripe\Cow\Utility\Format;
 
 /**
  * Represents a version for a release
@@ -475,5 +476,28 @@ class Version
                 break;
         }
         return $childRequirement;
+    }
+
+
+
+    /**
+     * Inject pattern for the given string
+     *
+     * @param $pattern
+     * @return mixed
+     */
+    public function injectPattern($pattern)
+    {
+        $path = Format::formatString($pattern, [
+            'stability' => $this->getStability(),
+            'stabilityVersion' => $this->getStabilityVersion(),
+            'major' => $this->getMajor(),
+            'minor' => $this->getMinor(),
+            'patch' => $this->getPatch(),
+            'version' => $this->getValue(),
+            'versionStable' => $this->getValueStable(),
+        ]);
+        // Collapse duplicate //
+        return str_replace('//', '/', $path);
     }
 }

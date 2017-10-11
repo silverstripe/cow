@@ -511,18 +511,45 @@ class Library
     }
 
     /**
-     * Get historic composer.json content from git
+     * Get historic composer.json content from git recursively
      *
      * @param string $ref Git ref (tag / branch / SHA)
+     * @param bool $recursive Search recursively
+     * @param int $maxDepth Safeguard against infinite loops
      * @return array|null
      */
-    public function getHistoryComposerData($ref)
+    public function getHistoryComposerData($ref, $recursive = true, $maxDepth = 6)
     {
-        $content = $this->getRepository()->run('show', ["{$ref}:composer.json"]);
-        if ($content) {
-            return Config::parseContent($content);
+        if ($maxDepth <= 0) {
+            return null;
         }
-        return null;
+
+        // Get composer data for this library
+        $content = $this->getRepository()->run('show', ["{$ref}:composer.json"]);
+        if (!$content) {
+            return null;
+        }
+        $results = Config::parseContent($content);
+        if (empty($results['require']) || !$recursive) {
+            return $results;
+        }
+
+        // Get all recursive changes
+        foreach ($results['require'] as $libraryName => $version) {
+            // If this library belongs to this project, and this tag is stable, recurse
+            $library = $this->getProject()->getLibrary($libraryName);
+            if (!$library || !Version::parse($version)) {
+                continue;
+            }
+            $nextResults = $library->getHistoryComposerData($version, true, $maxDepth - 1);
+            if (isset($nextResults['require'])) {
+                $results['require'] = array_merge(
+                    $nextResults['require'],
+                    $results['require']
+                );
+            }
+        }
+        return $results;
     }
 
     /**
@@ -538,16 +565,30 @@ class Library
     }
 
     /**
+     * Get list of archives to create for this release
+     *
+     * @return array
+     */
+    public function getArchives()
+    {
+        $data = $this->getCowData();
+        if (isset($data['archives'])) {
+            return $data['archives'];
+        }
+        return [];
+    }
+
+    /**
      * Gets cow config
      *
      * @array
      */
     public function getCowData()
     {
-        // @todo - Validate against schema
         // http://json-schema.org/examples.html
         $path = $this->getDirectory() . '/.cow.json';
-        return Config::loadFromFile($path);
+        $schemaPath = dirname(dirname(dirname(__DIR__))).'/cow.schema.json';
+        return Config::loadFromFile($path, $schemaPath);
     }
 
     /**
@@ -1000,18 +1041,10 @@ class Library
         if (empty($cowData['changelog-path'])) {
             return null;
         }
+        $pattern = $cowData['changelog-path'];
 
-        $path = Format::formatString($cowData['changelog-path'], [
-            'stability' => $version->getStability(),
-            'stabilityVersion' => $version->getStabilityVersion(),
-            'major' => $version->getMajor(),
-            'minor' => $version->getMinor(),
-            'patch' => $version->getPatch(),
-            'version' => $version->getValue(),
-            'versionStable' => $version->getValueStable(),
-        ]);
-        // Collapse duplicate //
-        return str_replace('//', '/', $path);
+        // Substitue version parameters
+        return $version->injectPattern($pattern);
     }
 
     /**

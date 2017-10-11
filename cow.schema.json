@@ -1,0 +1,82 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "cow",
+  "description": "cow release settings file",
+  "type": "object",
+  "properties": {
+    "github-slug": {
+      "type": "string"
+    },
+    "commit-link": {
+      "type": "string"
+    },
+    "changelog-holder": {
+      "type": "string"
+    },
+    "changelog-path": {
+      "type": "string"
+    },
+    "changelog-type": {
+      "type": "string",
+      "enum": [
+        "flat",
+        "grouped"
+      ]
+    },
+    "changelog-github": {
+      "type": "boolean"
+    },
+    "child-stability-inherit": {
+      "type": "boolean"
+    },
+    "dependency-constraint": {
+      "type": "string",
+      "enum": [
+        "exact",
+        "loose",
+        "semver"
+      ]
+    },
+    "vendors": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "exclude": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "upgrade-only": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "tests": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "archives": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "recipe": {
+            "type": "string"
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+}
