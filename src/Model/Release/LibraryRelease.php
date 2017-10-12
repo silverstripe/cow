@@ -245,7 +245,7 @@ class LibraryRelease
      * @param string $default Default value to get if no value found
      * @return string
      */
-    public function getBranching($default = Branch::DEFAULT_OPTION)
+    public function getBranching($default = Branch::AUTO)
     {
         return $this->branching ?: $default;
     }

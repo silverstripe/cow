@@ -67,11 +67,6 @@ class Branch extends Release
         self::NONE => self::NONE_DESCRIPTION,
     ];
 
-    /**
-     * Default branch option
-     */
-    const DEFAULT_OPTION = self::AUTO;
-
     protected function fire()
     {
         // Get arguments

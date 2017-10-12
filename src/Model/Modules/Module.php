@@ -89,6 +89,21 @@ class Module extends Library
     }
 
     /**
+     * Get parameter to pass to i18n text collector
+     *
+     * @return string
+     */
+    public function getI18nTextCollectorName()
+    {
+        $dir = $this->getRelativeMainDirectory();
+        // If short name has any slashes just use composer name instead
+        if (preg_match('#\w[\\/]\w#', $dir)) {
+            return $this->getName();
+        }
+        return $dir;
+    }
+
+    /**
      * Determine if this project has a .tx configured
      *
      * @return bool
