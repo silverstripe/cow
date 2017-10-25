@@ -27,11 +27,18 @@ class Release extends Command
 
     protected function configureOptions()
     {
+        $branchOptions = implode('|', array_keys(Branch::OPTIONS));
         $this
             ->addArgument('version', InputArgument::REQUIRED, 'Exact version tag to release this project as')
             ->addArgument('recipe', InputArgument::OPTIONAL, 'Recipe to release', 'silverstripe/installer')
             ->addOption('repository', "r", InputOption::VALUE_REQUIRED, "Custom repository url")
-            ->addOption('directory', 'd', InputOption::VALUE_REQUIRED, 'Optional directory to release project from');
+            ->addOption('directory', 'd', InputOption::VALUE_REQUIRED, 'Optional directory to release project from')
+            ->addOption(
+                'branching',
+                'b',
+                InputOption::VALUE_REQUIRED,
+                "Branching strategy. One of [{$branchOptions}]"
+            );
     }
 
     protected function fire()
@@ -46,9 +53,10 @@ class Release extends Command
         $createProject = new CreateProject($this, $version, $recipe, $directory, $repository);
         $createProject->run($this->input, $this->output);
         $project = $this->getProject();
+        $branching = $this->getBranching();
 
         // Build and confirm release plan
-        $buildPlan = new PlanRelease($this, $project, $version);
+        $buildPlan = new PlanRelease($this, $project, $version, $branching);
         $buildPlan->run($this->input, $this->output);
         $releasePlan = $buildPlan->getReleasePlan();
 
@@ -158,6 +166,20 @@ class Release extends Command
     {
         $directory = $this->getInputDirectory();
         return new Project($directory);
+    }
+
+    /**
+     * Get branching strategy
+     *
+     * @return string Branching strategy, or null to inherit / default
+     */
+    protected function getBranching()
+    {
+        $branch = $this->input->getOption('branching');
+        if ($branch && !array_key_exists($branch, Branch::OPTIONS)) {
+            throw new InvalidArgumentException("Invalid branching option {$branch}");
+        }
+        return $branch;
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace SilverStripe\Cow\Model\Modules;
 
+use BadMethodCallException;
 use Generator;
 use InvalidArgumentException;
 
@@ -109,5 +110,25 @@ class Project extends Module
     public function getProject()
     {
         return $this;
+    }
+
+    /**
+     * Get path to sake executable
+     *
+     * @return string
+     */
+    public function getSakePath()
+    {
+        $candidates = [
+            $this->getDirectory() . '/vendor/bin/sake', // New standard location
+            $this->getDirectory() . '/vendor/silverstripe/framework/sake',
+            $this->getDirectory() . '/framework/sake',
+        ];
+        foreach ($candidates as $candidate) {
+            if (file_exists($candidate)) {
+                return $candidate;
+            }
+        }
+        throw new BadMethodCallException("sake bin could not be found in this project");
     }
 }

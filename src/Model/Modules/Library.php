@@ -966,6 +966,12 @@ class Library
             if (!empty($data['Items'])) {
                 $libraryRelease->addItems($this->unserialisePlan($data['Items']));
             }
+
+            // Set branching
+            if (!empty($data['Branching'])) {
+                $libraryRelease->setBranching($data['Branching']);
+            }
+
             $releases[$name] = $libraryRelease;
         }
         return $releases;
@@ -984,7 +990,8 @@ class Library
         $content[$name] = [
             'Version' => $plan->getVersion()->getValue(),
             'Changelog' => $plan->getChangelog(),
-            'Items' => []
+            'Items' => [],
+            'Branching' => $plan->getBranching(null), // Only store internal value don't failover
         ];
         foreach ($plan->getItems() as $item) {
             $content[$name]['Items'] = array_merge(

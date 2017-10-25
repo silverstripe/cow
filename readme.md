@@ -60,6 +60,11 @@ This command has these options:
 * `--directory <directory>` to specify the folder to create or look for this project in. If you don't specify this,
 it will install to the path specified by `./release-<version>` in the current directory.
 * `--repository <repository>` will allow a custom composer package url to be specified. E.g. `http://packages.cwp.govt.nz`
+* `--branching <type>` will specify a branching strategy. This allows these options:
+  * `auto` - Default option, will branch to the minor version (e.g. 1.1) unless doing a non-stable tag (e.g. rc1)
+  * `major` - Branch all repos to the major version (e.g. 1) unless already on a more-specific minor version.
+  * `minor` - Branch all repos to the minor semver branch (e.g. 1.1)
+  * `none` - Release from the current branch and do no branching.
 
 `release` actually has several sub-commands which can be run independently. These are as below:
 

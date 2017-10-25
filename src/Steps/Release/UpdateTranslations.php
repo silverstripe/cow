@@ -279,12 +279,13 @@ class UpdateTranslations extends ReleaseStep
         // Get code dirs for each module
         $dirs = array();
         foreach ($modules as $module) {
-            $dirs[] = $module->getRelativeMainDirectory();
+            $dirs[] = $module->getI18nTextCollectorName();
         }
 
         $sakeCommand = sprintf(
-            '(cd %s && ./framework/sake dev/tasks/i18nTextCollectorTask "flush=all" "merge=1" "module=%s")',
+            '(cd %s && %s dev/tasks/i18nTextCollectorTask "flush=all" "merge=1" "module=%s")',
             $this->getProject()->getDirectory(),
+            $this->getProject()->getSakePath(),
             implode(',', $dirs)
         );
         $this->runCommand($output, $sakeCommand, "Error encountered running i18nTextCollectorTask");
