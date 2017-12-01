@@ -4,7 +4,10 @@ namespace SilverStripe\Cow\Steps\Release;
 
 use Exception;
 use InvalidArgumentException;
+use SilverStripe\Cow\Commands\Command;
+use SilverStripe\Cow\Model\Modules\Project;
 use SilverStripe\Cow\Model\Release\Archive;
+use SilverStripe\Cow\Model\Release\LibraryRelease;
 use SilverStripe\Cow\Utility\Composer;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -14,6 +17,27 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class BuildArchive extends ReleaseStep
 {
+    /**
+     * Custom composer repository
+     *
+     * @var string
+     */
+    protected $repository;
+
+    /**
+     * Construct new archive builder
+     *
+     * @param Command $command
+     * @param Project $project
+     * @param LibraryRelease|null $releasePlan
+     * @param string $repository Custom composer repository for this install
+     */
+    public function __construct(Command $command, Project $project, LibraryRelease $releasePlan = null, $repository = null)
+    {
+        parent::__construct($command, $project, $releasePlan);
+        $this->setRepository($repository);
+    }
+
     public function getStepName()
     {
         return 'release:archive';
@@ -144,7 +168,7 @@ class BuildArchive extends ReleaseStep
 
         // Install to this location
         $this->log($output, "Installing version {$version}");
-        Composer::createProject($this->getCommandRunner($output), $name, $path, $version, null, true);
+        Composer::createProject($this->getCommandRunner($output), $name, $path, $version, $this->getRepository(), true);
 
         // Copy composer.phar to the project
         // Write version info to the core folders (shouldn't be in version control)
@@ -189,5 +213,25 @@ class BuildArchive extends ReleaseStep
             return 'tar -cvzf';
         }
         throw new InvalidArgumentException("Cannot build archive for file {$file}");
+    }
+
+    /**
+     * Get custom composer repository
+     *
+     * @return string
+     */
+    public function getRepository()
+    {
+        return $this->repository;
+    }
+
+    /**
+     * @param string $repository
+     * @return $this
+     */
+    protected function setRepository($repository)
+    {
+        $this->repository = $repository;
+        return $this;
     }
 }

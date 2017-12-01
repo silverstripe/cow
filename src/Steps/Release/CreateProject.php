@@ -47,7 +47,7 @@ class CreateProject extends Step
      * @param Version $version
      * @param string $recipe
      * @param string $directory
-     * @param string $repository
+     * @param string $repository Custom composer repository for this install
      */
     public function __construct(Command $command, Version $version, $recipe, $directory = '.', $repository = null)
     {
@@ -90,6 +90,11 @@ class CreateProject extends Step
         if (stripos($status, 'Changes not staged for commit:')) {
             $this->log($output, "Reverting installer changes to composer.json");
             $repo->run("checkout", ["--", $path]);
+        }
+
+        // If using custom repository, write `.cow.repository` file for later
+        if ($this->getRepository()) {
+            file_put_contents($path.'/.cow.repository', $this->getRepository());
         }
 
         // Success

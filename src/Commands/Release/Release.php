@@ -31,8 +31,10 @@ class Release extends Command
         $this
             ->addArgument('version', InputArgument::REQUIRED, 'Exact version tag to release this project as')
             ->addArgument('recipe', InputArgument::OPTIONAL, 'Recipe to release', 'silverstripe/installer')
-            ->addOption('repository', "r", InputOption::VALUE_REQUIRED, "Custom repository url")
+            ->addOption('repository', 'r', InputOption::VALUE_REQUIRED, "Custom repository url")
             ->addOption('directory', 'd', InputOption::VALUE_REQUIRED, 'Optional directory to release project from')
+            ->addOption('skip-tests', null, InputOption::VALUE_NONE, 'Skip the tests suite run when performing the release')
+            ->addOption('skip-i18n', null, InputOption::VALUE_NONE, 'Skip the text collection task when performing the release')
             ->addOption(
                 'branching',
                 'b',
@@ -65,18 +67,20 @@ class Release extends Command
         $branchAlias->run($this->input, $this->output);
 
         // Update all translations
-        $translate = new UpdateTranslations($this, $project, $releasePlan);
-        $translate->run($this->input, $this->output);
+        if (!$this->input->getOption('skip-i18n')) {
+            $translate = new UpdateTranslations($this, $project, $releasePlan);
+            $translate->run($this->input, $this->output);
+        }
 
         // Run tests
-        $test = new RunTests($this, $project);
-        $test->run($this->input, $this->output);
+        if (!$this->input->getOption('skip-tests')) {
+            $test = new RunTests($this, $project);
+            $test->run($this->input, $this->output);
+        }
 
         // Generate changelog
         $changelogs = new CreateChangelog($this, $project, $releasePlan);
         $changelogs->run($this->input, $this->output);
-
-
 
         // Output completion
         $this->output->writeln("<info>Success!</info> Release has been updated.");
@@ -119,7 +123,20 @@ class Release extends Command
      */
     protected function getInputRepository()
     {
-        return $this->input->getOption('repository');
+        // Check specified repository
+        $repository = $this->input->getOption('repository');
+        if ($repository) {
+            return $repository;
+        }
+
+        // Check if repository was used during install
+        // Prevents mistake publishing a project created with a repository
+        $directory = $this->getInputDirectory();
+        if (file_exists($directory.'/.cow.repository')) {
+            return file_get_contents($directory.'/.cow.repository');
+        }
+
+        return null;
     }
 
     /**
