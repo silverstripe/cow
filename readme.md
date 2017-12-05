@@ -95,8 +95,9 @@ This command has these options:
   omit this option.
 * `--aws-profile <profile>` to specify the AWS profile name for uploading releases to s3. Check with
   damian@silverstripe.com if you don't have an AWS key setup.
-* `--skip-upload` to disable the "upload" command. This is useful if doing a private release and
+* `--skip-archive-upload` to disable both "archive" and "upload". This is useful if doing a private release and
   you don't want to upload this file to AWS.
+* `--skip-upload` to disable the "upload" command (but not archive)
 
 The release process, as with the initial `cow release` command, will actually be composed of several sub-commands,
 each of which could be run separately.

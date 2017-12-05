@@ -23,7 +23,13 @@ class Publish extends Release
     {
         parent::configureOptions();
         $this
-            ->addOption('skip-upload', 's', InputOption::VALUE_NONE, 'Skip uploading to AWS')
+            ->addOption('skip-archive-upload', null, InputOption::VALUE_NONE, 'Skip archive & upload to AWS')
+            ->addOption(
+                'skip-upload',
+                null,
+                InputOption::VALUE_NONE,
+                'Skip uploading to AWS, but still generates archives'
+            )
             ->addOption(
                 'aws-profile',
                 null,
@@ -50,14 +56,36 @@ class Publish extends Release
         $wait->run($this->input, $this->output);
 
         // Create packages
-        $package = new BuildArchive($this, $project, $releasePlan, $repository);
-        $package->run($this->input, $this->output);
+        if (!$this->skipArchive()) {
+            $package = new BuildArchive($this, $project, $releasePlan, $repository);
+            $package->run($this->input, $this->output);
+        }
 
         // Upload
-        if (!$this->input->getOption('skip-upload')) {
+        if (!$this->skipUpload()) {
             $upload = new UploadArchive($this, $project, $releasePlan, $awsProfile);
             $upload->run($this->input, $this->output);
         }
+    }
+
+    /**
+     * Is archive skipped?
+     *
+     * @return mixed
+     */
+    protected function skipArchive()
+    {
+        return $this->input->getOption('skip-archive-upload');
+    }
+
+    /**
+     * Is uploading skipped?
+     *
+     * @return bool
+     */
+    protected function skipUpload()
+    {
+        return $this->input->getOption('skip-upload') || $this->input->getOption('skip-archive-upload');
     }
 
     /**

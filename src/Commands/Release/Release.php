@@ -33,8 +33,18 @@ class Release extends Command
             ->addArgument('recipe', InputArgument::OPTIONAL, 'Recipe to release', 'silverstripe/installer')
             ->addOption('repository', 'r', InputOption::VALUE_REQUIRED, "Custom repository url")
             ->addOption('directory', 'd', InputOption::VALUE_REQUIRED, 'Optional directory to release project from')
-            ->addOption('skip-tests', null, InputOption::VALUE_NONE, 'Skip the tests suite run when performing the release')
-            ->addOption('skip-i18n', null, InputOption::VALUE_NONE, 'Skip the text collection task when performing the release')
+            ->addOption(
+                'skip-tests',
+                null,
+                InputOption::VALUE_NONE,
+                'Skip the tests suite run when performing the release'
+            )
+            ->addOption(
+                'skip-i18n',
+                null,
+                InputOption::VALUE_NONE,
+                'Skip the text collection task when performing the release'
+            )
             ->addOption(
                 'branching',
                 'b',
@@ -132,8 +142,8 @@ class Release extends Command
         // Check if repository was used during install
         // Prevents mistake publishing a project created with a repository
         $directory = $this->getInputDirectory();
-        if (file_exists($directory.'/.cow.repository')) {
-            return file_get_contents($directory.'/.cow.repository');
+        if (file_exists($directory . '/.cow.repository')) {
+            return file_get_contents($directory . '/.cow.repository');
         }
 
         return null;
@@ -149,7 +159,7 @@ class Release extends Command
         $version = $this->getInputVersion();
         $recipe = $this->getInputRecipe();
 
-        $filename = DIRECTORY_SEPARATOR . 'release-' . str_replace('/', '_', $recipe) . '-'. $version->getValue();
+        $filename = DIRECTORY_SEPARATOR . 'release-' . str_replace('/', '_', $recipe) . '-' . $version->getValue();
         $cwd = getcwd();
 
         // Check if we are already in this directory

@@ -32,8 +32,12 @@ class BuildArchive extends ReleaseStep
      * @param LibraryRelease|null $releasePlan
      * @param string $repository Custom composer repository for this install
      */
-    public function __construct(Command $command, Project $project, LibraryRelease $releasePlan = null, $repository = null)
-    {
+    public function __construct(
+        Command $command,
+        Project $project,
+        LibraryRelease $releasePlan = null,
+        $repository = null
+    ) {
         parent::__construct($command, $project, $releasePlan);
         $this->setRepository($repository);
     }
