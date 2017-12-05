@@ -60,11 +60,15 @@ This command has these options:
 * `--directory <directory>` to specify the folder to create or look for this project in. If you don't specify this,
 it will install to the path specified by `./release-<version>` in the current directory.
 * `--repository <repository>` will allow a custom composer package url to be specified. E.g. `http://packages.cwp.govt.nz`
+  Note: If you specify the repository during setup it will be re-used for subsquent commands
+  unless the `.cow.repository` file is deleted.
 * `--branching <type>` will specify a branching strategy. This allows these options:
   * `auto` - Default option, will branch to the minor version (e.g. 1.1) unless doing a non-stable tag (e.g. rc1)
   * `major` - Branch all repos to the major version (e.g. 1) unless already on a more-specific minor version.
   * `minor` - Branch all repos to the minor semver branch (e.g. 1.1)
   * `none` - Release from the current branch and do no branching.
+* `--skip-tests` to skip tests
+* `--skip-i18n` to skip updating localisations
 
 `release` actually has several sub-commands which can be run independently. These are as below:
 
@@ -91,6 +95,9 @@ This command has these options:
   omit this option.
 * `--aws-profile <profile>` to specify the AWS profile name for uploading releases to s3. Check with
   damian@silverstripe.com if you don't have an AWS key setup.
+* `--skip-archive-upload` to disable both "archive" and "upload". This is useful if doing a private release and
+  you don't want to upload this file to AWS.
+* `--skip-upload` to disable the "upload" command (but not archive)
 
 The release process, as with the initial `cow release` command, will actually be composed of several sub-commands,
 each of which could be run separately.

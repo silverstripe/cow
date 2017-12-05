@@ -237,7 +237,7 @@ class UpdateTranslations extends ReleaseStep
     }
 
     /**
-     * Tidy yaml files using yamlclean ruby gem
+     * Tidy yaml files using symfony yaml
      *
      * @param OutputInterface $output
      * @param Module[] $modules List of modules

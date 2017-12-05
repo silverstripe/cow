@@ -22,13 +22,21 @@ class Publish extends Release
     protected function configureOptions()
     {
         parent::configureOptions();
-        $this->addOption(
-            'aws-profile',
-            null,
-            InputOption::VALUE_REQUIRED,
-            "AWS profile to use for upload",
-            "silverstripe"
-        );
+        $this
+            ->addOption('skip-archive-upload', null, InputOption::VALUE_NONE, 'Skip archive & upload to AWS')
+            ->addOption(
+                'skip-upload',
+                null,
+                InputOption::VALUE_NONE,
+                'Skip uploading to AWS, but still generates archives'
+            )
+            ->addOption(
+                'aws-profile',
+                null,
+                InputOption::VALUE_REQUIRED,
+                "AWS profile to use for upload",
+                "silverstripe"
+            );
     }
 
     protected function fire()
@@ -37,6 +45,7 @@ class Publish extends Release
         $project = $this->getProject();
         $releasePlan = $this->getReleasePlan();
         $awsProfile = $this->getInputAWSProfile();
+        $repository = $this->getInputRepository();
 
         // Does bulk of module publishing, rewrite of dev branches, rewrite of tags, and actual tagging
         $publish = new PublishRelease($this, $project, $releasePlan);
@@ -47,12 +56,36 @@ class Publish extends Release
         $wait->run($this->input, $this->output);
 
         // Create packages
-        $package = new BuildArchive($this, $project, $releasePlan);
-        $package->run($this->input, $this->output);
+        if (!$this->skipArchive()) {
+            $package = new BuildArchive($this, $project, $releasePlan, $repository);
+            $package->run($this->input, $this->output);
+        }
 
         // Upload
-        $upload = new UploadArchive($this, $project, $releasePlan, $awsProfile);
-        $upload->run($this->input, $this->output);
+        if (!$this->skipUpload()) {
+            $upload = new UploadArchive($this, $project, $releasePlan, $awsProfile);
+            $upload->run($this->input, $this->output);
+        }
+    }
+
+    /**
+     * Is archive skipped?
+     *
+     * @return mixed
+     */
+    protected function skipArchive()
+    {
+        return $this->input->getOption('skip-archive-upload');
+    }
+
+    /**
+     * Is uploading skipped?
+     *
+     * @return bool
+     */
+    protected function skipUpload()
+    {
+        return $this->input->getOption('skip-upload') || $this->input->getOption('skip-archive-upload');
     }
 
     /**

@@ -45,7 +45,15 @@ class Composer
         $repository = null,
         $preferDist = false
     ) {
-        $command = ["composer", "create-project", "--no-interaction", $recipe, $directory, $version];
+        $command = [
+            "composer",
+            "create-project",
+            "--no-interaction",
+            "--ignore-platform-reqs",
+            $recipe,
+            $directory,
+            $version
+        ];
         if ($preferDist) {
             $command[] = "--prefer-dist";
             $command[] = "--no-dev";
