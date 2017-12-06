@@ -22,13 +22,14 @@ class Archive extends Publish
         // Get arguments
         $project = $this->getProject();
         $releasePlan = $this->getReleasePlan();
+        $repository = $this->getInputRepository();
 
         // Ensure we wait, even if just building archive
         $wait = new WaitStep($this, $project, $releasePlan);
         $wait->run($this->input, $this->output);
 
         // Create packages
-        $package = new BuildArchive($this, $project, $releasePlan);
+        $package = new BuildArchive($this, $project, $releasePlan, $repository);
         $package->run($this->input, $this->output);
     }
 }
