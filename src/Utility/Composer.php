@@ -45,27 +45,100 @@ class Composer
         $repository = null,
         $preferDist = false
     ) {
-        $command = [
-            "composer",
-            "create-project",
+        // Create-options
+        $createOptions = [
+            "--no-secure-http",
             "--no-interaction",
             "--ignore-platform-reqs",
+        ];
+
+        // Set dev / stable options
+        if ($preferDist) {
+            $createOptions[] = "--prefer-dist";
+            $createOptions[] = "--no-dev";
+        } else {
+            $createOptions[] = "--prefer-source";
+            $createOptions[] = "--keep-vcs"; // create only
+        }
+
+        // If using a repository, we must delay for a later update
+        if ($repository) {
+            $createOptions[] = '--repository';
+            $createOptions[] = $repository;
+            $createOptions[] = '--no-install';
+        }
+
+        // Create comand
+        $runner->runCommand(array_merge([
+            "composer",
+            "create-project",
             $recipe,
             $directory,
             $version
-        ];
-        if ($preferDist) {
-            $command[] = "--prefer-dist";
-            $command[] = "--no-dev";
-        } else {
-            $command[] = "--prefer-source";
-            $command[] = "--keep-vcs";
-        }
+        ], $createOptions), "Could not create project with version {$version}");
+
+        // Update un-installed project with custom repository
         if ($repository) {
-            $command[] = '--repository';
-            $command[] = $repository;
+            // Add repository temporarily
+            $runner->runCommand([
+                'composer',
+                'config',
+                'repositories.temp',
+                'composer',
+                $repository,
+                '--working-dir',
+                $directory,
+            ]);
+            // Enable http:// local repositories
+            $runner->runCommand([
+                'composer',
+                'config',
+                'secure-http',
+                'false',
+                '--working-dir',
+                $directory,
+            ]);
+
+            // update options
+            $updateOptions = [
+                "--no-interaction",
+                "--ignore-platform-reqs",
+            ];
+
+            // Set dev / stable options
+            if ($preferDist) {
+                $updateOptions[] = "--prefer-dist";
+                $updateOptions[] = "--no-dev";
+            } else {
+                $updateOptions[] = "--prefer-source";
+            }
+
+            // Update with the given repository
+            $runner->runCommand(array_merge([
+                'composer',
+                'update',
+                '--working-dir',
+                $directory,
+            ], $updateOptions), "Could not update project");
+
+            // Revert changes made above
+            $runner->runCommand([
+                'composer',
+                'config',
+                '--unset',
+                'repositories.temp',
+                '--working-dir',
+                $directory,
+            ]);
+            $runner->runCommand([
+                'composer',
+                'config',
+                '--unset',
+                'secure-http',
+                '--working-dir',
+                $directory,
+            ]);
         }
-        $runner->runCommand($command, "Could not create project with version {$version}");
     }
 
     /**
