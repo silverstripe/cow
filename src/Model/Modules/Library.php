@@ -516,9 +516,10 @@ class Library
      * @param string $ref Git ref (tag / branch / SHA)
      * @param bool $recursive Search recursively
      * @param int $maxDepth Safeguard against infinite loops
+     * @param bool $stableOnly Check if we only want to check stable tags
      * @return array|null
      */
-    public function getHistoryComposerData($ref, $recursive = true, $maxDepth = 6)
+    public function getHistoryComposerData($ref, $recursive = true, $maxDepth = 6, $stableOnly = false)
     {
         if ($maxDepth <= 0) {
             return null;
@@ -535,13 +536,23 @@ class Library
         }
 
         // Get all recursive changes
-        foreach ($results['require'] as $libraryName => $version) {
-            // If this library belongs to this project, and this tag is stable, recurse
+        foreach ($results['require'] as $libraryName => $libraryConstraint) {
+            // If this library belongs to this project, recurse
             $library = $this->getProject()->getLibrary($libraryName);
-            if (!$library || !Version::parse($version)) {
+            if (!$library) {
                 continue;
             }
-            $nextResults = $library->getHistoryComposerData($version, true, $maxDepth - 1);
+            // Get oldest version for this library and constraint
+            if (!ComposerConstraint::parse($libraryConstraint)) {
+                continue;
+            }
+            $constraint = new ComposerConstraint($libraryConstraint, $ref, $libraryName);
+            $version = $library->getOldestVersionMatching($constraint, $stableOnly);
+            if (!$version) {
+                continue;
+            }
+            // With this history version in hand, recurse
+            $nextResults = $library->getHistoryComposerData($version->getValue(), true, $maxDepth - 1, $stableOnly);
             if (isset($nextResults['require'])) {
                 $results['require'] = array_merge(
                     $nextResults['require'],
@@ -550,6 +561,38 @@ class Library
             }
         }
         return $results;
+    }
+
+    /**
+     * Returns the oldest version that matches the given version constraint
+     *
+     * @param ComposerConstraint $composerConstraint
+     * @param bool $stableOnly Check if we only want to check stable tags
+     * @return Version
+     */
+    public function getOldestVersionMatching(ComposerConstraint $composerConstraint, $stableOnly = false)
+    {
+        // Filter known tags by the constraint first
+        $childVersions = $composerConstraint->filterVersions($this->getTags());
+
+        // Check if we want to filter out stable tags only
+        // E.g. prefer "3.4.0..3.4.1" over "3.4.0-rc1..3.4.1"
+        if ($stableOnly) {
+            $stableChildVersions = Version::filter($childVersions, function (Version $nextTag) {
+                return $nextTag->isStable();
+            });
+            // Use stable versions if available, or fall back to unstable
+            if (!empty($stableChildVersions)) {
+                $childVersions = $stableChildVersions;
+            }
+        }
+
+        // Get smallest matching version
+        $childVersions = Version::sort($childVersions, Version::ASC);
+        if (!empty($childVersions)) {
+            return reset($childVersions);
+        }
+        return null;
     }
 
     /**

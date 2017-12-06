@@ -163,6 +163,9 @@ class CreateChangelog extends ReleaseStep
         // Build root release node
         $historicRelease = new ChangelogLibrary($newRelease, $historicVersion);
 
+        // Check if "stable only" mode
+        $preferStable = $newRelease->getVersion()->isStable();
+
         // Check all dependencies from this past commit.
         // Note that we flatten both current and historic dependecy trees in case dependencies
         // have been re-arranged since the prior tag.
@@ -173,7 +176,7 @@ class CreateChangelog extends ReleaseStep
                 // Get flat composer history up to 6 levels deep
                 $pastComposer = $newRelease
                     ->getLibrary()
-                    ->getHistoryComposerData($historicVersion->getValue(), true, 6);
+                    ->getHistoryComposerData($historicVersion->getValue(), true, 6, $preferStable);
             }
 
             // Check if this release has a historic tag.
@@ -185,30 +188,17 @@ class CreateChangelog extends ReleaseStep
 
             // Get oldest existing tag that matches the given constraint as the "from" for changelog purposes.
             $historicConstraint = new ComposerConstraint($historicConstraintName, $historicVersion, $childReleaseName);
-            $childVersions = $historicConstraint->filterVersions($childNewRelease->getLibrary()->getTags());
-
-            // If "to" is stable, then filter out unstable "from"
-            // E.g. prefer "3.4.0..3.4.1" over "3.4.0-rc1..3.4.1"
-            if ($childNewRelease->getVersion()->isStable()) {
-                $stableChildVersions = Version::filter($childVersions, function (Version $nextTag) {
-                    return $nextTag->isStable();
-                });
-                // Use stable versions if available, or fall back to unstable
-                if (!empty($stableChildVersions)) {
-                    $childVersions = $stableChildVersions;
-                }
-            }
-
-            // Get smallest matching version
-            $childVersions = Version::sort($childVersions, Version::ASC);
-            if (empty($childVersions)) {
+            $childHistoricVersion = $childNewRelease->getLibrary()->getOldestVersionMatching(
+                $historicConstraint,
+                $childNewRelease->getVersion()->isStable()
+            );
+            if (!$childHistoricVersion) {
                 throw new \LogicException(
                     "No historic version for library {$childReleaseName} matches constraint {$historicConstraintName}"
                 );
             }
 
             // Check if to == from version
-            $childHistoricVersion = reset($childVersions);
             if ($childHistoricVersion->getValue() === $childNewRelease->getVersion()->getValue()) {
                 continue;
             }
