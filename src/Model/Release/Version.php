@@ -424,26 +424,23 @@ class Version
      * Guess the next version to release from this version
      *
      * @param string $stability Stability of the next version to use
-     * @param int $stabilityVersion
+     * @param int $stabilityVersion Version of stability (e.g. 2 for -rc2)
      * @return Version
      */
     public function getNextVersion($stability = '', $stabilityVersion = 0)
     {
+        // Create new version with specified stability
         $canditate = clone $this;
-
-        // Check if we can simply release a new stability of the same version
-        // E.g. 4.0.0-alpha1 -> 4.0.0, or 4.0.0-alpha1 -> 4.0.0-beta1
         $canditate->setStability($stability);
         $canditate->setStabilityVersion($stabilityVersion);
-        if ($this->compareTo($canditate) < 0) {
-            return $canditate;
+
+        // If last release is stable, or new version isn't never, bump patch version
+        // This ensures the new version is always a new version
+        // E.g. 1.0.0 -> 1.0.1-rc1, 1.0.1-rc1 -> 1.0.1-rc2
+        if ($this->isStable() || $this->compareTo($canditate) >= 0) {
+            $canditate->setPatch($this->getPatch() + 1);
         }
 
-        // if suggested stability isn't more stable, advance to next stable patch release
-        // E.g. 4.0.0-alpha2 -> 4.0.1
-        $canditate->setStability('');
-        $canditate->setStabilityVersion(null);
-        $canditate->setPatch($this->getPatch() + 1);
         return $canditate;
     }
 
