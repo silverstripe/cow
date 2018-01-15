@@ -45,96 +45,42 @@ class Composer
         $repository = null,
         $preferDist = false
     ) {
-        // Create-options
-        $createOptions = [
-            "--no-secure-http",
-            "--no-interaction",
-            "--ignore-platform-reqs",
-        ];
-
-        // Set dev / stable options
-        if ($preferDist) {
-            $createOptions[] = "--prefer-dist";
-            $createOptions[] = "--no-dev";
-        } else {
-            $createOptions[] = "--prefer-source";
-            $createOptions[] = "--keep-vcs"; // create only
-        }
-
-        // If using a repository, we must delay for a later update
-        if ($repository) {
-            $createOptions[] = '--repository';
-            $createOptions[] = $repository;
-            $createOptions[] = '--no-install';
-        }
-
         // Create comand
+        $createOptions = self::getCreateOptions($repository, $preferDist);
         $runner->runCommand(array_merge([
             "composer",
             "create-project",
             $recipe,
             $directory,
-            $version
+            $version,
         ], $createOptions), "Could not create project with version {$version}");
 
-        // Update un-installed project with custom repository
-        if ($repository) {
-            // Add repository temporarily
-            $runner->runCommand([
-                'composer',
-                'config',
-                'repositories.temp',
-                'composer',
-                $repository,
-                '--working-dir',
-                $directory,
-            ]);
-            // Enable http:// local repositories
-            $runner->runCommand([
-                'composer',
-                'config',
-                'secure-http',
-                'false',
-                '--working-dir',
-                $directory,
-            ]);
+        // Set composer config
+        $customConfig = self::getUpdateConfig($directory, $repository);
+        foreach ($customConfig as $option => $arguments) {
+            $runner->runCommand(array_merge(
+                ['composer', 'config', $option],
+                $arguments,
+                ['--working-dir', $directory]
+            ));
+        }
 
-            // update options
-            $updateOptions = [
-                "--no-interaction",
-                "--ignore-platform-reqs",
-            ];
+        // Update with the given repository
+        $updateOptions = self::getUpdateOptions($preferDist);
+        $runner->runCommand(array_merge([
+            'composer',
+            'update',
+            '--working-dir',
+            $directory,
+        ], $updateOptions), "Could not update project");
 
-            // Set dev / stable options
-            if ($preferDist) {
-                $updateOptions[] = "--prefer-dist";
-                $updateOptions[] = "--no-dev";
-            } else {
-                $updateOptions[] = "--prefer-source";
-            }
-
-            // Update with the given repository
-            $runner->runCommand(array_merge([
-                'composer',
-                'update',
-                '--working-dir',
-                $directory,
-            ], $updateOptions), "Could not update project");
-
-            // Revert changes made above
+        // Revert all custom config
+        foreach ($customConfig as $option => $arguments) {
             $runner->runCommand([
                 'composer',
                 'config',
                 '--unset',
-                'repositories.temp',
-                '--working-dir',
-                $directory,
-            ]);
-            $runner->runCommand([
-                'composer',
-                'config',
-                '--unset',
-                'secure-http',
+                $option,
                 '--working-dir',
                 $directory,
             ]);
@@ -154,5 +100,89 @@ class Composer
         $error = "Couldn't determine GitHub oAuth token. Please set GITHUB_API_TOKEN";
         $result = $runner->runCommand($command, $error);
         return trim($result);
+    }
+
+    /**
+     * Get list of custom config to use for `composer update` when creating a project
+     *
+     * @param string $directory
+     * @param string $repository
+     * @return array
+     */
+    protected static function getUpdateConfig($directory, $repository)
+    {
+        // Register all custom options to temporarily set
+        $customConfig = [];
+
+        // If `requirements.php` is specified, set platform to lowest platform version
+        $composerData = Config::loadFromFile($directory . '/composer.json');
+        if (isset($composerData['require']['php'])
+            && preg_match('/^[\\D]*(?<version>[\\d.]+)/', $composerData['require']['php'], $matches)
+        ) {
+            $customConfig['platform.php'] = [$matches['version']];
+        }
+
+        // Update un-installed project with custom repository
+        if ($repository) {
+            $customConfig['repositories.temp'] = ['composer', $repository];
+            $customConfig['secure-http'] = ['false'];
+        }
+
+        return $customConfig;
+    }
+
+    /**
+     * Get all extra options to use with `composer create-project` when creating a project
+     *
+     * @param string $repository
+     * @param string $preferDist
+     * @return array
+     */
+    protected static function getCreateOptions($repository, $preferDist)
+    {
+        // Create-options
+        $createOptions = [
+            '--no-secure-http',
+            '--no-interaction',
+            '--ignore-platform-reqs',
+            '--no-install',
+        ];
+
+        // Set dev / stable options
+        if ($preferDist) {
+            $createOptions[] = "--prefer-dist";
+            $createOptions[] = "--no-dev";
+        } else {
+            $createOptions[] = "--prefer-source";
+            $createOptions[] = "--keep-vcs"; // create only
+        }
+
+        // Add repository
+        if ($repository) {
+            $createOptions[] = '--repository';
+            $createOptions[] = $repository;
+        }
+        return $createOptions;
+    }
+
+    /**
+     * Get all extra composer cli options to use with `composer update` when creating a project
+     *
+     * @param $preferDist
+     * @return array
+     */
+    protected static function getUpdateOptions($preferDist)
+    {
+        // update options
+        $updateOptions = ["--no-interaction"];
+
+        // Set dev / stable options
+        if ($preferDist) {
+            $updateOptions[] = "--prefer-dist";
+            $updateOptions[] = "--no-dev";
+        } else {
+            $updateOptions[] = "--prefer-source";
+        }
+        return $updateOptions;
     }
 }
