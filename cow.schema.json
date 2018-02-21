@@ -27,7 +27,17 @@
       "type": "boolean"
     },
     "child-stability-inherit": {
-      "type": "boolean"
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ]
     },
     "dependency-constraint": {
       "type": "string",
