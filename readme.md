@@ -108,3 +108,10 @@ each of which could be run separately.
 
 After the push step, `release:publish` will automatically wait for this version to be available in packagist.org
 before continuing.
+
+## Schema
+
+The [cow schema file](cow.schema.json) is in the root of this project.
+
+You can run `cow schema:validate` to check the `.cow.json` configuration file in your project or module to
+ensure it matches against the cow schema.

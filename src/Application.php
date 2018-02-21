@@ -69,6 +69,9 @@ class Application extends Console\Application
         // Module commands
         $commands[] = new Commands\Module\TranslateBuild();
 
+        // Schema commands
+        $commands[] = new Commands\Schema\Validate();
+
         return $commands;
     }
 }
