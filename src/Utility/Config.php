@@ -3,7 +3,6 @@
 namespace SilverStripe\Cow\Utility;
 
 use Exception;
-use JsonSchema\Validator;
 
 class Config
 {
@@ -27,9 +26,10 @@ class Config
         if ($schemaPath) {
             // Note: Parse as object (assoc = false) for validation
             $schema = static::loadFromFile($schemaPath);
-            $validator = new Validator();
+
             $objectData = self::parseContent($content, false);
-            $validator->validate($objectData, $schema);
+            $validator = SchemaValidator::validate($objectData, $schema);
+
             if (!$validator->isValid()) {
                 $errors = [];
                 foreach ($validator->getErrors() as $error) {

@@ -55,7 +55,7 @@ abstract class Command extends Console\Command\Command
         // Configure extra output formats
         $this->output->getFormatter()->setStyle('bold', new OutputFormatterStyle('blue'));
 
-        $this->fire();
+        return $this->fire();
     }
 
     /**

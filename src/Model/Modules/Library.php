@@ -15,6 +15,7 @@ use SilverStripe\Cow\Model\Release\LibraryRelease;
 use SilverStripe\Cow\Model\Release\Version;
 use SilverStripe\Cow\Utility\Config;
 use SilverStripe\Cow\Utility\Format;
+use SilverStripe\Cow\Utility\SchemaValidator;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -628,9 +629,8 @@ class Library
      */
     public function getCowData()
     {
-        // http://json-schema.org/examples.html
         $path = $this->getDirectory() . '/.cow.json';
-        $schemaPath = dirname(dirname(dirname(__DIR__))).'/cow.schema.json';
+        $schemaPath = dirname(dirname(dirname(__DIR__))) . '/' . SchemaValidator::SCHEMA_FILENAME;
         return Config::loadFromFile($path, $schemaPath);
     }
 
