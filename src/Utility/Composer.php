@@ -36,6 +36,7 @@ class Composer
      * @param string $version
      * @param string $repository Optional custom repository
      * @param bool $preferDist Set to true to use dist
+     * @param bool $ignorePlatform Set to true to ignore platform deps
      */
     public static function createProject(
         CommandRunner $runner,
@@ -43,10 +44,11 @@ class Composer
         $directory,
         $version,
         $repository = null,
-        $preferDist = false
+        $preferDist = false,
+        $ignorePlatform = false
     ) {
         // Create comand
-        $createOptions = self::getCreateOptions($repository, $preferDist);
+        $createOptions = self::getCreateOptions($repository, $preferDist, $ignorePlatform);
         $runner->runCommand(array_merge([
             "composer",
             "create-project",
@@ -66,7 +68,7 @@ class Composer
         }
 
         // Update with the given repository
-        $updateOptions = self::getUpdateOptions($preferDist);
+        $updateOptions = self::getUpdateOptions($preferDist, $ignorePlatform);
         $runner->runCommand(array_merge([
             'composer',
             'update',
@@ -136,17 +138,22 @@ class Composer
      *
      * @param string $repository
      * @param string $preferDist
+     * @param bool $ignorePlatform
      * @return array
      */
-    protected static function getCreateOptions($repository, $preferDist)
+    protected static function getCreateOptions($repository, $preferDist, $ignorePlatform)
     {
         // Create-options
         $createOptions = [
             '--no-secure-http',
             '--no-interaction',
-            '--ignore-platform-reqs',
             '--no-install',
         ];
+
+        // Set ignore platform reqs
+        if ($ignorePlatform) {
+            $createOptions[] = '--ignore-platform-reqs';
+        }
 
         // Set dev / stable options
         if ($preferDist) {
@@ -168,13 +175,19 @@ class Composer
     /**
      * Get all extra composer cli options to use with `composer update` when creating a project
      *
-     * @param $preferDist
+     * @param bool $preferDist
+     * @param bool $ignorePlatform
      * @return array
      */
-    protected static function getUpdateOptions($preferDist)
+    protected static function getUpdateOptions($preferDist, $ignorePlatform)
     {
         // update options
-        $updateOptions = ["--no-interaction"];
+        $updateOptions = [ "--no-interaction" ];
+
+        // Set ignore platform reqs
+        if ($ignorePlatform) {
+            $updateOptions[] = '--ignore-platform-reqs';
+        }
 
         // Set dev / stable options
         if ($preferDist) {

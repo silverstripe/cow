@@ -263,6 +263,7 @@ class Library
 
         // Get tag strings
         $repo = $this->getRepository();
+        $repo->run('fetch', ['--tags']);
         $result = $repo->run('tag');
         $tags = preg_split('~\R~u', $result);
         $tags = array_filter($tags);
@@ -527,7 +528,12 @@ class Library
         }
 
         // Get composer data for this library
-        $content = $this->getRepository()->run('show', ["{$ref}:composer.json"]);
+        try {
+            $content = $this->getRepository()->run('show', ["{$ref}:composer.json"]);
+        } catch (ProcessException $ex) {
+            // Skip missing composer.json in legacy releases
+            return null;
+        }
         if (!$content) {
             return null;
         }
@@ -538,8 +544,8 @@ class Library
 
         // Get all recursive changes
         foreach ($results['require'] as $libraryName => $libraryConstraint) {
-            // If this library belongs to this project, recurse
-            $library = $this->getProject()->getLibrary($libraryName);
+            // If this library belongs to this module, recurse
+            $library = $this->getLibrary($libraryName);
             if (!$library) {
                 continue;
             }
@@ -553,7 +559,12 @@ class Library
                 continue;
             }
             // With this history version in hand, recurse
-            $nextResults = $library->getHistoryComposerData($version->getValue(), true, $maxDepth - 1, $stableOnly);
+            $nextResults = $library->getHistoryComposerData(
+                $version->getOriginalString(),
+                true,
+                $maxDepth - 1,
+                $stableOnly
+            );
             if (isset($nextResults['require'])) {
                 $results['require'] = array_merge(
                     $nextResults['require'],
@@ -738,18 +749,28 @@ class Library
         // Check logical rules to pull out any direct dependencies
         foreach ($data['require'] as $name => $version) {
             // Skip non-child libraries
-            if (!$this->isChildLibrary($name)) {
-                continue;
+            if ($this->isChildLibrary($name)) {
+                // Defer to parent project for creating and registering libraries
+                // The project will prevent duplicate libraries appearing twice in the tree
+                $this->children[] = $this
+                    ->getProject()
+                    ->getOrCreateLibrary($name, $this);
             }
-            $path = $this->getProject()->findModulePath($name);
-            if (empty($path)) {
-                throw new LogicException("Required dependency $name is not installed");
-            }
-            $childLibrary = $this->createChildLibrary($path);
-            $this->children[] = $childLibrary;
         }
 
         return $this->children;
+    }
+
+    /**
+     * Get list of exclusive children (where this is the first parent)
+     *
+     * @return Library[]
+     */
+    public function getChildrenExclusive()
+    {
+        return array_filter($this->getChildren(), function (Library $child) {
+            return $child->getParent() === $this;
+        });
     }
 
     /**
@@ -881,7 +902,8 @@ class Library
     }
 
     /**
-     * Get parent library
+     * Get first parent library.
+     * Note: Even though a library can be included multiple times, prioritise the first parent only
      *
      * @return Library
      */
@@ -926,25 +948,6 @@ class Library
             default:
                 throw new InvalidArgumentException("Invalid dependency-constraint: {$dependencyconstraint}");
         }
-    }
-
-    /**
-     * Create a child library
-     *
-     * @param string $path
-     * @return Library
-     */
-    protected function createChildLibrary($path)
-    {
-        if (Module::isModulePath($path)) {
-            return new Module($path, $this);
-        }
-
-        if (Library::isLibraryPath($path)) {
-            return new Library($path, $this);
-        }
-
-        return null;
     }
 
     /**

@@ -17,6 +17,13 @@ class Version
     const DESC = 'descending';
 
     /**
+     * Original string value (may have `v` prefix)
+     *
+     * @var string
+     */
+    protected $original;
+
+    /**
      * @var int
      */
     protected $major;
@@ -85,11 +92,22 @@ class Version
                 $this->stabilityVersion = $matches['stabilityVersion'];
             }
         }
+        $this->original = $version;
     }
 
     public function __toString()
     {
         return $this->getValue();
+    }
+
+    /**
+     * Get original tag value
+     *
+     * @return string
+     */
+    public function getOriginalString()
+    {
+        return $this->original;
     }
 
     public function getStability()
@@ -247,7 +265,7 @@ class Version
     /**
      * Get all filenames
      *
-     * @return string
+     * @return string[]
      */
     public function getReleaseFilenames()
     {
@@ -345,10 +363,9 @@ class Version
      * Given a list of tags, determine which is the best "from" version
      *
      * @param Version[] $tags List of tags to search
-     * @param string $libraryName Name of library (for error reporting only)
      * @return Version
      */
-    public function getPriorVersionFromTags($tags, $libraryName)
+    public function getPriorVersionFromTags($tags)
     {
         // If we can programatically detect a prior version, then use this
         $prior = $this->getPriorVersion();

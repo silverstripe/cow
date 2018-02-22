@@ -5,6 +5,7 @@ namespace SilverStripe\Cow\Model\Modules;
 use BadMethodCallException;
 use Generator;
 use InvalidArgumentException;
+use LogicException;
 
 /**
  * Represents information about a project in a given directory
@@ -13,6 +14,18 @@ use InvalidArgumentException;
  */
 class Project extends Module
 {
+    /**
+     * List of all libraries registered for this project
+     *
+     * @var array
+     */
+    protected $libraries = [];
+
+    /**
+     * Cache of module paths
+     */
+    protected $modulePaths = null;
+
     public function __construct($directory)
     {
         parent::__construct($directory);
@@ -33,11 +46,6 @@ class Project extends Module
         // Note: Support modules without mysite
         return static::isLibraryPath($directory);
     }
-
-    /**
-     * Cache of module paths
-     */
-    protected $modulePaths = null;
 
     /**
      * Find directory for given module name
@@ -130,5 +138,53 @@ class Project extends Module
             }
         }
         throw new BadMethodCallException("sake bin could not be found in this project");
+    }
+
+    /**
+     * Return or register new library
+     *
+     * @param string $name
+     * @param Library $parent Main parent for this library
+     * @return Library
+     */
+    public function getOrCreateLibrary($name, Library $parent)
+    {
+        // Check global store
+        if (isset($this->libraries[$name])) {
+            return $this->libraries[$name];
+        }
+
+        // Create new
+        $path = $this->getProject()->findModulePath($name);
+        if (empty($path)) {
+            throw new LogicException("Required dependency $name is not installed");
+        }
+
+        // Build library
+        $library = $this->createLibrary($path, $parent);
+
+        // Register and return
+        $this->libraries[$name] = $library;
+        return $library;
+    }
+
+    /**
+     * Create a child library
+     *
+     * @param string $path
+     * @param Library $parent
+     * @return Library
+     */
+    protected function createLibrary($path, $parent)
+    {
+        if (Module::isModulePath($path)) {
+            return new Module($path, $parent);
+        }
+
+        if (Library::isLibraryPath($path)) {
+            return new Library($path, $parent);
+        }
+
+        throw new InvalidArgumentException("No module at {$path}");
     }
 }

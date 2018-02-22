@@ -41,37 +41,37 @@ class PublishRelease extends ReleaseStep
      * Release a library
      *
      * @param OutputInterface $output
-     * @param LibraryRelease $releasePlan The library to tag
+     * @param LibraryRelease $releasePlanNode Node in release plan being released
      */
-    protected function releaseRecursive(OutputInterface $output, LibraryRelease $releasePlan)
+    protected function releaseRecursive(OutputInterface $output, LibraryRelease $releasePlanNode)
     {
         // Skip upgrade-only modules
-        if (!$releasePlan->getIsNewRelease()) {
+        if (!$releasePlanNode->getIsNewRelease()) {
             return;
         }
 
         // Before releasing a version, make sure to tag all nested dependencies
-        foreach ($releasePlan->getItems() as $item) {
+        foreach ($releasePlanNode->getItems() as $item) {
             $this->releaseRecursive($output, $item);
         }
 
         // Release this library
-        $this->releaseLibrary($output, $releasePlan);
+        $this->releaseLibrary($output, $releasePlanNode);
     }
 
     /**
      * Performs a release of a single library
      *
      * @param OutputInterface $output
-     * @param LibraryRelease $releasePlan
+     * @param LibraryRelease $releasePlanNode Node in release plan being released
      */
-    protected function releaseLibrary(OutputInterface $output, LibraryRelease $releasePlan)
+    protected function releaseLibrary(OutputInterface $output, LibraryRelease $releasePlanNode)
     {
         // Release this library
-        $library = $releasePlan->getLibrary();
+        $library = $releasePlanNode->getLibrary();
         $branch = $library->getBranch();
         $name = $library->getName();
-        $versionName = $releasePlan->getVersion()->getValue();
+        $versionName = $releasePlanNode->getVersion()->getValue();
         $this->log($output, "Releasing library <info>{$name}</info> at version <info>{$versionName}</info>");
 
         // Step 1: Push development branch to origin before tagging
@@ -81,10 +81,10 @@ class PublishRelease extends ReleaseStep
         $this->detachBranch($output, $library);
 
         // Step 3: Rewrite composer.json on this head to all tagged versions only
-        $this->stabiliseRequirements($output, $releasePlan);
+        $this->stabiliseRequirements($output, $releasePlanNode);
 
         // Step 4: Tag and push this tag
-        $this->publishTag($output, $releasePlan);
+        $this->publishTag($output, $releasePlanNode);
 
         // Step 5: Restore back to dev branch
         $library->checkout($output, $branch);
@@ -110,19 +110,28 @@ class PublishRelease extends ReleaseStep
      * Rewrite all composer dependencies for this tag
      *
      * @param OutputInterface $output
-     * @param LibraryRelease $releasePlan
+     * @param LibraryRelease $releasePlanNode Current node in release plan being released
      */
-    protected function stabiliseRequirements(OutputInterface $output, LibraryRelease $releasePlan)
+    protected function stabiliseRequirements(OutputInterface $output, LibraryRelease $releasePlanNode)
     {
-        $parentLibrary = $releasePlan->getLibrary();
+        $parentLibrary = $releasePlanNode->getLibrary();
         $originalData = $composerData = $parentLibrary->getComposerData();
         $constraintType = $parentLibrary->getDependencyConstraint();
 
-        // Inspect all dependencies
-        foreach ($releasePlan->getItems() as $item) {
+        // Rewrite all dependencies.
+        // Note: rewrite dependencies even if non-exclusive children, so do a global search
+        // through the entire tree of the plan to get the new tag
+        $items = $this->getReleasePlan()->getAllItems();
+        foreach ($items as $item) {
             $childName = $item->getLibrary()->getName();
-            $stabiliseDependencyRequirement = $this->stabiliseDependencyRequirement($output, $item, $constraintType);
-            $composerData['require'][$childName] = $stabiliseDependencyRequirement;
+            // Only rewrite actual dependencies
+            if (isset($composerData['require'][$childName])) {
+                $composerData['require'][$childName] = $this->stabiliseDependencyRequirement(
+                    $output,
+                    $item,
+                    $constraintType
+                );
+            }
         }
 
         // Save modifications to the composer.json for this module
