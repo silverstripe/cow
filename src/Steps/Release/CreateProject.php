@@ -124,6 +124,7 @@ class CreateProject extends Step
             $this->getDirectory(),
             $installVersion,
             $this->getRepository(),
+            false, // prefer-source for base project
             true // Skip platform-reqs for base release
         );
     }
