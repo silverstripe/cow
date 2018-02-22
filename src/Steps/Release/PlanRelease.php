@@ -139,7 +139,7 @@ class PlanRelease extends Step
     protected function generateChildReleases(LibraryRelease $parent)
     {
         // Get children
-        $childModules = $parent->getLibrary()->getChildren();
+        $childModules = $parent->getLibrary()->getChildrenExclusive();
         foreach ($childModules as $childModule) {
             // For the given child module, guess the upgrade mechanism (upgrade or new tag)
             if ($parent->getLibrary()->isChildUpgradeOnly($childModule->getName())) {

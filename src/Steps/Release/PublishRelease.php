@@ -118,11 +118,20 @@ class PublishRelease extends ReleaseStep
         $originalData = $composerData = $parentLibrary->getComposerData();
         $constraintType = $parentLibrary->getDependencyConstraint();
 
-        // Inspect all dependencies
-        foreach ($releasePlan->getItems() as $item) {
+        // Rewrite all dependencies.
+        // Note: rewrite dependencies even if non-exclusive children, so do a global search
+        // through the entire tree of the plan to get the new tag
+        $items = $this->getReleasePlan()->getAllItems();
+        foreach ($items as $item) {
             $childName = $item->getLibrary()->getName();
-            $stabiliseDependencyRequirement = $this->stabiliseDependencyRequirement($output, $item, $constraintType);
-            $composerData['require'][$childName] = $stabiliseDependencyRequirement;
+            // Only rewrite actual dependencies
+            if (isset($composerData['require'][$childName])) {
+                $composerData['require'][$childName] = $this->stabiliseDependencyRequirement(
+                    $output,
+                    $item,
+                    $constraintType
+                );
+            }
         }
 
         // Save modifications to the composer.json for this module
