@@ -487,7 +487,7 @@ class PlanRelease extends Step
 
             // If releasing a new tag, show previous version
             $tags = $node->getLibrary()->getTags();
-            $previous = $node->getVersion()->getPriorVersionFromTags($tags, $node->getLibrary()->getName());
+            $previous = $node->getVersion()->getPriorVersionFromTags($tags);
             if ($previous) {
                 $version .= ', prior version <comment>' . $previous->getValue() . '</comment>';
             }

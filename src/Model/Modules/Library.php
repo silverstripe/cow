@@ -527,7 +527,12 @@ class Library
         }
 
         // Get composer data for this library
-        $content = $this->getRepository()->run('show', ["{$ref}:composer.json"]);
+        try {
+            $content = $this->getRepository()->run('show', ["{$ref}:composer.json"]);
+        } catch (ProcessException $ex) {
+            // Skip missing composer.json in legacy releases
+            return null;
+        }
         if (!$content) {
             return null;
         }
@@ -538,8 +543,8 @@ class Library
 
         // Get all recursive changes
         foreach ($results['require'] as $libraryName => $libraryConstraint) {
-            // If this library belongs to this project, recurse
-            $library = $this->getProject()->getLibrary($libraryName);
+            // If this library belongs to this module, recurse
+            $library = $this->getLibrary($libraryName);
             if (!$library) {
                 continue;
             }
@@ -553,7 +558,12 @@ class Library
                 continue;
             }
             // With this history version in hand, recurse
-            $nextResults = $library->getHistoryComposerData($version->getValue(), true, $maxDepth - 1, $stableOnly);
+            $nextResults = $library->getHistoryComposerData(
+                $version->getOriginalString(),
+                true,
+                $maxDepth - 1,
+                $stableOnly
+            );
             if (isset($nextResults['require'])) {
                 $results['require'] = array_merge(
                     $nextResults['require'],

@@ -218,7 +218,7 @@ class LibraryRelease
     public function getPriorVersion()
     {
         $tags = $this->getLibrary()->getTags();
-        return $this->getVersion()->getPriorVersionFromTags($tags, $this->getLibrary()->getName());
+        return $this->getVersion()->getPriorVersionFromTags($tags);
     }
 
     /**
