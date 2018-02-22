@@ -47,9 +47,6 @@ class Composer
         $preferDist = false,
         $ignorePlatform = false
     ) {
-        // Flush cache prior to create; Otherwise recent tags may not be present.
-        $runner->runCommand(['composer', 'clear-cache']);
-
         // Create comand
         $createOptions = self::getCreateOptions($repository, $preferDist, $ignorePlatform);
         $runner->runCommand(array_merge([
