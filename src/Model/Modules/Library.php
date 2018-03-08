@@ -357,7 +357,7 @@ class Library
 
         // Pull
         try {
-            $repo->run('pull', [$remote, $branch, '--rebase']);
+            $repo->run('pull', ['--rebase', $remote, $branch]);
         } finally {
             // Restore locale changes
             if ($hasChanges) {
