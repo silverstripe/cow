@@ -124,14 +124,18 @@ class PublishRelease extends ReleaseStep
         $items = $this->getReleasePlan()->getAllItems();
         foreach ($items as $item) {
             $childName = $item->getLibrary()->getName();
-            // Only rewrite actual dependencies
-            if (isset($composerData['require'][$childName])) {
-                $composerData['require'][$childName] = $this->stabiliseDependencyRequirement(
-                    $output,
-                    $item,
-                    $constraintType
-                );
+
+            // Ensure this library is allowed to release this dependency (even if shared)
+            if (!isset($composerData['require'][$childName]) || !$parentLibrary->isChildLibrary($childName)) {
+                continue;
             }
+
+            // Update dependency
+            $composerData['require'][$childName] = $this->stabiliseDependencyRequirement(
+                $output,
+                $item,
+                $constraintType
+            );
         }
 
         // Save modifications to the composer.json for this module
