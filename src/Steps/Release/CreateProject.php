@@ -93,8 +93,8 @@ class CreateProject extends Step
         }
 
         // If using custom repository, write `.cow.repository` file for later
-        if ($this->getRepository()) {
-            file_put_contents($path.'/.cow.repository', $this->getRepository());
+        if ($repo) {
+            file_put_contents($repo->getPath() . '/.cow.repository', $this->getRepository());
         }
 
         // Success
