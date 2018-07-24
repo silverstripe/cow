@@ -185,13 +185,23 @@ class ComposerConstraint
     {
         // Match dev constraint
         $valid = preg_match(
-            '/^(?<major>\\d+)(\\.(?<minor>\\d+))?(?<dev>\.[x\\*]\\-dev)$/',
+            '/^(?<major>\\d+)((\\.(?<minor>\\d+))(\\.(?<patch>\\d+))?)?(?<dev>\\.[x\\*]\\-dev)$/',
             $version,
             $matches
         );
         if ($valid) {
-            $minor = (isset($matches['minor']) && strlen($matches['minor'])) ? $matches['minor'] : '0';
-            $patch = (isset($matches['minor']) && $matches['minor']) ? '0' : null;
+            $minor = '0';
+            $patch = null;
+            if (isset($matches['minor'])) {
+                $minor = strlen($matches['minor']) ? $matches['minor'] : '0';
+                if ($matches['minor']) {
+                    if (isset($matches['patch']) && strlen($matches['patch'])) {
+                        $patch = $matches['patch'];
+                    } else {
+                        $patch = '0';
+                    }
+                }
+            }
             return [
                 'type' => '~',
                 'major' => $matches['major'],
