@@ -118,10 +118,15 @@ class Composer
 
         // If `requirements.php` is specified, set platform to lowest platform version
         $composerData = Config::loadFromFile($directory . '/composer.json');
+        // @todo - this needs to resolve the dependencies all the way down the tree - recipes don't declare php deps
         if (isset($composerData['require']['php'])
             && preg_match('/^[\\D]*(?<version>[\\d.]+)/', $composerData['require']['php'], $matches)
         ) {
             $customConfig['platform.php'] = [$matches['version']];
+            $customConfig['platform.ext-intl'] = ['1'];
+        } else {
+            $customConfig['platform.php'] = ['5.6'];
+            $customConfig['platform.ext-intl'] = ['1'];
         }
 
         // Update un-installed project with custom repository
