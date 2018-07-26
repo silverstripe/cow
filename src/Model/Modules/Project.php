@@ -26,6 +26,13 @@ class Project extends Module
      */
     protected $modulePaths = null;
 
+    /**
+     * Whether to fetch tags during plan generation
+     *
+     * @var bool
+     */
+    protected $fetchTags = true;
+
     public function __construct($directory)
     {
         parent::__construct($directory);
@@ -166,6 +173,28 @@ class Project extends Module
         // Register and return
         $this->libraries[$name] = $library;
         return $library;
+    }
+
+    /**
+     * Set whether to fetch tags during plan generation
+     *
+     * @param bool $fetchTags
+     * @return $this
+     */
+    public function setFetchTags($fetchTags)
+    {
+        $this->fetchTags = (bool) $fetchTags;
+        return $this;
+    }
+
+    /**
+     * Whether to fetch tags during plan generation
+     *
+     * @return bool
+     */
+    public function getFetchTags()
+    {
+        return $this->fetchTags;
     }
 
     /**
