@@ -93,7 +93,6 @@ class UpdateTranslations extends ReleaseStep
         }
 
         $this->log($output, "Updating translations for {$count} module(s)");
-        $this->checkTransifexVersion($output);
         $this->storeJavascript($output, $modules);
         $this->pullSource($output, $modules);
         $this->cleanYaml($output, $modules);
@@ -106,24 +105,12 @@ class UpdateTranslations extends ReleaseStep
     }
 
     /**
-     * Test that tx tool is installed
-     *
+     * @deprecated 2.3..3.0
      * @param OutputInterface $output
-     * @throws InvalidArgumentException
      */
     protected function checkTransifexVersion(OutputInterface $output)
     {
-        $error = "translate requires transifex {$this->txVersion} at least. "
-            . "Run 'pip install transifex-client==0.11b3' to update.";
-
-        // Get version
-        $result = $this->runCommand($output, array("tx", "--version"), $error);
-        $result = preg_replace('/\s+/', '', $result);
-        if (version_compare($result, $this->txVersion, '<')) {
-            throw new InvalidArgumentException($error ." Current version: ".$result);
-        }
-
-        $this->log($output, "Using transifex CLI version: $result");
+        // noop
     }
 
     /**
