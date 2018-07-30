@@ -46,6 +46,12 @@ class Release extends Command
                 'Skip the text collection task when performing the release'
             )
             ->addOption(
+                'skip-fetch-tags',
+                null,
+                InputOption::VALUE_NONE,
+                'Skip fetching tags from origin'
+            )
+            ->addOption(
                 'branching',
                 'b',
                 InputOption::VALUE_REQUIRED,
@@ -192,7 +198,12 @@ class Release extends Command
     protected function getProject()
     {
         $directory = $this->getInputDirectory();
-        return new Project($directory);
+        $project = new Project($directory);
+
+        $fetchTags = !$this->input->getOption('skip-fetch-tags');
+        $project->setFetchTags($fetchTags);
+
+        return $project;
     }
 
     /**

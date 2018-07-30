@@ -263,7 +263,10 @@ class Library
 
         // Get tag strings
         $repo = $this->getRepository();
-        $repo->run('fetch', ['--tags']);
+        if ($this->getProject()->getFetchTags()) {
+            // Fetch remote tags from origin first
+            $repo->run('fetch', ['--tags']);
+        }
         $result = $repo->run('tag');
         $tags = preg_split('~\R~u', $result);
         $tags = array_filter($tags);

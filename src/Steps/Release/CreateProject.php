@@ -84,6 +84,9 @@ class CreateProject extends Step
 
         // Revert composer / recipe-core changes to composer.json
         $library = $this->getProject();
+        $fetchTags = !$input->getOption('skip-fetch-tags');
+        $library->setFetchTags($fetchTags);
+
         $path = $library->getComposerPath();
         $repo = $library->getRepository();
         $status = $repo->run("status", [$path]);
