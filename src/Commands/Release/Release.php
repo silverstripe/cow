@@ -229,7 +229,8 @@ class Release extends Command
      */
     protected function getPublishCommand($version, $project)
     {
-        $command = 'cow release:publish ' . $version->getValue() . ' ' . $project->getName();
+        $binName = $this->getApplication()->getBinName();
+        $command = $binName . ' release:publish ' . $version->getValue() . ' ' . $project->getName();
         switch ($this->output->getVerbosity()) {
             case Output::VERBOSITY_DEBUG:
                 $command .= ' -vvv';
