@@ -19,27 +19,14 @@ class ChangelogItem
     protected $changelogLibrary;
 
     /**
-     * @return ChangelogLibrary
-     */
-    public function getChangelogLibrary()
-    {
-        return $this->changelogLibrary;
-    }
-
-    /**
-     * @param ChangelogLibrary $changelogLibrary
-     * @return $this
-     */
-    public function setChangelogLibrary($changelogLibrary)
-    {
-        $this->changelogLibrary = $changelogLibrary;
-        return $this;
-    }
-
-    /**
      * @var Commit
      */
     protected $commit;
+
+    /**
+     * @var bool
+     */
+    protected $includeAllCommits = false;
 
     /**
      * Rules for ignoring commits
@@ -99,10 +86,11 @@ class ChangelogItem
      * @param ChangelogLibrary $changelogLibrary
      * @param Commit $commit
      */
-    public function __construct(ChangelogLibrary $changelogLibrary, Commit $commit)
+    public function __construct(ChangelogLibrary $changelogLibrary, Commit $commit, $includeAllCommits = false)
     {
         $this->setChangelogLibrary($changelogLibrary);
         $this->setCommit($commit);
+        $this->setIncludeAllCommits($includeAllCommits);
     }
 
     /**
@@ -246,9 +234,14 @@ class ChangelogItem
             }
         }
 
-        // Fallback check for CVE (not at start of string)
+        // Check for security identifier (not at start of string)
         if ($this->getSecurityCVE()) {
             return 'Security';
+        }
+
+        // Fallback check to see if we should include all commits
+        if ($this->getIncludeAllCommits()) {
+            return 'Other changes';
         }
 
         return null;
@@ -277,9 +270,9 @@ class ChangelogItem
     }
 
     /**
-     * If this is a security fix, get the CVP (in 'ss-2015-016' fomat)
+     * If this is a security fix, get the CVE/identifier (in 'ss-2015-016' format)
      *
-     * @return string|null cvp, or null if not
+     * @return string|null CVE/identifier, or null if not
      */
     public function getSecurityCVE()
     {
@@ -323,5 +316,41 @@ class ChangelogItem
         }
 
         return $content . "\n";
+    }
+
+    /**
+     * @return ChangelogLibrary
+     */
+    public function getChangelogLibrary()
+    {
+        return $this->changelogLibrary;
+    }
+
+    /**
+     * @param ChangelogLibrary $changelogLibrary
+     * @return $this
+     */
+    public function setChangelogLibrary($changelogLibrary)
+    {
+        $this->changelogLibrary = $changelogLibrary;
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function getIncludeAllCommits()
+    {
+        return $this->includeAllCommits;
+    }
+
+    /**
+     * @param bool $includeAllCommits
+     * @return $this
+     */
+    public function setIncludeAllCommits($includeAllCommits)
+    {
+        $this->includeAllCommits = (bool) $includeAllCommits;
+        return $this;
     }
 }

@@ -4,6 +4,7 @@ namespace SilverStripe\Cow\Commands\Release;
 
 use SilverStripe\Cow\Steps\Release\CreateChangelog;
 use SilverStripe\Cow\Steps\Release\PlanRelease;
+use Symfony\Component\Console\Input\InputOption;
 
 /**
  * Description of Create
@@ -20,6 +21,18 @@ class Changelog extends Release
 
     protected $description = 'Generate changelog';
 
+    protected function configureOptions()
+    {
+        parent::configureOptions();
+
+        $this->addOption(
+            'all-commits',
+            null,
+            InputOption::VALUE_NONE,
+            'Include all changes in the changelog (default: false)'
+        );
+    }
+
     protected function fire()
     {
         // Get arguments
@@ -33,7 +46,17 @@ class Changelog extends Release
         $releasePlan = $buildPlan->getReleasePlan();
 
         // Generate changelog
-        $changelogs = new CreateChangelog($this, $project, $releasePlan);
-        $changelogs->run($this->input, $this->output);
+        $changelog = new CreateChangelog($this, $project, $releasePlan);
+        $changelog->run($this->input, $this->output);
+    }
+
+    /**
+     * Whether to include all commits in the changelog
+     *
+     * @return bool
+     */
+    public function getIncludeAllCommits()
+    {
+        return (bool) $this->input->getOption('all-commits');
     }
 }

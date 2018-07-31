@@ -27,22 +27,9 @@ class Changelog
     protected $rootLibrary;
 
     /**
-     * @return ChangelogLibrary
+     * @var bool
      */
-    public function getRootLibrary()
-    {
-        return $this->rootLibrary;
-    }
-
-    /**
-     * @param ChangelogLibrary $rootLibrary
-     * @return $this
-     */
-    public function setRootLibrary($rootLibrary)
-    {
-        $this->rootLibrary = $rootLibrary;
-        return $this;
-    }
+    protected $includeAllCommits = false;
 
     /**
      * Create a new changelog
@@ -79,7 +66,7 @@ class Changelog
                 ->getLog($range);
 
             foreach ($log->getCommits() as $commit) {
-                $change = new ChangelogItem($changelogLibrary, $commit);
+                $change = new ChangelogItem($changelogLibrary, $commit, $this->getIncludeAllCommits());
 
                 // Detect duplicates and skip ignored items
                 $key = $change->getDistinctDetails();
@@ -295,5 +282,41 @@ class Changelog
             }
         });
         return $commits;
+    }
+
+    /**
+     * @return bool
+     */
+    public function getIncludeAllCommits()
+    {
+        return $this->includeAllCommits;
+    }
+
+    /**
+     * @param bool $includeAllCommits
+     * @return $this
+     */
+    public function setIncludeAllCommits($includeAllCommits)
+    {
+        $this->includeAllCommits = (bool) $includeAllCommits;
+        return $this;
+    }
+
+    /**
+     * @return ChangelogLibrary
+     */
+    public function getRootLibrary()
+    {
+        return $this->rootLibrary;
+    }
+
+    /**
+     * @param ChangelogLibrary $rootLibrary
+     * @return $this
+     */
+    public function setRootLibrary($rootLibrary)
+    {
+        $this->rootLibrary = $rootLibrary;
+        return $this;
     }
 }
