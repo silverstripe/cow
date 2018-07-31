@@ -31,6 +31,15 @@ class Application extends Console\Application
         return $this->getVersionInDir(dirname($directory));
     }
 
+    /**
+     * Get the name of the application used to run the command, eg: cow or bin/cow
+     *
+     * @return string
+     */
+    public function getBinName()
+    {
+        return isset($_SERVER['argv'][0]) ? $_SERVER['argv'][0] : 'cow';
+    }
 
     public function getLongVersion()
     {
