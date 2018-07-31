@@ -1006,6 +1006,12 @@ class Library
             $version = new Version($data['Version']);
             $libraryRelease = new LibraryRelease($library, $version);
 
+            // Set the previous version if specified
+            if (!empty($data['PriorVersion'])) {
+                $priorVersion = new Version($data['PriorVersion']);
+                $libraryRelease->setPriorVersion($priorVersion);
+            }
+
             // Restore cached changelog
             if (!empty($data['Changelog'])) {
                 $libraryRelease->setChangelog($data['Changelog']);
@@ -1037,6 +1043,7 @@ class Library
         $content = [];
         $name = $plan->getLibrary()->getName();
         $content[$name] = [
+            'PriorVersion' => $plan->getPriorVersion(false),
             'Version' => $plan->getVersion()->getValue(),
             'Changelog' => $plan->getChangelog(),
             'Items' => [],

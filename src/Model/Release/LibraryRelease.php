@@ -41,42 +41,6 @@ class LibraryRelease
     protected $changelog;
 
     /**
-     * @return Library
-     */
-    public function getLibrary()
-    {
-        return $this->library;
-    }
-
-    /**
-     * @param Library $library
-     * @return $this
-     */
-    public function setLibrary($library)
-    {
-        $this->library = $library;
-        return $this;
-    }
-
-    /**
-     * @return Version
-     */
-    public function getVersion()
-    {
-        return $this->version;
-    }
-
-    /**
-     * @param Version $version
-     * @return $this
-     */
-    public function setVersion($version)
-    {
-        $this->version = $version;
-        return $this;
-    }
-
-    /**
      * The version being released
      *
      * @var Version
@@ -84,15 +48,26 @@ class LibraryRelease
     protected $version;
 
     /**
+     * The previous version of the module being released
+     *
+     * @var Version
+     */
+    protected $priorVersion;
+
+    /**
      * LibraryRelease constructor.
      *
      * @param Library $library
      * @param Version $version
+     * @param Version|null $priorVersion
      */
-    public function __construct(Library $library, Version $version)
+    public function __construct(Library $library, Version $version, Version $priorVersion = null)
     {
         $this->setLibrary($library);
         $this->setVersion($version);
+        if ($priorVersion) {
+            $this->setPriorVersion($priorVersion);
+        }
     }
 
     /**
@@ -213,12 +188,31 @@ class LibraryRelease
     /**
      * Determine "from" version for this version
      *
+     * @param bool $fallback Whether to fall back to guessing from tags
      * @return Version
      */
-    public function getPriorVersion()
+    public function getPriorVersion($fallback = true)
     {
+        // If it has been explicitly provided, or we shouldn't fall back to using tags, return the prop
+        if ($this->priorVersion || !$fallback) {
+            return $this->priorVersion;
+        }
+
+        // Otherwise, guess it from the constraint and existing tags
         $tags = $this->getLibrary()->getTags();
         return $this->getVersion()->getPriorVersionFromTags($tags);
+    }
+
+    /**
+     * Explicitly set the "from" version for this version
+     *
+     * @param Version $version
+     * @return $this
+     */
+    public function setPriorVersion(Version $version)
+    {
+        $this->priorVersion = $version;
+        return $this;
     }
 
     /**
@@ -259,6 +253,42 @@ class LibraryRelease
     public function setBranching($branching)
     {
         $this->branching = $branching;
+        return $this;
+    }
+
+    /**
+     * @return Library
+     */
+    public function getLibrary()
+    {
+        return $this->library;
+    }
+
+    /**
+     * @param Library $library
+     * @return $this
+     */
+    public function setLibrary($library)
+    {
+        $this->library = $library;
+        return $this;
+    }
+
+    /**
+     * @return Version
+     */
+    public function getVersion()
+    {
+        return $this->version;
+    }
+
+    /**
+     * @param Version $version
+     * @return $this
+     */
+    public function setVersion($version)
+    {
+        $this->version = $version;
         return $this;
     }
 }
