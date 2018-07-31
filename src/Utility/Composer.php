@@ -47,8 +47,15 @@ class Composer
         $preferDist = false,
         $ignorePlatform = false
     ) {
+        if ($ignorePlatform !== false) {
+            user_error(
+                '$ingorePlatform argument is now deprecated, set up the correct platform via composer config',
+                E_USER_DEPRECATED
+            );
+        }
+
         // Create comand
-        $createOptions = self::getCreateOptions($repository, $preferDist, $ignorePlatform);
+        $createOptions = self::getCreateOptions($repository, $preferDist);
         $runner->runCommand(array_merge([
             "composer",
             "create-project",
@@ -68,7 +75,7 @@ class Composer
         }
 
         // Update with the given repository
-        $updateOptions = self::getUpdateOptions($preferDist, $ignorePlatform);
+        $updateOptions = self::getUpdateOptions($preferDist);
         $runner->runCommand(array_merge([
             'composer',
             'update',
@@ -141,7 +148,7 @@ class Composer
      * @param bool $ignorePlatform
      * @return array
      */
-    protected static function getCreateOptions($repository, $preferDist, $ignorePlatform)
+    protected static function getCreateOptions($repository, $preferDist, $ignorePlatform = null)
     {
         // Create-options
         $createOptions = [
@@ -150,9 +157,11 @@ class Composer
             '--no-install',
         ];
 
-        // Set ignore platform reqs
-        if ($ignorePlatform) {
-            $createOptions[] = '--ignore-platform-reqs';
+        if ($ignorePlatform !== null) {
+            user_error(
+                '$ingorePlatform argument is now deprecated, set up the correct platform via composer config',
+                E_USER_DEPRECATED
+            );
         }
 
         // Set dev / stable options
@@ -179,14 +188,16 @@ class Composer
      * @param bool $ignorePlatform
      * @return array
      */
-    protected static function getUpdateOptions($preferDist, $ignorePlatform)
+    protected static function getUpdateOptions($preferDist, $ignorePlatform = null)
     {
         // update options
         $updateOptions = [ "--no-interaction" ];
 
-        // Set ignore platform reqs
-        if ($ignorePlatform) {
-            $updateOptions[] = '--ignore-platform-reqs';
+        if ($ignorePlatform !== null) {
+            user_error(
+                '$ingorePlatform argument is now deprecated, set up the correct platform via composer config',
+                E_USER_DEPRECATED
+            );
         }
 
         // Set dev / stable options

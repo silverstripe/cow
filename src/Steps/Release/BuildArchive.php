@@ -172,7 +172,7 @@ class BuildArchive extends ReleaseStep
 
         // Install to this location
         $this->log($output, "Installing version {$version}");
-        Composer::createProject($this->getCommandRunner($output), $name, $path, $version, $this->getRepository(), true);
+        Composer::createProject($this->getCommandRunner($output), $name, $path, $version, $this->getRepository());
 
         // Copy composer.phar to the project
         // Write version info to the core folders (shouldn't be in version control)
