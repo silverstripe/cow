@@ -404,22 +404,44 @@ class PlanRelease extends Step
         InputInterface $input,
         LibraryRelease $selectedVersion
     ) {
-        $question = new Question(
-            "Please enter a new version to release for <info>"
-            . $selectedVersion->getLibrary()->getName() . "</info>: ",
-            $selectedVersion->getVersion()
-        );
-        $newVersionName = $this->getQuestionHelper()->ask($input, $output, $question);
+        $versions = [
+            'new_version' => [
+                'text' => 'Please enter a new version to release for <info>%s</info>: ',
+                'default' => $selectedVersion->getVersion(),
+            ],
+            'prior_version' => [
+                'text' => 'Optional: modify the prior version for <info>%s</info>: ',
+                'default' => $selectedVersion->getPriorVersion(),
+            ],
+        ];
 
-        // If version is valid, update and return
-        if (Version::parse($newVersionName)) {
-            // Warn if upgrade-only and selected version isn't an existing tag
-            if ($selectedVersion->getLibrary()->isUpgradeOnly()) {
+        foreach ($versions as $key => $options) {
+            $question = new Question(
+                sprintf($options['text'], $selectedVersion->getLibrary()->getName()),
+                $options['default']
+            );
+            $result = $this->getQuestionHelper()->ask($input, $output, $question);
+
+            // If version is invalid, show an error message
+            if (!Version::parse($result)) {
+                $this->log(
+                    $output,
+                    "Invalid version {$result}; Please enter a tag in w.x.y(-[rc|alpha|beta][z]) format",
+                    "error"
+                );
+                $this->reviewLibraryVersion($output, $input, $selectedVersion);
+                return;
+            }
+
+            // Warn if upgrade-only OR specifying a previous version and selected version isn't an existing tag
+            $upgradeOnly = $selectedVersion->getLibrary()->isUpgradeOnly();
+            if ($upgradeOnly || $key === 'prior_version') {
                 $tags = $selectedVersion->getLibrary()->getTags();
-                if (!array_key_exists($newVersionName, $tags)) {
+                if (!array_key_exists($result, $tags)) {
                     $this->log(
                         $output,
-                        "This library is marked as upgrade-only; $newVersionName is not an existing tag",
+                        ($upgradeOnly ? 'This library is marked as upgrade-only; ' : '')
+                        . "$result is not an existing tag",
                         'error'
                     );
                     $this->reviewLibraryVersion($output, $input, $selectedVersion);
@@ -427,22 +449,33 @@ class PlanRelease extends Step
                 }
             }
 
-            // Update release version
-            $newVersion = new Version($newVersionName);
-            $this->modifyLibraryReleaseVersion($selectedVersion, $newVersion);
-
-            // Save modified plan to cache immediately
-            $this->getProject()->saveCachedPlan($this->getReleasePlan());
-            return;
+            $versions[$key]['result'] = $result;
         }
 
-        // If error, repeat
-        $this->log(
-            $output,
-            "Invalid version {$newVersionName}; Please enter a tag in w.x.y(-[rc|alpha|beta][z]) format",
-            "error"
-        );
-        $this->reviewLibraryVersion($output, $input, $selectedVersion);
+        // Update release version
+        $newVersion = new Version($versions['new_version']['result']);
+        $priorVersion = null;
+        if (!empty($versions['prior_version']['result'])) {
+            $priorVersion = new Version($versions['prior_version']['result']);
+
+            // Validate that the requested previous version is lower than the new version. It is allowed
+            // to be the same though.
+            if ($priorVersion->compareTo($newVersion) > 0) {
+                $this->log(
+                    $output,
+                    'Prior version ' . $priorVersion->getValue() . ' is not actually lower than '
+                    . 'new version ' . $newVersion->getValue(),
+                    'error'
+                );
+                $this->reviewLibraryVersion($output, $input, $selectedVersion);
+                return;
+            }
+        }
+
+        $this->modifyLibraryReleaseVersion($selectedVersion, $newVersion, $priorVersion);
+
+        // Save modified plan to cache immediately
+        $this->getProject()->saveCachedPlan($this->getReleasePlan());
     }
 
     /**
@@ -484,14 +517,14 @@ class PlanRelease extends Step
         // Get version release information
         if ($node->getIsNewRelease()) {
             $version = ' (<info>' . $node->getVersion()->getValue() . '</info>) new tag';
-
-            // If releasing a new tag, show previous version
-            $previous = $node->getPriorVersion();
-            if ($previous) {
-                $version .= ', prior version <comment>' . $previous->getValue() . '</comment>';
-            }
         } else {
             $version = ' (<comment>' . $node->getVersion()->getValue() . '</comment> existing tag)';
+        }
+
+        // Show previous version if it's different from the new version
+        $previous = $node->getPriorVersion();
+        if ($previous && $previous->getValue() !== $node->getVersion()->getValue()) {
+            $version .= ', prior version <comment>' . $previous->getValue() . '</comment>';
         }
 
         // Build string
@@ -512,13 +545,17 @@ class PlanRelease extends Step
      *
      * @param LibraryRelease $selectedVersion
      * @param Version $newVersion New version
+     * @param Version|null $priorVersion Prior version (optional)
      */
-    protected function modifyLibraryReleaseVersion(LibraryRelease $selectedVersion, $newVersion)
+    protected function modifyLibraryReleaseVersion(LibraryRelease $selectedVersion, $newVersion, $priorVersion = null)
     {
         $wasNewRelease = $selectedVersion->getIsNewRelease();
 
         // Replace tag
         $selectedVersion->setVersion($newVersion);
+        if ($priorVersion) {
+            $selectedVersion->setPriorVersion($priorVersion);
+        }
 
         // If the "create new release" tag changes, we need to re-generate all child dependencies
         $isNewRelease = $selectedVersion->getIsNewRelease();
