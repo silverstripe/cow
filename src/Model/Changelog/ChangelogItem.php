@@ -35,6 +35,8 @@ class ChangelogItem
      */
     protected $ignoreRules = array(
         '/^Merge/',
+        '/branch alias/',
+        '/^Added(.*)changelog$/',
         '/^Blocked revisions/',
         '/^Initialized merge tracking /',
         '/^Created (branches|tags)/',
