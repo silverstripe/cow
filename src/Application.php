@@ -16,7 +16,7 @@ class Application extends Console\Application
      */
     protected function getVersionInDir($directory)
     {
-        if (!$directory) {
+        if (!$directory || dirname($directory) === $directory) {
             return null;
         }
         $installed = $directory . '/vendor/composer/installed.json';
