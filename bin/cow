@@ -24,7 +24,10 @@ foreach ($paths as $path) {
 }
 
 if (!$included) {
-    throw new RuntimeException("What is Composer? Is a food?");
+    $binName = isset($_SERVER['argv'][0]) ? $_SERVER['argv'][0] : 'cow';
+    fwrite(STDERR, "$binName was unable to locate the vendor/autoload.php file.\n");
+    fwrite(STDERR, "Please make sure you've installed the composer dependencies by running composer install\n");
+    exit(1);
 }
 
 $app = new SilverStripe\Cow\Application();
