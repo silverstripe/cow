@@ -27,8 +27,9 @@ class Application extends Console\Application
                     return $library['version'];
                 }
             }
+        } else {
+            return $this->getVersionInDir(dirname($directory));
         }
-        return $this->getVersionInDir(dirname($directory));
     }
 
     /**
