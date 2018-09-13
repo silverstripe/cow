@@ -76,7 +76,7 @@ class ChangelogItem
             '/^(APICHANGE|API-CHANGE|API CHANGE|API)\s?:?/i'
         ),
         'Features and Enhancements' => array(
-            '/^(ENHANCEMENT|ENHNACEMENT|FEATURE|NEW)\s?:?/i'
+            '/^(ENHANCEMENT|ENHNACEMENT|ENH|FEATURE|NEW)\s?:?/i'
         ),
         'Bugfixes' => array(
             '/^(BUGFIX|BUGFUX|BUG|FIX|FIXED|FIXING)\s?:?/i',
