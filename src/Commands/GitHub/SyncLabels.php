@@ -44,8 +44,7 @@ class SyncLabels extends Command
         $this->addArgument(
             'modules',
             InputArgument::OPTIONAL,
-            'Specify specific modules to process (comma delimited)',
-            ''
+            'Optionally sync to specific modules (comma delimited)'
         );
     }
 

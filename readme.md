@@ -30,6 +30,7 @@ If you're feeling lonely, or just want to test your install, you can run `cow mo
 * The yamlclean ruby gem is also required for localisation. Install yamlclean gem using `gem install yamlclean`.
 * For uploading of archive to s3 you must also install the
   [AWS CLI tools](http://docs.aws.amazon.com/cli/latest/userguide/installing.html).
+* A `GITHUB_ACCESS_TOKEN` environment variable set for GitHub commands.
 
 ## Commands
 
@@ -127,6 +128,34 @@ The changelog command takes the follow arguments and options:
 **Pro-tip:** Part of this command involves plan generation and/or confirmation, and you can provide the
 `--skip-fetch-tags` option to prevent Cow from re-fetching all tags from origin if you have already done this
 and only want to make a quick change.
+
+## Synchronising data to supported modules
+
+Cow includes commands to help synchronise standardised data to all
+[commercially supported modules](https://www.silverstripe.org/software/addons/silverstripe-commercially-supported-module-list/):
+
+* `cow github:synclabels` Pushes a centralised list of labels to all supported module GitHub repositories
+* `cow github:ratelimit` Check your current GitHub API rate limiting status (sync commands can use this up quickly)
+
+**Note:** All GitHub API commands require a `GITHUB_ACCESS_TOKEN` environment variable to be set before they can be
+used.
+
+### Labels
+
+[Centralised label configuration](https://github.com/silverstripe/supported-modules/blob/gh-pages/labels.json) can be
+pushed out to all [supported modules](https://github.com/silverstripe/supported-modules/blob/gh-pages/modules.json)
+using the `cow github:synclabels` command.
+
+This command takes an optional argument to specify which module(s) to update:
+
+* `modules` Optionally sync to specific modules (comma delimited)
+
+If the `modules` argument is not provided, the list of supported modules will be loaded from the `supported-modules`
+GitHub repository. You can then confirm the list, before you will be shown a list of the labels that will be sync'd
+and finally all labels will either be created or updated on the target repositories.
+
+This command can max out your GitHub API rate limiting credits, so use it sparingly. If you exceed the limit you may
+need to go and make a coffee and come back in an hour (check current rate limits with `cow github:ratelimit`).
 
 ## Schema
 
