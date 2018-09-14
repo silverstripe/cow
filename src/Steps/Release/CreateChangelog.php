@@ -105,6 +105,10 @@ class CreateChangelog extends ReleaseStep
 
         // Generate markedown from plan
         $changelog = new Changelog($changelogLibrary);
+        /** @var \SilverStripe\Cow\Commands\Release\Changelog $command */
+        $command = $this->getCommand();
+        $changelog->setIncludeOtherChanges($command->getIncludeOtherChanges());
+
         $content = $changelog->getMarkdown($output, $release->getLibrary()->getChangelogFormat());
 
         // Store this changelog

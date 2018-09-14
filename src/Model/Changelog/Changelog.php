@@ -2,7 +2,6 @@
 
 namespace SilverStripe\Cow\Model\Changelog;
 
-use Generator;
 use Gitonomy\Git\Exception\ReferenceNotFoundException;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -27,22 +26,9 @@ class Changelog
     protected $rootLibrary;
 
     /**
-     * @return ChangelogLibrary
+     * @var bool
      */
-    public function getRootLibrary()
-    {
-        return $this->rootLibrary;
-    }
-
-    /**
-     * @param ChangelogLibrary $rootLibrary
-     * @return $this
-     */
-    public function setRootLibrary($rootLibrary)
-    {
-        $this->rootLibrary = $rootLibrary;
-        return $this;
-    }
+    protected $includeOtherChanges = false;
 
     /**
      * Create a new changelog
@@ -79,7 +65,7 @@ class Changelog
                 ->getLog($range);
 
             foreach ($log->getCommits() as $commit) {
-                $change = new ChangelogItem($changelogLibrary, $commit);
+                $change = new ChangelogItem($changelogLibrary, $commit, $this->getIncludeOtherChanges());
 
                 // Detect duplicates and skip ignored items
                 $key = $change->getDistinctDetails();
@@ -295,5 +281,41 @@ class Changelog
             }
         });
         return $commits;
+    }
+
+    /**
+     * @return bool
+     */
+    public function getIncludeOtherChanges()
+    {
+        return $this->includeOtherChanges;
+    }
+
+    /**
+     * @param bool $includeOtherChanges
+     * @return $this
+     */
+    public function setIncludeOtherChanges($includeOtherChanges)
+    {
+        $this->includeOtherChanges = (bool) $includeOtherChanges;
+        return $this;
+    }
+
+    /**
+     * @return ChangelogLibrary
+     */
+    public function getRootLibrary()
+    {
+        return $this->rootLibrary;
+    }
+
+    /**
+     * @param ChangelogLibrary $rootLibrary
+     * @return $this
+     */
+    public function setRootLibrary($rootLibrary)
+    {
+        $this->rootLibrary = $rootLibrary;
+        return $this;
     }
 }

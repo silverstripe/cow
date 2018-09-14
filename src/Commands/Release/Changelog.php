@@ -4,6 +4,7 @@ namespace SilverStripe\Cow\Commands\Release;
 
 use SilverStripe\Cow\Steps\Release\CreateChangelog;
 use SilverStripe\Cow\Steps\Release\PlanRelease;
+use Symfony\Component\Console\Input\InputOption;
 
 /**
  * Description of Create
@@ -12,10 +13,6 @@ use SilverStripe\Cow\Steps\Release\PlanRelease;
  */
 class Changelog extends Release
 {
-    /**
-     *
-     * @var string
-     */
     protected $name = 'release:changelog';
 
     protected $description = 'Generate changelog';
@@ -33,7 +30,7 @@ class Changelog extends Release
         $releasePlan = $buildPlan->getReleasePlan();
 
         // Generate changelog
-        $changelogs = new CreateChangelog($this, $project, $releasePlan);
-        $changelogs->run($this->input, $this->output);
+        $changelog = new CreateChangelog($this, $project, $releasePlan);
+        $changelog->run($this->input, $this->output);
     }
 }
