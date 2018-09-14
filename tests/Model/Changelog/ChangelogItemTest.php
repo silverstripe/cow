@@ -79,4 +79,42 @@ class ChangelogItemTest extends PHPUnit_Framework_TestCase
             ['Default fallback doesn\'t categorise commit', 'Default fallback doesn\'t categorise commit', null],
         ];
     }
+
+    /**
+     * @param string $message
+     * @param bool $expected
+     * @dataProvider ignoredMessageProvider
+     */
+    public function testIsIgnored($message, $expected)
+    {
+        $commit = $this->createMock(Commit::class);
+        $commit->expects($this->once())->method('getSubjectMessage')->willReturn($message);
+
+        $item = new ChangelogItem($this->library, $commit);
+        $this->assertSame($expected, $item->isIgnored());
+    }
+
+    /**
+     * @return array[]
+     */
+    public function ignoredMessageProvider()
+    {
+        return [
+            ['Merge branch 1 into 2', true],
+            ['Merge remote tracking branch origin/foo into master', true],
+            ['Update branch alias', true],
+            ['Remove obsolete branch alias', true],
+            ['Added 1.2.3-rc1 changelog', true],
+            ['Blocked revisions blah', true],
+            ['Initialized merge tracking against x', true],
+            ['Created branches 1.2 and 1.3', true],
+            ['Created tags 1.2.3 and 1.3.0', true],
+            ['NOTFORMERGE Whoops, we merged it anyway', true],
+            ['', true],
+            ['Fix a bug somewhere', false],
+            ['API Changing something big', false],
+            ['NEW Enhancing something', false],
+            ['[SS-2047-123] Something serious', false],
+        ];
+    }
 }
