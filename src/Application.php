@@ -3,7 +3,9 @@
 namespace SilverStripe\Cow;
 
 use SilverStripe\Cow\Commands;
+use SilverStripe\Cow\Loader\SupportedModuleLoader;
 use SilverStripe\Cow\Utility\Config;
+use SilverStripe\Cow\Utility\GitHubApi;
 use Symfony\Component\Console;
 
 class Application extends Console\Application
@@ -55,6 +57,10 @@ class Application extends Console\Application
     {
         $commands = parent::getDefaultCommands();
 
+        // Create dependencies
+        $githubApi = new GitHubApi();
+        $supportedModuleLoader = SupportedModuleLoader::instance();
+
         // What is this cow doing in here, stop it, get out
         $commands[] = new Commands\MooCommand();
 
@@ -81,6 +87,10 @@ class Application extends Console\Application
 
         // Schema commands
         $commands[] = new Commands\Schema\Validate();
+
+        // GitHub commands
+        $commands[] = new Commands\GitHub\RateLimit($githubApi);
+        $commands[] = new Commands\GitHub\SyncLabels($supportedModuleLoader, $githubApi);
 
         return $commands;
     }
