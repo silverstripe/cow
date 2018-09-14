@@ -112,6 +112,22 @@ each of which could be run separately.
 After the push step, `release:publish` will automatically wait for this version to be available in packagist.org
 before continuing.
 
+## Creating changelogs
+
+`cow release:changelog` will create a changelog which is categorised into various sets of change types, e.g.
+enhancements, bug fixes, API changes and security fixes.
+
+The changelog command takes the follow arguments and options:
+
+* `version` The version you're releasing the project as
+* `recipe` The recipe you're releasing
+* `--include-other-changes` If provided, uncategorised commits will also be included in an "Other changes" section.
+  Note that commits which match `ChangelogItem::isIgnored()` will still be excluded, e.g. merge commits.
+
+**Pro-tip:** Part of this command involves plan generation and/or confirmation, and you can provide the
+`--skip-fetch-tags` option to prevent Cow from re-fetching all tags from origin if you have already done this
+and only want to make a quick change.
+
 ## Schema
 
 The [cow schema file](cow.schema.json) is in the root of this project.
