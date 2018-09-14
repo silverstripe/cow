@@ -3,7 +3,7 @@
 namespace SilverStripe\Cow;
 
 use SilverStripe\Cow\Commands;
-use SilverStripe\Cow\Loader\SupportedModuleLoader;
+use SilverStripe\Cow\Utility\SupportedModuleLoader;
 use SilverStripe\Cow\Utility\Config;
 use SilverStripe\Cow\Utility\GitHubApi;
 use Symfony\Component\Console;
@@ -59,7 +59,7 @@ class Application extends Console\Application
 
         // Create dependencies
         $githubApi = new GitHubApi();
-        $supportedModuleLoader = SupportedModuleLoader::instance();
+        $supportedModuleLoader = new SupportedModuleLoader();
 
         // What is this cow doing in here, stop it, get out
         $commands[] = new Commands\MooCommand();

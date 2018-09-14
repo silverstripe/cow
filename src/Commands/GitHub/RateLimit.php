@@ -50,7 +50,9 @@ class RateLimit extends Command
         $this->output->writeln('Limit: <comment>' . $data['limit'] . '</comment>');
 
         $remainingFormat = $data['remaining'] > 0 ? 'info' : 'error';
-        $this->output->writeln('Remaining: <' . $remainingFormat . '>' . $data['remaining'] . '</' . $remainingFormat . '>');
+        $this->output->writeln(
+            'Remaining: <' . $remainingFormat . '>' . $data['remaining'] . '</' . $remainingFormat . '>'
+        );
 
         $now = new DateTime();
         $resetDate = new DateTime();

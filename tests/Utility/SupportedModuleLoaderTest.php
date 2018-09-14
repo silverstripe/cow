@@ -1,10 +1,10 @@
 <?php
 
-namespace SilverStripe\Cow\Tests\Loader;
+namespace SilverStripe\Cow\Tests\Utility;
 
 use PHPUnit_Framework_MockObject_MockObject;
 use PHPUnit_Framework_TestCase;
-use SilverStripe\Cow\Loader\SupportedModuleLoader;
+use SilverStripe\Cow\Utility\SupportedModuleLoader;
 
 class SupportedModuleLoaderTest extends PHPUnit_Framework_TestCase
 {

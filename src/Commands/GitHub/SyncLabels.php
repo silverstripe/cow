@@ -5,7 +5,7 @@ namespace SilverStripe\Cow\Commands\GitHub;
 use Exception;
 use Github\Api\Issue\Labels as LabelsApi;
 use SilverStripe\Cow\Commands\Command;
-use SilverStripe\Cow\Loader\SupportedModuleLoader;
+use SilverStripe\Cow\Utility\SupportedModuleLoader;
 use SilverStripe\Cow\Utility\GitHubApi;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Style\SymfonyStyle;

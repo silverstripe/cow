@@ -1,11 +1,8 @@
 <?php
 
-namespace SilverStripe\Cow\Loader;
+namespace SilverStripe\Cow\Utility;
 
-use SilverStripe\Cow\Utility\FilterInterface;
-use SilverStripe\Cow\Loader;
-
-class SupportedModuleLoader extends Loader
+class SupportedModuleLoader
 {
     /**
      * @var FilterInterface
