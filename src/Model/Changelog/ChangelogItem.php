@@ -70,16 +70,16 @@ class ChangelogItem
     protected static $types = array(
         'Security' => array(
             // E.g. "[ss-2015-016]: Security fix" - deliberately case insensitive here
-            '/^(\[SS-2(\d){3}-(\d){3}\])\s?:?/i'
+            '/^(\[SS-2(\d){3}-(\d){3}\]):?/i'
         ),
         'API Changes' => array(
-            '/^(APICHANGE|API-CHANGE|API CHANGE|API)\b/'
+            '/^(APICHANGE|API-CHANGE|API CHANGE|API)\b:?/'
         ),
         'Features and Enhancements' => array(
-            '/^(ENHANCEMENT|ENHNACEMENT|ENH|FEATURE|NEW)\b/'
+            '/^(ENHANCEMENT|ENHNACEMENT|ENH|FEATURE|NEW)\b:?/'
         ),
         'Bugfixes' => array(
-            '/^(BUG FIX|BUGFIX|BUGFUX|BUG|FIXED|FIXING|FIX)\s?:?\b/',
+            '/^(BUG FIX|BUGFIX|BUGFUX|BUG|FIXED|FIXING|FIX)\b:?/',
         )
     );
 

@@ -61,6 +61,7 @@ class ChangelogItemTest extends PHPUnit_Framework_TestCase
             ['BUG Fixed some regex rules', 'Fixed some regex rules', 'Bugfixes'],
             ['BUG FIX Fixed some regex rules', 'Fixed some regex rules', 'Bugfixes'],
             ['FIX Fixed some regex rules', 'Fixed some regex rules', 'Bugfixes'],
+            ['FIX: Forgot colon', 'Forgot colon', 'Bugfixes'],
             ['Fixed some regex rules', 'Fixed some regex rules', 'Bugfixes'],
             ['Fixing some regex rules', 'Fixing some regex rules', 'Bugfixes'],
             ['Fixing Behat', 'Fixing Behat', 'Bugfixes'],
@@ -74,6 +75,7 @@ class ChangelogItemTest extends PHPUnit_Framework_TestCase
             ['ENH Support goland PHP extension', 'Support goland PHP extension', 'Features and Enhancements'],
             ['[SS-2047-123] Lower doubt with cow coverage', 'Lower doubt with cow coverage', 'Security'],
             ['[ss-2047-123] Lower doubt with cow coverage', 'Lower doubt with cow coverage', 'Security'],
+            ['[SS-2047-123]: Logins now use passwords', 'Logins now use passwords', 'Security'],
             ['Default fallback doesn\'t categorise commit', 'Default fallback doesn\'t categorise commit', null],
         ];
     }
