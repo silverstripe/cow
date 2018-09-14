@@ -1,26 +1,29 @@
 language: php
 
-php: 5.6
-
-dist: trusty
-
-env:
-  matrix:
-    - PHPUNIT_TEST=1
-    - PHPCS_TEST=1
+matrix:
+  include:
+  - php: 5.6
+    env: PHPUNIT_TEST=1 PHPCS_TEST=1
+  - php: 7.0
+    env: PHPUNIT_TEST=1
+  - php: 7.1
+    env: PHPUNIT_COVERAGE_TEST=1
+  - php: 7.2
+    env: PHPUNIT_TEST=1
 
 before_script:
-# php setup
+  # php setup
   - phpenv rehash
   - export PATH=~/.composer/vendor/bin:$PATH
 
-# phpcs setup
-  - if [[ $PHPCS_TEST ]]; then composer global require squizlabs/php_codesniffer:^3 --prefer-dist --no-interaction --no-progress --no-suggest -o; fi
-
-# Install
+  # Install
   - composer validate
-  - composer install --dev --prefer-dist
+  - composer install --prefer-dist
 
 script:
-  - if [[ $PHPUNIT_TEST ]];  then vendor/bin/phpunit tests; fi
-  - if [[ $PHPCS_TEST ]]; then phpcs --standard=PSR2 bin/ src/ tests/; fi
+  - if [[ $PHPUNIT_TEST ]]; then vendor/bin/phpunit; fi
+  - if [[ $PHPUNIT_COVERAGE_TEST ]]; then phpdbg -qrr vendor/bin/phpunit --coverage-clover=coverage.xml; fi
+  - if [[ $PHPCS_TEST ]]; then vendor/bin/phpcs --standard=PSR2 bin/ src/ tests/; fi
+
+after_success:
+  - if [[ $PHPUNIT_COVERAGE_TEST ]]; then bash <(curl -s https://codecov.io/bash) -f coverage.xml; fi
