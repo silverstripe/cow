@@ -69,18 +69,17 @@ class ChangelogItem
      */
     protected static $types = array(
         'Security' => array(
-            // E.g. "[ss-2015-016]: Security fix"
-            '/^(\[SS-2(\d){3}-(\d){3}\])\s?:?/i'
+            // E.g. "[ss-2015-016]: Security fix" - deliberately case insensitive here
+            '/^(\[SS-2(\d){3}-(\d){3}\]):?/i'
         ),
         'API Changes' => array(
-            '/^(APICHANGE|API-CHANGE|API CHANGE|API)\s?:?/i'
+            '/^(APICHANGE|API-CHANGE|API CHANGE|API)\b:?/'
         ),
         'Features and Enhancements' => array(
-            '/^(ENHANCEMENT|ENHNACEMENT|ENH|FEATURE|NEW)\s?:?/i'
+            '/^(ENHANCEMENT|ENHNACEMENT|ENH|FEATURE|NEW)\b:?/'
         ),
         'Bugfixes' => array(
-            '/^(BUGFIX|BUGFUX|BUG|FIX|FIXED|FIXING)\s?:?/i',
-            '/^(BUG FIX)\s?:?/i'
+            '/^(BUG FIX|BUGFIX|BUGFUX|BUG|FIXED|FIXING|FIX)\b:?/',
         )
     );
 
@@ -196,8 +195,10 @@ class ChangelogItem
     {
         $message = $this->getMessage();
 
-        // Strip categorisation tags (API, BUG FIX, etc)
         foreach (self::$types as $rules) {
+            // Strip categorisation tags (API, BUG FIX, etc) where they are uppercase. If they match but are
+            // lowercase then we'll include them in the commit message, e.g. "Fixing regex rules" as opposed to
+            // "FIX Regex rules now work"
             foreach ($rules as $rule) {
                 $message = trim(preg_replace($rule, '', $message));
             }
@@ -238,7 +239,8 @@ class ChangelogItem
         $message = $this->getRawMessage();
         foreach (self::$types as $type => $rules) {
             foreach ($rules as $rule) {
-                if (preg_match($rule, $message)) {
+                // Add case insensitivity modifier
+                if (preg_match($rule . 'i', $message)) {
                     return $type;
                 }
             }

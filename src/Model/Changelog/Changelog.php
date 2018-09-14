@@ -253,7 +253,7 @@ class Changelog
     /**
      * Sort and filter this list of commits into a grouped array of commits
      *
-     * @param array $commits Flat list of commits
+     * @param ChangelogItem[] $commits Flat list of commits
      * @return array Nested list of commit categories, each of which is a list of commits in that category.
      * Empty categories are still returned
      */
