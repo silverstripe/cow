@@ -56,6 +56,12 @@ class Release extends Command
                 'b',
                 InputOption::VALUE_REQUIRED,
                 "Branching strategy. One of [{$branchOptions}]"
+            )
+            ->addOption(
+                'include-other-changes',
+                null,
+                InputOption::VALUE_NONE,
+                'Include other changes in the changelog (default: false)'
             );
     }
 
@@ -243,5 +249,15 @@ class Release extends Command
                 break;
         }
         return $command;
+    }
+
+    /**
+     * Whether to include all commits in the changelog
+     *
+     * @return bool
+     */
+    public function getIncludeOtherChanges()
+    {
+        return (bool) $this->input->getOption('include-other-changes');
     }
 }

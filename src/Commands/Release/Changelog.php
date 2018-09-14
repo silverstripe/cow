@@ -13,25 +13,9 @@ use Symfony\Component\Console\Input\InputOption;
  */
 class Changelog extends Release
 {
-    /**
-     *
-     * @var string
-     */
     protected $name = 'release:changelog';
 
     protected $description = 'Generate changelog';
-
-    protected function configureOptions()
-    {
-        parent::configureOptions();
-
-        $this->addOption(
-            'include-other-changes',
-            null,
-            InputOption::VALUE_NONE,
-            'Include other changes in the changelog (default: false)'
-        );
-    }
 
     protected function fire()
     {
@@ -48,15 +32,5 @@ class Changelog extends Release
         // Generate changelog
         $changelog = new CreateChangelog($this, $project, $releasePlan);
         $changelog->run($this->input, $this->output);
-    }
-
-    /**
-     * Whether to include all commits in the changelog
-     *
-     * @return bool
-     */
-    public function getIncludeOtherChanges()
-    {
-        return (bool) $this->input->getOption('include-other-changes');
     }
 }
