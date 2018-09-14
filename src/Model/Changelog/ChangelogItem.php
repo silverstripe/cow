@@ -26,7 +26,7 @@ class ChangelogItem
     /**
      * @var bool
      */
-    protected $includeAllCommits = false;
+    protected $includeOtherChanges = false;
 
     /**
      * Rules for ignoring commits
@@ -92,7 +92,7 @@ class ChangelogItem
     {
         $this->setChangelogLibrary($changelogLibrary);
         $this->setCommit($commit);
-        $this->setIncludeAllCommits($includeAllCommits);
+        $this->setIncludeOtherChanges($includeAllCommits);
     }
 
     /**
@@ -242,7 +242,7 @@ class ChangelogItem
         }
 
         // Fallback check to see if we should include all commits
-        if ($this->getIncludeAllCommits()) {
+        if ($this->getIncludeOtherChanges()) {
             return 'Other changes';
         }
 
@@ -341,18 +341,18 @@ class ChangelogItem
     /**
      * @return bool
      */
-    public function getIncludeAllCommits()
+    public function getIncludeOtherChanges()
     {
-        return $this->includeAllCommits;
+        return $this->includeOtherChanges;
     }
 
     /**
-     * @param bool $includeAllCommits
+     * @param bool $includeOtherChanges
      * @return $this
      */
-    public function setIncludeAllCommits($includeAllCommits)
+    public function setIncludeOtherChanges($includeOtherChanges)
     {
-        $this->includeAllCommits = (bool) $includeAllCommits;
+        $this->includeOtherChanges = (bool) $includeOtherChanges;
         return $this;
     }
 }

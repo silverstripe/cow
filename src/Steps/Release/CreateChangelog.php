@@ -107,7 +107,7 @@ class CreateChangelog extends ReleaseStep
         $changelog = new Changelog($changelogLibrary);
         /** @var \SilverStripe\Cow\Commands\Release\Changelog $command */
         $command = $this->getCommand();
-        $changelog->setIncludeAllCommits($command->getIncludeAllCommits());
+        $changelog->setIncludeOtherChanges($command->getIncludeOtherChanges());
 
         $content = $changelog->getMarkdown($output, $release->getLibrary()->getChangelogFormat());
 

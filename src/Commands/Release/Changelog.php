@@ -26,10 +26,10 @@ class Changelog extends Release
         parent::configureOptions();
 
         $this->addOption(
-            'all-commits',
+            'include-other-changes',
             null,
             InputOption::VALUE_NONE,
-            'Include all changes in the changelog (default: false)'
+            'Include other changes in the changelog (default: false)'
         );
     }
 
@@ -55,8 +55,8 @@ class Changelog extends Release
      *
      * @return bool
      */
-    public function getIncludeAllCommits()
+    public function getIncludeOtherChanges()
     {
-        return (bool) $this->input->getOption('all-commits');
+        return (bool) $this->input->getOption('include-other-changes');
     }
 }

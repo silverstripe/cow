@@ -29,7 +29,7 @@ class Changelog
     /**
      * @var bool
      */
-    protected $includeAllCommits = false;
+    protected $includeOtherChanges = false;
 
     /**
      * Create a new changelog
@@ -66,7 +66,7 @@ class Changelog
                 ->getLog($range);
 
             foreach ($log->getCommits() as $commit) {
-                $change = new ChangelogItem($changelogLibrary, $commit, $this->getIncludeAllCommits());
+                $change = new ChangelogItem($changelogLibrary, $commit, $this->getIncludeOtherChanges());
 
                 // Detect duplicates and skip ignored items
                 $key = $change->getDistinctDetails();
@@ -287,18 +287,18 @@ class Changelog
     /**
      * @return bool
      */
-    public function getIncludeAllCommits()
+    public function getIncludeOtherChanges()
     {
-        return $this->includeAllCommits;
+        return $this->includeOtherChanges;
     }
 
     /**
-     * @param bool $includeAllCommits
+     * @param bool $includeOtherChanges
      * @return $this
      */
-    public function setIncludeAllCommits($includeAllCommits)
+    public function setIncludeOtherChanges($includeOtherChanges)
     {
-        $this->includeAllCommits = (bool) $includeAllCommits;
+        $this->includeOtherChanges = (bool) $includeOtherChanges;
         return $this;
     }
 
