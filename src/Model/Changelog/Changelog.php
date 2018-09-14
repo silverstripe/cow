@@ -2,7 +2,6 @@
 
 namespace SilverStripe\Cow\Model\Changelog;
 
-use Generator;
 use Gitonomy\Git\Exception\ReferenceNotFoundException;
 use Symfony\Component\Console\Output\OutputInterface;
 
