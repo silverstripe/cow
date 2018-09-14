@@ -59,6 +59,7 @@ class ChangelogItemTest extends PHPUnit_Framework_TestCase
     {
         return [
             ['BUG Fixed some regex rules', 'Fixed some regex rules', 'Bugfixes'],
+            ['BUG FIX Fixed some regex rules', 'Fixed some regex rules', 'Bugfixes'],
             ['FIX Fixed some regex rules', 'Fixed some regex rules', 'Bugfixes'],
             ['Fixed some regex rules', 'Fixed some regex rules', 'Bugfixes'],
             ['Fixing some regex rules', 'Fixing some regex rules', 'Bugfixes'],
