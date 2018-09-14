@@ -422,6 +422,11 @@ class PlanRelease extends Step
             );
             $result = $this->getQuestionHelper()->ask($input, $output, $question);
 
+            // Nothing was entered (just enter pressed) so take user back to the plan
+            if ($result instanceof Version) {
+                return;
+            }
+
             // If version is invalid, show an error message
             if (!Version::parse($result)) {
                 $this->log(
