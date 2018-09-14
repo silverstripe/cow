@@ -1,0 +1,14 @@
+<phpunit bootstrap="vendor/autoload.php" colors="true">
+    <testsuite name="Cow">
+        <directory>tests</directory>
+    </testsuite>
+
+    <filter>
+        <whitelist addUncoveredFilesFromWhitelist="true">
+            <directory suffix=".php">src/</directory>
+            <exclude>
+                <directory suffix=".php">tests/</directory>
+            </exclude>
+        </whitelist>
+    </filter>
+</phpunit>
