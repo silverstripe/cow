@@ -43,8 +43,8 @@ class SyncLabels extends Command
     {
         $this->addArgument(
             'modules',
-            InputArgument::OPTIONAL,
-            'Optionally sync to specific modules (comma delimited)'
+            InputArgument::IS_ARRAY,
+            'Optionally sync to specific modules (space delimited)'
         );
     }
 
@@ -52,9 +52,8 @@ class SyncLabels extends Command
     {
         $io = new SymfonyStyle($this->input, $this->output);
 
-        if ($this->input->getArgument('modules')) {
-            $modules = explode(',', $this->input->getArgument('modules'));
-        } else {
+        $modules = $this->input->getArgument('modules');
+        if (empty($modules)) {
             // Loading data and confirming steps with user
             $io->section('Loading supported modules');
             $modules = $this->supportedModuleLoader->getModules();
