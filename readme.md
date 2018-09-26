@@ -157,6 +157,20 @@ and finally all labels will either be created or updated on the target repositor
 This command can max out your GitHub API rate limiting credits, so use it sparingly. If you exceed the limit you may
 need to go and make a coffee and come back in an hour (check current rate limits with `cow github:ratelimit`).
 
+### Metadata files
+
+[File templates](https://github.com/silverstripe/supported-modules/tree/gh-pages/templates) for supported modules can
+be synchronised out to all supported modules using the `module:sync:metadata` command.
+
+This command will pull the latest version from the supported-modules repository, write the contents to each repository
+then stage, commit and push directly to the default branch.
+
+This command takes an optional argument to skip the clone/pull of each repository beforehand:
+
+* `--skip-update` Optionally skip the clone/fetch/pull for each repository before running the sync
+
+You will need `git` available in your system path, as well as write permission to push to each repository.
+
 ## Schema
 
 The [cow schema file](cow.schema.json) is in the root of this project.

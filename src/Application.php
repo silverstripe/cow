@@ -84,6 +84,7 @@ class Application extends Console\Application
 
         // Module commands
         $commands[] = new Commands\Module\TranslateBuild();
+        $commands[] = new Commands\Module\Sync\Metadata($supportedModuleLoader);
 
         // Schema commands
         $commands[] = new Commands\Schema\Validate();

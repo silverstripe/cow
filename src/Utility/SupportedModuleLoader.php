@@ -62,7 +62,7 @@ class SupportedModuleLoader
      * @param string $filename
      * @return string
      */
-    protected function getRemoteData($filename)
+    public function getRemoteData($filename)
     {
         $data = file_get_contents($this->getFilePath($filename));
         return $data ?: '';
