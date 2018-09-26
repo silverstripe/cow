@@ -1,6 +1,6 @@
 <?php
 
-namespace SilverStripe\Cow\Tests\Command\GitHub;
+namespace SilverStripe\Cow\Tests\Commands\GitHub;
 
 use Github\Client;
 use PHPUnit_Framework_TestCase;

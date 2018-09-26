@@ -42,7 +42,7 @@ abstract class AbstractSyncCommand extends Command
                 continue;
             }
 
-            if (is_dir($baseDir . $repositoryHash)) {
+            if ($this->tempFolderExists($baseDir . $repositoryHash)) {
                 $this->output->writeln('Updating <comment>' . $repository . '</comment>...');
                 $this->updateRepository($repository);
             } else {
@@ -66,6 +66,15 @@ abstract class AbstractSyncCommand extends Command
             mkdir($baseDir);
         }
         return realpath($baseDir) . '/';
+    }
+
+    /**
+     * @param string $folder
+     * @return bool
+     */
+    protected function tempFolderExists($folder)
+    {
+        return is_dir($folder);
     }
 
     /**

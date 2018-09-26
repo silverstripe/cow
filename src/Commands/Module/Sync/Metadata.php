@@ -69,41 +69,84 @@ class Metadata extends AbstractSyncCommand
                 if (substr($repository, 0, 12) !== 'silverstripe') {
                     continue;
                 }
-
                 $basePath = $this->getRepositoryPath($repository);
 
-                // Write the file
-                file_put_contents($basePath . '/' . $baseFilename, $data);
-
-                // Stage the file
-                $process = new Process(['/usr/bin/env', 'git', 'add', $baseFilename, strtolower($baseFilename)]);
-                $process->setWorkingDirectory($basePath);
-                // We don't need to know if one of the two filenames didn't exist
-                $process->disableOutput();
-                $this->getHelper('process')->run($this->output, $process);
-
-                // Get the staged changes
-                $process = new Process(['/usr/bin/env', 'git', 'diff', '--staged']);
-                $process->setWorkingDirectory($basePath);
-                $process->run();
-                $result = $process->getOutput();
-                if (trim($result) === '') {
-                    // No changes, skip
+                $this->writeDataToFile($basePath . '/' . $baseFilename, $data);
+                $this->stageFile($basePath, $baseFilename);
+                if (!$this->hasChanges($basePath)) {
                     continue;
                 }
-
-                // Commit the changes
-                $process = new Process(['/usr/bin/env', 'git', 'commit', '-m', 'Update ' . $baseFilename]);
-                $process->setWorkingDirectory($basePath);
-                $this->getHelper('process')->run($this->output, $process);
-
-                // Push the changes
-                $process = new Process(['/usr/bin/env', 'git', 'push']);
-                $process->setWorkingDirectory($basePath);
-                $this->getHelper('process')->run($this->output, $process);
+                $this->commitChanges($basePath, $baseFilename);
+                $this->pushChanges($basePath);
             }
         }
 
         $this->output->writeln('<info>Done</info>');
+    }
+
+    /**
+     * Writes the given data to the given filename
+     *
+     * @param string $filename
+     * @param string $data
+     */
+    protected function writeDataToFile($filename, $data)
+    {
+        file_put_contents($filename, $data);
+    }
+
+    /**
+     * Adds the given filename to stage
+     *
+     * @param string $basePath
+     * @param string $filename
+     */
+    protected function stageFile($basePath, $filename)
+    {
+        $process = new Process(['/usr/bin/env', 'git', 'add', $filename, strtolower($filename)]);
+        $process->setWorkingDirectory($basePath);
+        // We don't need to know if one of the two filenames didn't exist
+        $process->disableOutput();
+        $this->getHelper('process')->run($this->output, $process);
+    }
+
+    /**
+     * Returns whether the given path has any staged changes in it
+     *
+     * @param string $basePath
+     * @return bool
+     */
+    protected function hasChanges($basePath)
+    {
+        $process = new Process(['/usr/bin/env', 'git', 'diff', '--staged']);
+        $process->setWorkingDirectory($basePath);
+        $process->run();
+        $result = $process->getOutput();
+        return trim($result) !== '';
+    }
+
+    /**
+     * Commit stages changes
+     *
+     * @param string $basePath
+     * @param string $filename
+     */
+    protected function commitChanges($basePath, $filename)
+    {
+        $process = new Process(['/usr/bin/env', 'git', 'commit', '-m', 'Update ' . $filename]);
+        $process->setWorkingDirectory($basePath);
+        $this->getHelper('process')->run($this->output, $process);
+    }
+
+    /**
+     * Pushes any new commits to origin
+     *
+     * @param string $basePath
+     */
+    protected function pushChanges($basePath)
+    {
+        $process = new Process(['/usr/bin/env', 'git', 'push']);
+        $process->setWorkingDirectory($basePath);
+        $this->getHelper('process')->run($this->output, $process);
     }
 }
