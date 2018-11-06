@@ -175,6 +175,7 @@ class CreateChangelog extends ReleaseStep
         // have been re-arranged since the prior tag.
         $pastComposer = null;
         foreach ($newRelease->getAllItems() as $childNewRelease) {
+            /** LibraryRelease $childNewRelease */
             // Lazy-load historic composer content as needed
             if (!isset($pastComposer)) {
                 // Get flat composer history up to 6 levels deep
@@ -188,14 +189,24 @@ class CreateChangelog extends ReleaseStep
             if (empty($pastComposer['require'][$childReleaseName])) {
                 continue;
             }
-            $historicConstraintName = $pastComposer['require'][$childReleaseName];
 
-            // Get oldest existing tag that matches the given constraint as the "from" for changelog purposes.
-            $historicConstraint = new ComposerConstraint($historicConstraintName, $historicVersion, $childReleaseName);
-            $childHistoricVersion = $childNewRelease->getLibrary()->getOldestVersionMatching(
-                $historicConstraint,
-                $childNewRelease->getVersion()->isStable()
-            );
+            // Use an explicitly specified previous version
+            $childHistoricVersion = $childNewRelease->getPriorVersion(false);
+            if (!$childHistoricVersion) {
+                $historicConstraintName = $pastComposer['require'][$childReleaseName];
+
+                // Get oldest existing tag that matches the given constraint as the "from" for changelog purposes.
+                $historicConstraint = new ComposerConstraint(
+                    $historicConstraintName,
+                    $historicVersion,
+                    $childReleaseName
+                );
+                $childHistoricVersion = $childNewRelease->getLibrary()->getOldestVersionMatching(
+                    $historicConstraint,
+                    $childNewRelease->getVersion()->isStable()
+                );
+            }
+
             if (!$childHistoricVersion) {
                 throw new \LogicException(
                     "No historic version for library {$childReleaseName} matches constraint {$historicConstraintName}"
