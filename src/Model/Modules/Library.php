@@ -1033,17 +1033,19 @@ class Library
     }
 
     /**
-     * Serialise a plan to json
+     * Gather an array of data for the current plan (and sub-items), which will be encoded as JSON
+     * when written to file.
      *
      * @param LibraryRelease $plan
-     * @return array Encoded json data
+     * @return array Data to be later JSON encoded
      */
     public function serialisePlan(LibraryRelease $plan)
     {
         $content = [];
         $name = $plan->getLibrary()->getName();
+        $priorVersion = $plan->getPriorVersion(false);
         $content[$name] = [
-            'PriorVersion' => $plan->getPriorVersion(false),
+            'PriorVersion' => $priorVersion ? $priorVersion->getValue() : null,
             'Version' => $plan->getVersion()->getValue(),
             'Changelog' => $plan->getChangelog(),
             'Items' => [],
