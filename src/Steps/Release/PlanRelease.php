@@ -424,6 +424,10 @@ class PlanRelease extends Step
 
             // Nothing was entered (just enter pressed) so take user back to the plan
             if ($result instanceof Version) {
+                // If pressing enter on prior version (optional), finish the loop but don't return
+                if ($key === 'prior_version') {
+                    continue;
+                }
                 return;
             }
 
