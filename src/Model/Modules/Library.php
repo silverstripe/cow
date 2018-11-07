@@ -1033,7 +1033,8 @@ class Library
     }
 
     /**
-     * Serialise a plan to json
+     * Gather an array of data for the current plan (and sub-items), which will be encoded as JSON
+     * when written to file.
      *
      * @param LibraryRelease $plan
      * @return array Data to be later JSON encoded
