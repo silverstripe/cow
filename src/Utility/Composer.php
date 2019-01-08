@@ -72,10 +72,12 @@ class Composer
         $directory,
         $repository = null,
         $preferDist = false,
-        $ignorePlatform = false
+        $ignorePlatform = false,
+        $emulateRequirements = true
     ) {
         // Set composer config
-        $customConfig = self::getUpdateConfig($directory, $repository);
+        $customConfig = self::getUpdateConfig($directory, $repository, $emulateRequirements);
+
         foreach ($customConfig as $option => $arguments) {
             $runner->runCommand(array_merge(
                 ['composer', 'config', $option],
@@ -128,19 +130,21 @@ class Composer
      *
      * @param string $directory
      * @param string $repository
+     * @param bool $emulateRequirements
      * @return array
      */
-    protected static function getUpdateConfig($directory, $repository)
+    protected static function getUpdateConfig($directory, $repository, $emulateRequirements)
     {
         // Register all custom options to temporarily set
         $customConfig = [];
 
-        $composerData = Config::loadFromFile($directory . '/composer.json');
-
-        $customConfig = array_merge(
-            $customConfig,
-            static::requirementsConfig($composerData)
-        );
+        if ($emulateRequirements) {
+            $composerData = Config::loadFromFile($directory . '/composer.json');
+            $customConfig = array_merge(
+                $customConfig,
+                static::requirementsConfig($composerData)
+            );
+        }
 
         // Update un-installed project with custom repository
         if ($repository) {
@@ -206,7 +210,7 @@ class Composer
     /**
      * Read the allowed versions defined in the composer format and return them ordered
      *
-     * @param String $versionDefinition version definition
+     * @param string $versionDefinition version definition
      * @return array ordered list of versions as strings
      *
      * @link https://getcomposer.org/doc/articles/versions.md Composer version format documentation

@@ -75,7 +75,7 @@ class CreateProject extends Step
 
         // Pick and install this version
         $version = $this->getBestVersion($output);
-        $this->installVersion($output, $version);
+        $this->installVersion($output, $version, !$input->getOption('skip-emulate-requirements'));
 
         // Validate result
         if (!Project::isProjectPath($this->directory)) {
@@ -117,8 +117,9 @@ class CreateProject extends Step
      *
      * @param OutputInterface $output
      * @param string $installVersion Composer version to install
+     * @param bool $emulateRequirements Composer to emulate platform environment aligned with requirements
      */
-    protected function installVersion(OutputInterface $output, $installVersion)
+    protected function installVersion(OutputInterface $output, $installVersion, $emulateRequirements)
     {
         $this->log($output, "Installing version <info>{$installVersion}</info> in <info>{$this->directory}</info>");
 
@@ -128,7 +129,7 @@ class CreateProject extends Step
         $repository = $this->getRepository();
 
         Composer::createProject($runner, $recipe, $directory, $installVersion, $repository);
-        Composer::update($runner, $directory, $repository);
+        Composer::update($runner, $directory, $repository, false, false, $emulateRequirements);
     }
 
     /**

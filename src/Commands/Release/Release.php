@@ -46,6 +46,12 @@ class Release extends Command
                 'Skip the text collection task when performing the release'
             )
             ->addOption(
+                'skip-emulate-requirements',
+                null,
+                InputOption::VALUE_NONE,
+                'Do not emulate php and extension requirements through composer config platform'
+            )
+            ->addOption(
                 'skip-fetch-tags',
                 null,
                 InputOption::VALUE_NONE,

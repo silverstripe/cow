@@ -61,7 +61,11 @@ class BuildArchive extends ReleaseStep
         $this->log($output, "Generating archives for {$count} recipes");
         foreach ($archives as $archive) {
             // Create project
-            $path = $this->createArchiveFiles($output, $archive);
+            $path = $this->createArchiveFiles(
+                $output,
+                $archive,
+                !$input->getOption('skip-emulate-requirements')
+            );
             foreach ($archive->getFiles() as $file) {
                 // Create file for this project
                 $this->buildFiles($output, $path, $file);
@@ -154,10 +158,11 @@ class BuildArchive extends ReleaseStep
      *
      * @param OutputInterface $output
      * @param Archive $archive
+     * @param bool $emulateRequirements Composer to emulate platform environment aligned with requirements
      * @return string Path to temporary project
      * @throws Exception
      */
-    protected function createArchiveFiles(OutputInterface $output, Archive $archive)
+    protected function createArchiveFiles(OutputInterface $output, Archive $archive, $emulateRequirements)
     {
         $runner = $this->getCommandRunner($output);
         $name = $archive->getRelease()->getLibrary()->getName();
@@ -176,7 +181,7 @@ class BuildArchive extends ReleaseStep
         $this->log($output, "Installing version {$version}");
 
         Composer::createProject($runner, $name, $path, $version, $repository);
-        Composer::update($runner, $path, $repository);
+        Composer::update($runner, $path, $repository, false, false, $emulateRequirements);
 
         // Copy composer.phar to the project
         // Write version info to the core folders (shouldn't be in version control)
