@@ -121,15 +121,14 @@ class CreateProject extends Step
     protected function installVersion(OutputInterface $output, $installVersion)
     {
         $this->log($output, "Installing version <info>{$installVersion}</info> in <info>{$this->directory}</info>");
-        Composer::createProject(
-            $this->getCommandRunner($output),
-            $this->getRecipe(),
-            $this->getDirectory(),
-            $installVersion,
-            $this->getRepository(),
-            false, // prefer-source for base project
-            true // Skip platform-reqs for base release
-        );
+
+        $runner = $this->getCommandRunner($output);
+        $recipe = $this->getRecipe();
+        $directory = $this->getDirectory();
+        $repository = $this->getRepository();
+
+        Composer::createProject($runner, $recipe, $directory, $installVersion, $repository);
+        Composer::update($runner, $directory, $repository);
     }
 
     /**

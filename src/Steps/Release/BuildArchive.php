@@ -159,9 +159,11 @@ class BuildArchive extends ReleaseStep
      */
     protected function createArchiveFiles(OutputInterface $output, Archive $archive)
     {
+        $runner = $this->getCommandRunner($output);
         $name = $archive->getRelease()->getLibrary()->getName();
         $version = $archive->getRelease()->getVersion()->getValue();
         $path = $archive->getTempDir();
+        $repository = $this->getRepository();
         $this->log($output, "Generating archives for <info>{$name}</info> at <comment>{$path}</comment>");
 
         // Ensure path is empty, but exists
@@ -172,7 +174,9 @@ class BuildArchive extends ReleaseStep
 
         // Install to this location
         $this->log($output, "Installing version {$version}");
-        Composer::createProject($this->getCommandRunner($output), $name, $path, $version, $this->getRepository(), true);
+
+        Composer::createProject($runner, $name, $path, $version, $repository);
+        Composer::update($runner, $path, $repository);
 
         // Copy composer.phar to the project
         // Write version info to the core folders (shouldn't be in version control)
