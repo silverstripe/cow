@@ -61,7 +61,11 @@ class BuildArchive extends ReleaseStep
         $this->log($output, "Generating archives for {$count} recipes");
         foreach ($archives as $archive) {
             // Create project
-            $path = $this->createArchiveFiles($output, $archive);
+            $path = $this->createArchiveFiles(
+                $output,
+                $archive,
+                !$input->getOption('skip-emulate-requirements')
+            );
             foreach ($archive->getFiles() as $file) {
                 // Create file for this project
                 $this->buildFiles($output, $path, $file);
@@ -154,14 +158,17 @@ class BuildArchive extends ReleaseStep
      *
      * @param OutputInterface $output
      * @param Archive $archive
+     * @param bool $emulateRequirements Composer to emulate platform environment aligned with requirements
      * @return string Path to temporary project
      * @throws Exception
      */
-    protected function createArchiveFiles(OutputInterface $output, Archive $archive)
+    protected function createArchiveFiles(OutputInterface $output, Archive $archive, $emulateRequirements)
     {
+        $runner = $this->getCommandRunner($output);
         $name = $archive->getRelease()->getLibrary()->getName();
         $version = $archive->getRelease()->getVersion()->getValue();
         $path = $archive->getTempDir();
+        $repository = $this->getRepository();
         $this->log($output, "Generating archives for <info>{$name}</info> at <comment>{$path}</comment>");
 
         // Ensure path is empty, but exists
@@ -172,7 +179,9 @@ class BuildArchive extends ReleaseStep
 
         // Install to this location
         $this->log($output, "Installing version {$version}");
-        Composer::createProject($this->getCommandRunner($output), $name, $path, $version, $this->getRepository(), true);
+
+        Composer::createProject($runner, $name, $path, $version, $repository);
+        Composer::update($runner, $path, $repository, false, false, $emulateRequirements);
 
         // Copy composer.phar to the project
         // Write version info to the core folders (shouldn't be in version control)

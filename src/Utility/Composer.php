@@ -29,7 +29,8 @@ class Composer
     }
 
     /**
-     * Install a given version
+     * Create a given version skeleton (aka composer create-project)
+     *
      * @param CommandRunner $runner
      * @param string $recipe
      * @param string $directory
@@ -45,9 +46,8 @@ class Composer
         $version,
         $repository = null,
         $preferDist = false,
-        $ignorePlatform = false
+        $ignorePlatform = true
     ) {
-        // Create comand
         $createOptions = self::getCreateOptions($repository, $preferDist, $ignorePlatform);
         $runner->runCommand(array_merge([
             "composer",
@@ -56,9 +56,28 @@ class Composer
             $directory,
             $version,
         ], $createOptions), "Could not create project with version {$version}");
+    }
 
+    /**
+     * @param CommandRunner $runner
+     * @param string $recipe
+     * @param string $directory
+     * @param string $version
+     * @param string $repository Optional custom repository
+     * @param bool $preferDist Set to true to use dist
+     * @param bool $ignorePlatform Set to true to ignore platform deps
+     */
+    public static function update(
+        CommandRunner $runner,
+        $directory,
+        $repository = null,
+        $preferDist = false,
+        $ignorePlatform = false,
+        $emulateRequirements = true
+    ) {
         // Set composer config
-        $customConfig = self::getUpdateConfig($directory, $repository);
+        $customConfig = self::getUpdateConfig($directory, $repository, $emulateRequirements);
+
         foreach ($customConfig as $option => $arguments) {
             $runner->runCommand(array_merge(
                 ['composer', 'config', $option],
@@ -67,25 +86,27 @@ class Composer
             ));
         }
 
-        // Update with the given repository
-        $updateOptions = self::getUpdateOptions($preferDist, $ignorePlatform);
-        $runner->runCommand(array_merge([
-            'composer',
-            'update',
-            '--working-dir',
-            $directory,
-        ], $updateOptions), "Could not update project");
-
-        // Revert all custom config
-        foreach ($customConfig as $option => $arguments) {
-            $runner->runCommand([
+        try {
+            // Update with the given repository
+            $updateOptions = self::getUpdateOptions($preferDist, $ignorePlatform);
+            $runner->runCommand(array_merge([
                 'composer',
-                'config',
-                '--unset',
-                $option,
+                'update',
                 '--working-dir',
                 $directory,
-            ]);
+            ], $updateOptions), "Could not update project");
+        } finally {
+            // Revert all custom config
+            foreach ($customConfig as $option => $arguments) {
+                $runner->runCommand([
+                    'composer',
+                    'config',
+                    '--unset',
+                    $option,
+                    '--working-dir',
+                    $directory,
+                ]);
+            }
         }
     }
 
@@ -109,19 +130,20 @@ class Composer
      *
      * @param string $directory
      * @param string $repository
+     * @param bool $emulateRequirements
      * @return array
      */
-    protected static function getUpdateConfig($directory, $repository)
+    protected static function getUpdateConfig($directory, $repository, $emulateRequirements)
     {
         // Register all custom options to temporarily set
         $customConfig = [];
 
-        // If `requirements.php` is specified, set platform to lowest platform version
-        $composerData = Config::loadFromFile($directory . '/composer.json');
-        if (isset($composerData['require']['php'])
-            && preg_match('/^[\\D]*(?<version>[\\d.]+)/', $composerData['require']['php'], $matches)
-        ) {
-            $customConfig['platform.php'] = [$matches['version']];
+        if ($emulateRequirements) {
+            $composerData = Config::loadFromFile($directory . '/composer.json');
+            $customConfig = array_merge(
+                $customConfig,
+                static::requirementsConfig($composerData)
+            );
         }
 
         // Update un-installed project with custom repository
@@ -131,6 +153,109 @@ class Composer
         }
 
         return $customConfig;
+    }
+
+    /**
+     * Build platform configuration from composer requirements
+     * Does not return the requirements for which the original
+     * composer.json has already got "config.platform.*" defined
+     *
+     * @param array $composerData current composer.json config
+     *
+     * @return array associative array of composer platform config values
+     */
+    private static function requirementsConfig(array $composerData)
+    {
+        $config = [];
+
+        if (!isset($composerData['require'])) {
+            return $config;
+        }
+
+        $requirements = $composerData['require'];
+
+        foreach ($requirements as $package => $version) {
+            if ($package === 'php') {
+                if (isset($composerData['config']['platform']['php'])) {
+                    continue;
+                }
+
+                $versions = static::parseVersions($version);
+
+                if (count($versions)) {
+                    $config['platform.php'] = [$versions[0]];
+                }
+            } elseif (strpos($package, '/') === false && substr($package, 0, 4) === 'ext-') {
+                if (isset($composerData['config']['platform'][$package])) {
+                    continue;
+                }
+
+                $packageKey = sprintf('platform.%s', $package);
+
+                if ($version === '*') {
+                    $config[$packageKey] = ['1'];
+                } else {
+                    $versions = static::parseVersions($version);
+
+                    if (count($versions)) {
+                        $config[$packageKey] = [$versions[0]];
+                    }
+                }
+            }
+        }
+
+        return $config;
+    }
+
+    /**
+     * Read the allowed versions defined in the composer format and return them ordered
+     *
+     * @param string $versionDefinition version definition
+     * @return array ordered list of versions as strings
+     *
+     * @link https://getcomposer.org/doc/articles/versions.md Composer version format documentation
+     *
+     */
+    private static function parseVersions($versionDefinition)
+    {
+        static $regex = '/
+            (?<!(?:<|>|\.|\d))  # Does not start with "<", ">", "." or a number
+                                # that means it may be ">=7.1", "<=7.1", "7.1" but cannot be ">7.1" nor "<7.1"
+                                # We also eliminate partial matches ignoring stuff starting with
+                                # a number or a dot ".", so that ">7.1.25" does not become "1.25" nor "5"
+
+            (?<version>\d+(?:\.\d+(?:\.\d+)?)?)
+        /x';
+
+        if (preg_match_all($regex, $versionDefinition, $matches)
+            && isset($matches['version'])
+            && count($matches['version'])
+        ) {
+            $versions = $matches['version'];
+
+            usort($versions, static function ($a, $b) {
+                $af = floatval($a);
+                $bf = floatval($b);
+
+                if ($af < $bf) {
+                    return -1;
+                } elseif ($af > $bf) {
+                    return 1;
+                } else {
+                    if ($a < $b) {
+                        return -1;
+                    } elseif ($a > $b) {
+                        return 1;
+                    } else {
+                        return 0;
+                    }
+                }
+            });
+
+            return $versions;
+        } else {
+            return [];
+        }
     }
 
     /**
