@@ -56,7 +56,7 @@ class RateLimit extends Command
 
         $now = new DateTime();
         $resetDate = new DateTime();
-        $resetDate->setTimestamp($data['reset']);
+        $resetDate->setTimestamp($data['reset'] + 1);
         $this->output->writeln('Resets in: <comment>' . $resetDate->diff($now)->i . ' mins</comment>');
     }
 }
