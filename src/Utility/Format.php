@@ -17,7 +17,7 @@ class Format
     {
         $result = $format;
         foreach ($arguments as $name => $value) {
-            $result = str_replace('{'.$name.'}', $value, $result);
+            $result = str_replace('{' . $name . '}', $value, $result);
         }
         return $result;
     }

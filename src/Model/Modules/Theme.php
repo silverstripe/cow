@@ -13,7 +13,7 @@ class Theme extends Module
         if (!static::isLibraryPath($dir)) {
             return false;
         }
-        $data = json_decode(file_get_contents($path.'/composer.json'), true);
+        $data = json_decode(file_get_contents($path . '/composer.json'), true);
         return isset($data['type']) && $data['type'] === 'silverstripe-theme';
     }
 }

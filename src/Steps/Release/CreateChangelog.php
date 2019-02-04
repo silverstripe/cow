@@ -141,7 +141,7 @@ class CreateChangelog extends ReleaseStep
             if (!is_dir($dirname)) {
                 mkdir($dirname, 0777, true);
             }
-            file_put_contents($fullPath, $header.$content);
+            file_put_contents($fullPath, $header . $content);
             $this->commitChanges($output, $changelogHolder, $version, $fullPath);
         }
 
