@@ -99,19 +99,19 @@ class Project extends Module
     protected function getDirectories()
     {
         // Search all directories
-        foreach (glob($this->directory."/*", GLOB_ONLYDIR) as $baseDir) {
+        foreach (glob($this->directory . "/*", GLOB_ONLYDIR) as $baseDir) {
             yield $baseDir;
         }
 
         // Add vendor modules
-        foreach (glob($this->directory."/vendor/*", GLOB_ONLYDIR) as $vendorDir) {
-            foreach (glob($vendorDir."/*", GLOB_ONLYDIR) as $moduleDir) {
+        foreach (glob($this->directory . "/vendor/*", GLOB_ONLYDIR) as $vendorDir) {
+            foreach (glob($vendorDir . "/*", GLOB_ONLYDIR) as $moduleDir) {
                 yield $moduleDir;
             }
         }
 
         // Add themes
-        foreach (glob($this->directory."/themes/*", GLOB_ONLYDIR) as $themeDir) {
+        foreach (glob($this->directory . "/themes/*", GLOB_ONLYDIR) as $themeDir) {
             yield $themeDir;
         }
     }

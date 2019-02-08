@@ -56,7 +56,7 @@ class Changelog
         $toVersion = $changelogLibrary->getRelease()->getIsNewRelease()
             ? 'HEAD' // Since it won't have been tagged yet, we use the current branch head
             : $changelogLibrary->getRelease()->getVersion()->getValue();
-        $range = $fromVersion."..".$toVersion;
+        $range = $fromVersion . ".." . $toVersion;
         try {
             $log = $changelogLibrary
                 ->getRelease()

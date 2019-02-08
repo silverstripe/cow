@@ -17,7 +17,7 @@ class SupportedModuleFilterTest extends PHPUnit_Framework_TestCase
             ['name' => 'food', 'type' => 'unsupported-module'],
         ];
 
-        $result = (new SupportedModuleFilter)->filter($input);
+        $result = (new SupportedModuleFilter())->filter($input);
         $this->assertContains(['name' => 'foo', 'type' => 'supported-module'], $result);
         $this->assertContains(['name' => 'bar', 'type' => 'supported-module'], $result);
         $this->assertNotContains(['name' => 'baz', 'type' => 'supported-dependency'], $result);

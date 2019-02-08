@@ -153,7 +153,7 @@ class RewriteReleaseBranches extends ReleaseStep
             return;
         }
 
-        $this->log($output, "Removing branch alias from <info>".$library->getName()."</info>");
+        $this->log($output, "Removing branch alias from <info>" . $library->getName() . "</info>");
         unset($composerData['extra']['branch-alias']);
 
         // Write changes
@@ -200,8 +200,8 @@ class RewriteReleaseBranches extends ReleaseStep
                 $this->log(
                     $output,
                     "Warning: Dependency <info>{$childName}</info> of parent <info>{$parentName}</info> "
-                    . "was installed with constraint <info>".$childConstraint->getValue()."</info> but is "
-                    . "being released at a lower version <info>".$childVersion->getValue()."</info>",
+                    . "was installed with constraint <info>" . $childConstraint->getValue() . "</info> but is "
+                    . "being released at a lower version <info>" . $childVersion->getValue() . "</info>",
                     "error"
                 );
             }

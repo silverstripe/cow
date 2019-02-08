@@ -239,7 +239,7 @@ class UpdateTranslations extends ReleaseStep
             );
 
             $num = 0;
-            foreach (glob($module->getLangDirectory()."/*.yml") as $sourceFile) {
+            foreach (glob($module->getLangDirectory() . "/*.yml") as $sourceFile) {
                 $dirty = file_get_contents($sourceFile);
                 $sourceData = Yaml::parse($dirty);
                 $cleaned = Yaml::dump($sourceData, 9999, 2);

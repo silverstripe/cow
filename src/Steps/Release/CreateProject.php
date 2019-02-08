@@ -154,7 +154,7 @@ class CreateProject extends Step
             }
         }
 
-        throw new InvalidArgumentException("Could not install project from version ".$this->version->getValue());
+        throw new InvalidArgumentException("Could not install project from version " . $this->version->getValue());
     }
 
     public function getStepName()
