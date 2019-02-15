@@ -73,7 +73,9 @@ class Library
         $this->parent = $parent;
 
         if (!$this->isValid()) {
-            throw new InvalidArgumentException("No library in directory \"{$this->directory}\"");
+            throw new InvalidArgumentException(
+                "No library in directory \"{$this->directory}\". Did you forget to run cow release:create?"
+            );
         }
     }
 
