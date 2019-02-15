@@ -42,11 +42,6 @@ class CreateChangelog extends ReleaseStep
      */
     protected function recursiveGenerateChangelog(OutputInterface $output, LibraryRelease $release)
     {
-        // Don't generate changelogs for non-release upgrades (e.g. bump to existing tag)
-        if (!$release->getIsNewRelease()) {
-            return;
-        }
-
         // Generate changelog for this library only
         $this->generateChangelog($output, $release);
 
@@ -195,16 +190,21 @@ class CreateChangelog extends ReleaseStep
             if (!$childHistoricVersion) {
                 $historicConstraintName = $pastComposer['require'][$childReleaseName];
 
-                // Get oldest existing tag that matches the given constraint as the "from" for changelog purposes.
-                $historicConstraint = new ComposerConstraint(
-                    $historicConstraintName,
-                    $historicVersion,
-                    $childReleaseName
-                );
-                $childHistoricVersion = $childNewRelease->getLibrary()->getOldestVersionMatching(
-                    $historicConstraint,
-                    $childNewRelease->getVersion()->isStable()
-                );
+                if ($childNewRelease->getPriorVersion()) {
+                    $childHistoricVersion = $childNewRelease->getPriorVersion();
+                } else {
+                    // Get oldest existing tag that matches the given constraint as the "from" for changelog purposes.
+                    $historicConstraint = new ComposerConstraint(
+                        $historicConstraintName,
+                        $historicVersion,
+                        $childReleaseName
+                    );
+
+                    $childHistoricVersion = $childNewRelease->getLibrary()->getOldestVersionMatching(
+                        $historicConstraint,
+                        $childNewRelease->getVersion()->isStable()
+                    );
+                }
             }
 
             if (!$childHistoricVersion) {
