@@ -265,13 +265,18 @@ class Release extends Command
      */
     public function getIncludeOtherChanges()
     {
-        // If project level configuration is defined, use that
+        // If an argument was explicitly passed, use it (true)
+        if ($this->input->getOption('include-other-changes')) {
+            return true;
+        }
+
+        // No argument was passed, fall back to project level configuration
         $projectConfig = $this->getProject()->getChangelogIncludeOtherChanges();
         if ($projectConfig !== null) {
             return $projectConfig;
         }
 
-        // Use direct argument (defaults to false)
-        return $this->input->getOption('include-other-changes');
+        // Default value
+        return false;
     }
 }

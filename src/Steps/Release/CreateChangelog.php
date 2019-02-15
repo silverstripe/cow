@@ -109,7 +109,7 @@ class CreateChangelog extends ReleaseStep
         $command = $this->getCommand();
         $changelog->setIncludeOtherChanges($command->getIncludeOtherChanges());
         if ($changelog->getIncludeOtherChanges()) {
-            $this->log($output, 'Including untagged commits in changelog');
+            $this->log($output, 'Including "other changes" in changelog');
         }
 
         $content = $changelog->getMarkdown($output, $release->getLibrary()->getChangelogFormat());
