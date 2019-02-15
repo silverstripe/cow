@@ -1138,7 +1138,7 @@ class Library
     }
 
     /**
-     * Find library to holde the changelog for this library. Defaults to self.
+     * Find library to hold the changelog for this library. Defaults to self.
      *
      * @return Library
      */
@@ -1156,5 +1156,20 @@ class Library
             );
         }
         return $library;
+    }
+
+    /**
+     * Whether to include "other changes" (commits that are not tagged with a Cow friendly prefix) in changelogs
+     * or not. Can return null if no project configuration is found.
+     *
+     * @return bool|null
+     */
+    public function getChangelogIncludeOtherChanges()
+    {
+        $data = $this->getCowData();
+        if (!isset($data['changelog-include-other-changes'])) {
+            return null;
+        }
+        return (bool) $data['changelog-include-other-changes'];
     }
 }

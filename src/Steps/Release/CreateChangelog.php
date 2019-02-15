@@ -108,6 +108,9 @@ class CreateChangelog extends ReleaseStep
         /** @var \SilverStripe\Cow\Commands\Release\Changelog $command */
         $command = $this->getCommand();
         $changelog->setIncludeOtherChanges($command->getIncludeOtherChanges());
+        if ($changelog->getIncludeOtherChanges()) {
+            $this->log($output, 'Including "other changes" in changelog');
+        }
 
         $content = $changelog->getMarkdown($output, $release->getLibrary()->getChangelogFormat());
 

@@ -13,6 +13,8 @@ Basic options are:
 * `changelog-github` (bool) Push up changelog to github up via github release API (v3)
 * `changelog-format` Either 'flat' (single list of items) or 'grouped' (grouped by standard groups).\
   Defaults to 'grouped' if left out.
+* `changelog-include-other-changes` Whether to include commits that are not tagged with Cow friendly prefixes. Default
+  is false.
 * `child-stability-inherit` (bool|array) If set to true, child modules will be released with the same stability
   (e.g. -alpha1) as the parent. This can also be set to an array of modules to limit child stability inheritance to.
 * `vendors` Declare list of child requirement library vendors that will be released. A vendor must be declared,
