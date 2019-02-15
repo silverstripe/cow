@@ -30,6 +30,11 @@ abstract class Command extends Console\Command\Command
     protected $output;
 
     /**
+     * @var Console\Helper\ProgressBar
+     */
+    protected $progressBar;
+
+    /**
      * {@inheritdoc}
      */
     protected function configure()
@@ -51,6 +56,7 @@ abstract class Command extends Console\Command\Command
     {
         $this->input = $input;
         $this->output = $output;
+        $this->progressBar = new Console\Helper\ProgressBar($this->output);
 
         // Configure extra output formats
         $this->output->getFormatter()->setStyle('bold', new OutputFormatterStyle('blue'));

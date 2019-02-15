@@ -25,7 +25,7 @@ class Changelog extends Release
         $branching = $this->getBranching();
 
         // Build and confirm release plan
-        $buildPlan = new PlanRelease($this, $project, $version, $branching);
+        $buildPlan = new PlanRelease($this, $project, $version, $branching, $this->progressBar);
         $buildPlan->run($this->input, $this->output);
         $releasePlan = $buildPlan->getReleasePlan();
 
