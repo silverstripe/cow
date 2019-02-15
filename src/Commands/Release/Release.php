@@ -258,12 +258,20 @@ class Release extends Command
     }
 
     /**
-     * Whether to include all commits in the changelog
+     * Whether to include all commits in the changelog. Will look at project level configuration as well as the
+     * specific argument passed to the command.
      *
      * @return bool
      */
     public function getIncludeOtherChanges()
     {
-        return (bool) $this->input->getOption('include-other-changes');
+        // If project level configuration is defined, use that
+        $projectConfig = $this->getProject()->getChangelogIncludeOtherChanges();
+        if ($projectConfig !== null) {
+            return $projectConfig;
+        }
+
+        // Use direct argument (defaults to false)
+        return $this->input->getOption('include-other-changes');
     }
 }

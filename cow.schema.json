@@ -26,6 +26,9 @@
     "changelog-github": {
       "type": "boolean"
     },
+    "changelog-include-other-changes": {
+      "type": "boolean"
+    },
     "child-stability-inherit": {
       "anyOf": [
         {
