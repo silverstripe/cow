@@ -2,6 +2,7 @@
 
 namespace SilverStripe\Cow\Tests\Model\Modules;
 
+use InvalidArgumentException;
 use PHPUnit_Framework_MockObject_MockObject;
 use PHPUnit_Framework_TestCase;
 use SilverStripe\Cow\Model\Modules\Library;
@@ -10,6 +11,15 @@ use SilverStripe\Cow\Model\Release\Version;
 
 class LibraryTest extends PHPUnit_Framework_TestCase
 {
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessageRegExp /Did you forget to run cow release:create\?/
+     */
+    public function testNonExistentLibrary()
+    {
+        new Library('some-directory-that/will/never_exist');
+    }
+
     public function testSerialisePlanSavesPriorVersion()
     {
         /** @var Library|PHPUnit_Framework_MockObject_MockObject $library */
