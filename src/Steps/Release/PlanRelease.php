@@ -86,8 +86,11 @@ class PlanRelease extends Step
         $version = $this->getVersion()->getValue();
         $this->log($output, "Planning release for project {$name} version {$version}");
 
+        $assumeNoReleases = $input->getOption('assume-no-releases');
+        $forceRelease = explode(',', $input->getOption('release') ?: '');
+
         // Build initial plan
-        $this->buildInitialPlan($output);
+        $this->buildInitialPlan($output, $assumeNoReleases, $forceRelease);
 
         // Review with author
         $this->reviewPlan($output, $input);
@@ -97,8 +100,11 @@ class PlanRelease extends Step
      * Generate a draft plan for the current project based on configuration and automatic best-guess
      *
      * @param OutputInterface $output
+     * @param bool $assumeNoRelease Indicate that the plan should assume the latest tag for the release
+     * @param array $forceRelease Modules to release regardless of $assumeNoRelease setting
+     * @throws Exception
      */
-    protected function buildInitialPlan(OutputInterface $output)
+    protected function buildInitialPlan(OutputInterface $output, $assumeNoRelease = false, $forceRelease = [])
     {
         // Load cached value
         $moduleRelease = $this->getProject()->loadCachedPlan();
@@ -118,7 +124,7 @@ class PlanRelease extends Step
         // Generate a suggested release
         $this->log($output, 'Automatically building a suggested release plan');
         $moduleRelease = new LibraryRelease($this->getProject(), $this->getVersion());
-        $this->generateChildReleases($moduleRelease);
+        $this->generateChildReleases($moduleRelease, $assumeNoRelease, $forceRelease);
 
         // Set branching if specified on CLI
         if ($branching) {
@@ -134,15 +140,19 @@ class PlanRelease extends Step
      * Recursively generate a plan for this parent recipe
      *
      * @param LibraryRelease $parent Parent release object
+     * @param bool $assumeNoRelease Indicate that the plan should assume the latest tag for the release
+     * @param array $forceRelease Modules to release regardless of $assumeNoRelease setting
      * @throws Exception
      */
-    protected function generateChildReleases(LibraryRelease $parent)
+    protected function generateChildReleases(LibraryRelease $parent, $assumeNoRelease = false, $forceRelease = [])
     {
         // Get children
         $childModules = $parent->getLibrary()->getChildrenExclusive();
         foreach ($childModules as $childModule) {
             // For the given child module, guess the upgrade mechanism (upgrade or new tag)
-            if ($parent->getLibrary()->isChildUpgradeOnly($childModule->getName())) {
+            if ($assumeNoRelease && !in_array($childModule->getName(), $forceRelease)) {
+                $release = $this->generateReleaseFromLatestTag($parent, $childModule);
+            } elseif ($parent->getLibrary()->isChildUpgradeOnly($childModule->getName())) {
                 $release = $this->generateUpgradeRelease($parent, $childModule);
             } else {
                 $release = $this->proposeNewReleaseVersion($parent, $childModule);
@@ -154,9 +164,31 @@ class PlanRelease extends Step
             // an existing tag, so there's no need to recursie.
             $tags = $childModule->getTags();
             if (!array_key_exists($release->getVersion()->getValue(), $tags)) {
-                $this->generateChildReleases($release);
+                $this->generateChildReleases($release, $assumeNoRelease, $forceRelease);
             }
         }
+    }
+
+    /**
+     * Given the library, generate a "release" for it using the latest tag.
+     *
+     * @param LibraryRelease $parentRelease
+     * @param Library $childModule
+     * @return LibraryRelease
+     */
+    protected function generateReleaseFromLatestTag(LibraryRelease $parentRelease, Library $childModule)
+    {
+        $constraint = $parentRelease->getLibrary()->getChildConstraint(
+            $childModule->getName(),
+            $parentRelease->getVersion()
+        );
+
+        $tags = $constraint->filterVersions($childModule->getTags());
+
+        $tags = Version::sort($tags);
+
+        $version = reset($tags);
+        return new LibraryRelease($childModule, $version, $version);
     }
 
     /**
@@ -481,7 +513,9 @@ class PlanRelease extends Step
             }
         }
 
-        $this->modifyLibraryReleaseVersion($selectedVersion, $newVersion, $priorVersion);
+        $assumeNoReleases = $input->getOption('assume-no-releases');
+
+        $this->modifyLibraryReleaseVersion($selectedVersion, $newVersion, $priorVersion, $assumeNoReleases);
 
         // Save modified plan to cache immediately
         $this->getProject()->saveCachedPlan($this->getReleasePlan());
@@ -556,8 +590,12 @@ class PlanRelease extends Step
      * @param Version $newVersion New version
      * @param Version|null $priorVersion Prior version (optional)
      */
-    protected function modifyLibraryReleaseVersion(LibraryRelease $selectedVersion, $newVersion, $priorVersion = null)
-    {
+    protected function modifyLibraryReleaseVersion(
+        LibraryRelease $selectedVersion,
+        $newVersion,
+        $priorVersion = null,
+        $assumeNoReleases = false
+    ) {
         $wasNewRelease = $selectedVersion->getIsNewRelease();
 
         // Replace tag
@@ -574,7 +612,7 @@ class PlanRelease extends Step
 
             // Changing to require a new tag will populate children again from scratch
             if ($isNewRelease) {
-                $this->generateChildReleases($selectedVersion);
+                $this->generateChildReleases($selectedVersion, $assumeNoReleases);
             }
         }
     }
