@@ -126,7 +126,7 @@ class Library
         // Guess from git remote
         $remotes = $this->getRemotes();
         foreach ($remotes as $remote) {
-            if (preg_match('#github.com/(?<slug>[^\\s/\\.]+/[^\\s/\\.]+)#', $remote, $matches)) {
+            if (preg_match('#github.com(/|:)(?<slug>[^\\s/\\.]+/[^\\s/\\.]+)#', $remote, $matches)) {
                 return $matches['slug'];
             }
         }
