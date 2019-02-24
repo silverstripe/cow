@@ -5,7 +5,7 @@
 
 The ineptly named tool which may one day supercede the older [build tools](https://github.com/silverstripe/silverstripe-buildtools).
 
-![moo](https://giphy.com/gifs/blow-screen-8AsXV477ls6LS)
+![moo](https://media.giphy.com/media/8AsXV477ls6LS/giphy.gif)
 
 ## Install
 
