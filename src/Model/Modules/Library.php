@@ -126,7 +126,7 @@ class Library
         // Guess from git remote
         $remotes = $this->getRemotes();
         foreach ($remotes as $remote) {
-            if (preg_match('#github.com/(?<slug>[^\\s/\\.]+/[^\\s/\\.]+)#', $remote, $matches)) {
+            if (preg_match('#github.com(/|:)(?<slug>[^\\s/\\.]+/[^\\s/\\.]+)#', $remote, $matches)) {
                 return $matches['slug'];
             }
         }
@@ -708,7 +708,10 @@ class Library
         // Fallback to checking remotes. E.g. gitlab remotes
         $remotes = $this->getRemotes();
         foreach ($remotes as $name => $remote) {
-            if (preg_match('/^http(s)?:/', $remote)) {
+            // Handle https or ssh endpoints
+            if (preg_match('/^(http(s)?:|git@)/', $remote)) {
+                // Replace ssh protocol with https
+                $remote = preg_replace('/git@(.+):/', 'https://$1/', $remote);
                 // Remove trailing .git
                 $remote = preg_replace('/\\.git$/', '', $remote);
                 $remote = rtrim($remote, '/') . '/commit/{sha}';
