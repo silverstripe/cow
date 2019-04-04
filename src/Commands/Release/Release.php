@@ -2,18 +2,18 @@
 
 namespace SilverStripe\Cow\Commands\Release;
 
+use InvalidArgumentException;
 use SilverStripe\Cow\Commands\Command;
 use SilverStripe\Cow\Model\Modules\Project;
 use SilverStripe\Cow\Model\Release\Version;
-use SilverStripe\Cow\Steps\Release\RewriteReleaseBranches;
 use SilverStripe\Cow\Steps\Release\CreateChangelog;
 use SilverStripe\Cow\Steps\Release\CreateProject;
 use SilverStripe\Cow\Steps\Release\PlanRelease;
+use SilverStripe\Cow\Steps\Release\RewriteReleaseBranches;
 use SilverStripe\Cow\Steps\Release\RunTests;
 use SilverStripe\Cow\Steps\Release\UpdateTranslations;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
-use InvalidArgumentException;
 use Symfony\Component\Console\Output\Output;
 
 /**
@@ -86,7 +86,7 @@ class Release extends Command
         $branching = $this->getBranching();
 
         // Build and confirm release plan
-        $buildPlan = new PlanRelease($this, $project, $version, $branching);
+        $buildPlan = new PlanRelease($this, $project, $version, $branching, $this->progressBar);
         $buildPlan->run($this->input, $this->output);
         $releasePlan = $buildPlan->getReleasePlan();
 

@@ -6,10 +6,11 @@ use Exception;
 use SilverStripe\Cow\Commands\Command;
 use SilverStripe\Cow\Commands\Release\Branch;
 use SilverStripe\Cow\Model\Modules\Library;
-use SilverStripe\Cow\Model\Release\LibraryRelease;
 use SilverStripe\Cow\Model\Modules\Project;
+use SilverStripe\Cow\Model\Release\LibraryRelease;
 use SilverStripe\Cow\Model\Release\Version;
 use SilverStripe\Cow\Steps\Step;
+use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ChoiceQuestion;
@@ -42,6 +43,11 @@ class PlanRelease extends Step
     protected $branching = null;
 
     /**
+     * @var ProgressBar
+     */
+    protected $progressBar;
+
+    /**
      * @return LibraryRelease
      */
     public function getReleasePlan()
@@ -66,13 +72,20 @@ class PlanRelease extends Step
      * @param Project $project
      * @param Version $version
      * @param string $branching Override branching strategy
+     * @param ProgressBar $progressBar
      */
-    public function __construct(Command $command, Project $project, Version $version, $branching)
-    {
+    public function __construct(
+        Command $command,
+        Project $project,
+        Version $version,
+        $branching,
+        ProgressBar $progressBar
+    ) {
         parent::__construct($command);
         $this->setProject($project);
         $this->setVersion($version);
         $this->setBranching($branching);
+        $this->setProgressBar($progressBar);
     }
 
     public function getStepName()
@@ -518,6 +531,13 @@ class PlanRelease extends Step
      */
     protected function getReleaseOptions(LibraryRelease $node, $depth = 0)
     {
+        // Start a progress indicator at the top level
+        if ($depth === 0) {
+            $totalItems = $node->countAllItems(true);
+            $this->getProgressBar()->start($totalItems);
+            $this->getProgressBar()->advance();
+        }
+
         $options = [];
         // Format / indent this line
         $formatting
@@ -541,11 +561,19 @@ class PlanRelease extends Step
 
         // Build child version options
         foreach ($node->getItems() as $child) {
+            $this->getProgressBar()->advance();
+
             $options = array_merge(
                 $options,
                 $this->getReleaseOptions($child, $depth ? $depth + 3 : 1)
             );
         }
+
+        if ($depth === 0) {
+            $this->getProgressBar()->finish();
+            $this->getProgressBar()->clear();
+        }
+
         return $options;
     }
 
@@ -577,5 +605,23 @@ class PlanRelease extends Step
                 $this->generateChildReleases($selectedVersion);
             }
         }
+    }
+
+    /**
+     * @return ProgressBar
+     */
+    public function getProgressBar()
+    {
+        return $this->progressBar;
+    }
+
+    /**
+     * @param ProgressBar $progressBar
+     * @return $this
+     */
+    public function setProgressBar($progressBar)
+    {
+        $this->progressBar = $progressBar;
+        return $this;
     }
 }

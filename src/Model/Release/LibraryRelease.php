@@ -175,6 +175,21 @@ class LibraryRelease
     }
 
     /**
+     * Recursively get the total number of items
+     *
+     * @param bool $includeSelf
+     * @return int
+     */
+    public function countAllItems($includeSelf = false)
+    {
+        $count = 0;
+        foreach ($this->getAllItems($includeSelf) as $item) {
+            $count++;
+        }
+        return $count;
+    }
+
+    /**
      * Is this a new release?
      *
      * @return bool True if a new tag will be created, false if using existing tag
