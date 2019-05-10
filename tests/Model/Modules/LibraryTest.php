@@ -62,6 +62,23 @@ class LibraryTest extends PHPUnit_Framework_TestCase
         $this->assertTrue($library->getChangelogIncludeOtherChanges(), 'Should be true from config');
     }
 
+    public function testGetChangelogTemplate()
+    {
+        /** @var Library|PHPUnit_Framework_MockObject_MockObject $library */
+        $library = $this->getMockBuilder(Library::class)
+            ->disableOriginalConstructor()
+            ->setMethods(['getCowData'])
+            ->getMock();
+
+        $library->expects($this->exactly(2))->method('getCowData')->willReturnOnConsecutiveCalls(
+            ['changelog-template' => '.changelog.md'],
+            []
+        );
+
+        $this->assertEquals('.changelog.md', $library->getChangelogTemplatePath());
+        $this->assertNull($library->getChangelogTemplatePath(), 'Should be null when undefined');
+    }
+
     public function testGetCommitLinkReturnsFromCowConfig()
     {
         /** @var Library|PHPUnit_Framework_MockObject_MockObject $mock */

@@ -1117,6 +1117,17 @@ class Library
         return $version->injectPattern($pattern);
     }
 
+    public function getChangelogTemplatePath()
+    {
+        $cowData = $this->getCowData();
+
+        if (empty($cowData['changelog-template'])) {
+            return null;
+        }
+
+        return $cowData['changelog-template'];
+    }
+
     /**
      * Get Changelog format type
      *
