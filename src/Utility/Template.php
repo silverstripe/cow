@@ -2,10 +2,8 @@
 
 namespace SilverStripe\Cow\Utility;
 
+use Exception;
 use Twig\Environment;
-use Twig\Error\LoaderError;
-use Twig\Error\RuntimeError;
-use Twig\Error\SyntaxError;
 use Twig\Loader\ArrayLoader;
 
 class Template
@@ -16,14 +14,17 @@ class Template
      * @param $template
      * @param $context
      * @return string
-     * @throws LoaderError
-     * @throws RuntimeError
-     * @throws SyntaxError
      */
-    public function renderTemplateWithContext($template, $context)
+    public function renderTemplateWithContext(string $template, array $context): string
     {
-        $twig = new Environment(new ArrayLoader(['template' => $template]));
+        try {
+            $twig = new Environment(new ArrayLoader(['template' => $template]), ['autoescape' => false]);
 
-        return $twig->render('template', $context);
+            return $twig->render('template', $context);
+        } catch (Exception $e) {
+            error_log($e->getMessage());
+
+            return '';
+        }
     }
 }
