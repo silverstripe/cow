@@ -129,6 +129,16 @@ The changelog command takes the follow arguments and options:
 `--skip-fetch-tags` option to prevent Cow from re-fetching all tags from origin if you have already done this
 and only want to make a quick change.
 
+### Changelog Templates
+
+You can specify a file to use as the template for generating fresh changelogs via the `changelog-template` configuration
+in `.cow.json`. This template can use [Twig](https://twig.symfony.com/doc/2.x/templates.html) syntax to inject relevant
+information:
+
+- `{{ version }}` will inject the version that the changelog is being generated for (e.g. `1.2.3`)
+- `{{ logs }}` will inject the commit logs with before/after delimiters, so they can be updated later without destroying
+  any other changes to the contents.
+
 ## Synchronising data to supported modules
 
 Cow includes commands to help synchronise standardised data to all

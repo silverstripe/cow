@@ -83,6 +83,7 @@ class ChangelogTest extends PHPUnit_Framework_TestCase
         $library->method('getCommitLink')->will($this->returnCallback(function ($argument) {
             return 'http://example.com/' . $argument;
         }));
+        $library->method('getChangelogTemplatePath')->willReturn('.template.md');
 
         $version = new Version('1.0.0');
         $priorVersion = new Version('0.5.0');
