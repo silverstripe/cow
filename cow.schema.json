@@ -16,6 +16,9 @@
     "changelog-path": {
       "type": "string"
     },
+    "changelog-template": {
+      "type": "string"
+    },
     "changelog-type": {
       "type": "string",
       "enum": [

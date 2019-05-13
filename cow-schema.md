@@ -10,6 +10,8 @@ Basic options are:
 * `changelog-holder` Specify a child library as the "holder" for the changelog. Defaults to the same module.
 * `changelog-path` location of changelog to build for this project.
   Relative to the root directory of the changelog-holder.
+* `changelog-template` location of Twig template to use when generating changelogs. See [readme.md](readme.md).
+  Relative to the root directory of the project.
 * `changelog-github` (bool) Push up changelog to github up via github release API (v3)
 * `changelog-format` Either 'flat' (single list of items) or 'grouped' (grouped by standard groups).\
   Defaults to 'grouped' if left out.
@@ -36,6 +38,7 @@ Basic options are:
   "commit-link": "https://github.com/silverstripe/silverstripe-installer/commit/{sha}",
   "changelog-holder": "silverstripe/framework",
   "changelog-path": "docs/en/04_Changelogs/{stability}/{version}.md",
+  "changelog-template": "changelog.md.twig",
   "changelog-type": "grouped",
   "changelog-github": true,
   "child-stability-inherit": true,
