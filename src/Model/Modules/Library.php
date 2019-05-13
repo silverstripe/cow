@@ -1119,13 +1119,7 @@ class Library
 
     public function getChangelogTemplatePath()
     {
-        $cowData = $this->getCowData();
-
-        if (empty($cowData['changelog-template'])) {
-            return null;
-        }
-
-        return $cowData['changelog-template'];
+        return $this->getCowData()['changelog-template'] ?? null;
     }
 
     /**
