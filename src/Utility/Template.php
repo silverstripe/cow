@@ -15,7 +15,7 @@ class Template
      * @param $context
      * @return string
      */
-    public function renderTemplateWithContext(string $template, array $context): string
+    public function renderTemplateStringWithContext(string $template, array $context): string
     {
         try {
             $twig = new Environment(new ArrayLoader(['template' => $template]), ['autoescape' => false]);

@@ -13,7 +13,7 @@ class TemplateTest extends PHPUnit_Framework_TestCase
         $context = ['version' => '1.0.0'];
         $expected = "# Release 1.0.0";
 
-        $output = (new Template())->renderTemplateWithContext($template, $context);
+        $output = (new Template())->renderTemplateStringWithContext($template, $context);
 
         $this->assertEquals($output, $expected);
     }

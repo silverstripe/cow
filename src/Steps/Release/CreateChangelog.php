@@ -10,6 +10,7 @@ use SilverStripe\Cow\Model\Modules\Library;
 use SilverStripe\Cow\Model\Release\ComposerConstraint;
 use SilverStripe\Cow\Model\Release\LibraryRelease;
 use SilverStripe\Cow\Model\Release\Version;
+use SilverStripe\Cow\Utility\ChangelogRenderer;
 use SilverStripe\Cow\Utility\Template;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -19,20 +20,6 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class CreateChangelog extends ReleaseStep
 {
-    /**
-     * Below this line, any text will be automatically regenerated
-     *
-     * @var string
-     */
-    protected $topDelimiter = "<!--- Changes below this line will be automatically regenerated -->";
-
-    /**
-     * Above this line, any text will be automatically regenerated
-     *
-     * @var string
-     */
-    protected $bottomDelimiter = "<!--- Changes above this line will be automatically regenerated -->";
-
     public function run(InputInterface $input, OutputInterface $output)
     {
         $this->log($output, "Generating changelog content for all releases in this plan");
@@ -107,7 +94,7 @@ class CreateChangelog extends ReleaseStep
             $this->log($output, " * <info>{$name}</info> from <info>{$prior}</info> to <info>{$version}</info>");
         }
 
-        // Generate markedown from plan
+        // Generate markdown from plan
         $changelog = new Changelog($changelogLibrary);
         /** @var \SilverStripe\Cow\Commands\Release\Changelog $command */
         $command = $this->getCommand();
@@ -255,26 +242,18 @@ class CreateChangelog extends ReleaseStep
      */
     protected function patchChangelog(OutputInterface $output, string $existingContent, string $logs): string
     {
-        $topDelimiterPos = stripos($existingContent, $this->topDelimiter);
-        $bottomDelimiterPos = stripos($existingContent, $this->bottomDelimiter);
-        if ($topDelimiterPos === false || $bottomDelimiterPos === false) {
+        $renderer = new ChangelogRenderer();
+
+        // Warn when logs will be appended
+        if (strpos($existingContent, ChangelogRenderer::TOP_DELIMITER) === false) {
             $this->log(
                 $output,
                 "Warning: Log regeneration delimiters not found. Logs will be appended to existing content.",
                 "error"
             );
-
-            return $existingContent . $this->topDelimiter . $logs . $this->bottomDelimiter;
-        } else {
-            $beforeLogs = substr($existingContent, 0, $topDelimiterPos + strlen($this->topDelimiter));
-            $afterLogs = substr($existingContent, $bottomDelimiterPos);
-
-            return implode([
-                $beforeLogs,
-                $logs,
-                $afterLogs
-            ]);
         }
+
+        return $renderer->updateChangelog($existingContent, $logs);
     }
 
     /**
@@ -292,38 +271,26 @@ class CreateChangelog extends ReleaseStep
         string $logs = '',
         ?string $templatePath = ''
     ): string {
+        $renderer = new ChangelogRenderer();
+
         $fullTemplatePath = implode([
             $this->getProject()->getDirectory(),
             DIRECTORY_SEPARATOR,
             $templatePath
         ]);
 
-        // Wrap logs in delimiters so they can be updated later
-        $logs = implode("\n\n", [
-            $this->topDelimiter,
-            $logs,
-            $this->bottomDelimiter
-        ]);
-
         // Fall back to basic output if no template is specified or if the template is missing
         if (is_null($templatePath) || !file_exists($fullTemplatePath)) {
             $this->log($output, "No changelog template found, falling back to basic output");
 
-            return sprintf(
-                "# %s\n\n%s",
-                $version->getValue(),
-                $logs
-            );
+            return $renderer->renderChangelog($version, $logs);
         }
 
         // Load the template into memory and render it with context
         $template = file_get_contents($fullTemplatePath);
-        $content = (new Template())->renderTemplateWithContext(
-            $template,
-            ['logs' => $logs, 'version' => $version->getValue()]
-        );
+        $content = $renderer->renderChangelogWithTemplate($template, $version, $logs);
 
-        if (strpos($content, $this->topDelimiter) === false) {
+        if (strpos($content, ChangelogRenderer::TOP_DELIMITER) === false) {
             $this->log($output, "Warning: Logs not included in changelog template", "error");
         }
 
