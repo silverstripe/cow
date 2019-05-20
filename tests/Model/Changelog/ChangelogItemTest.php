@@ -79,7 +79,7 @@ class ChangelogItemTest extends PHPUnit_Framework_TestCase
             ['[ss-2047-123]: Logins now use passwords', 'Logins now use passwords', 'Security'],
             ['[CVE-1234-56789]: Fix something serious', 'Fix something serious', 'Security'],
             ['[CVE-1234-12345] Remove admin login backdoor', 'Remove admin login backdoor', 'Security'],
-            ['[cve-1234-12345] added admin login backdoor', 'added admin login backdoor', 'Security'],
+            ['[cve-1234-123456] added admin login backdoor', 'added admin login backdoor', 'Security'],
             ['[cve-2018-8001] testing is cool', 'testing is cool', 'Security'],
             ['Default fallback doesn\'t categorise commit', 'Default fallback doesn\'t categorise commit', null],
         ];

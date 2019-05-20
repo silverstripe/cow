@@ -61,7 +61,7 @@ class ChangelogItem
             // E.g. "[ss-2015-016]: Security fix" - deliberately case insensitive here
             '/^(\[SS-2(\d){3}-(\d){3}\]):?/i',
             // E.g. "[cve-2019-12345]: Security fix"
-            '/^(\[CVE-(\d){4}-(\d){4,5}\]):?/i',
+            '/^(\[CVE-(\d){4}-(\d){4,}\]):?/i',
         ),
         'API Changes' => array(
             '/^(APICHANGE|API-CHANGE|API CHANGE|API)\b:?/'
@@ -286,7 +286,7 @@ class ChangelogItem
         }
 
         // New CVE style identifiers
-        if (preg_match('/^\[(?<cve>CVE-(\d){4}-(\d){4,5})\]/i', $this->getRawMessage(), $matches)) {
+        if (preg_match('/^\[(?<cve>CVE-(\d){4}-(\d){4,})\]/i', $this->getRawMessage(), $matches)) {
             return strtolower($matches['cve']);
         }
     }
