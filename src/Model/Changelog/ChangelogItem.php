@@ -59,7 +59,9 @@ class ChangelogItem
     protected static $types = array(
         'Security' => array(
             // E.g. "[ss-2015-016]: Security fix" - deliberately case insensitive here
-            '/^(\[SS-2(\d){3}-(\d){3}\]):?/i'
+            '/^(\[SS-2(\d){3}-(\d){3}\]):?/i',
+            // E.g. "[cve-2019-12345]: Security fix"
+            '/^(\[CVE-(\d){4}-(\d){4,}\]):?/i',
         ),
         'API Changes' => array(
             '/^(APICHANGE|API-CHANGE|API CHANGE|API)\b:?/'
@@ -272,13 +274,19 @@ class ChangelogItem
     }
 
     /**
-     * If this is a security fix, get the CVE/identifier (in 'ss-2015-016' format)
+     * If this is a security fix, get the CVE/identifier (in 'ss-2015-016' or 'CVE-2019-12345' format)
      *
      * @return string|null CVE/identifier, or null if not
      */
     public function getSecurityCVE()
     {
-        if (preg_match('/^\[(?<cve>SS-2(\d){3}-(\d){3})\]/i', $this->getRawMessage(), $matches)) {
+        // Old SS style security identifiers
+        if (preg_match('/^\[(?<ssid>SS-2(\d){3}-(\d){3})\]/i', $this->getRawMessage(), $matches)) {
+            return strtolower($matches['ssid']);
+        }
+
+        // New CVE style identifiers
+        if (preg_match('/^\[(?<cve>CVE-(\d){4}-(\d){4,})\]/i', $this->getRawMessage(), $matches)) {
             return strtolower($matches['cve']);
         }
     }
