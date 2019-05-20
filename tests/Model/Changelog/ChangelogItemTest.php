@@ -76,6 +76,11 @@ class ChangelogItemTest extends PHPUnit_Framework_TestCase
             ['[SS-2047-123] Lower doubt with cow coverage', 'Lower doubt with cow coverage', 'Security'],
             ['[ss-2047-123] Lower doubt with cow coverage', 'Lower doubt with cow coverage', 'Security'],
             ['[SS-2047-123]: Logins now use passwords', 'Logins now use passwords', 'Security'],
+            ['[SS-2047-123]: Logins now use passwords', 'Logins now use passwords', 'Security'],
+            ['[CVE-1234-56789]: Fix something serious', 'Fix something serious', 'Security'],
+            ['[CVE-1234-12345] Remove admin login backdoor', 'Remove admin login backdoor', 'Security'],
+            ['[cve-1234-12345] added admin login backdoor', 'added admin login backdoor', 'Security'],
+            ['[cve-2018-8001] testing is cool', 'testing is cool', 'Security'],
             ['Default fallback doesn\'t categorise commit', 'Default fallback doesn\'t categorise commit', null],
         ];
     }
@@ -115,6 +120,7 @@ class ChangelogItemTest extends PHPUnit_Framework_TestCase
             ['API Changing something big', false],
             ['NEW Enhancing something', false],
             ['[SS-2047-123] Something serious', false],
+            ['[CVE-2019-12345] Fixed something', false],
         ];
     }
 }
