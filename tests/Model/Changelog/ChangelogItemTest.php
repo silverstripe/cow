@@ -76,7 +76,7 @@ class ChangelogItemTest extends PHPUnit_Framework_TestCase
             ['[SS-2047-123] Lower doubt with cow coverage', 'Lower doubt with cow coverage', 'Security'],
             ['[ss-2047-123] Lower doubt with cow coverage', 'Lower doubt with cow coverage', 'Security'],
             ['[SS-2047-123]: Logins now use passwords', 'Logins now use passwords', 'Security'],
-            ['[SS-2047-123]: Logins now use passwords', 'Logins now use passwords', 'Security'],
+            ['[ss-2047-123]: Logins now use passwords', 'Logins now use passwords', 'Security'],
             ['[CVE-1234-56789]: Fix something serious', 'Fix something serious', 'Security'],
             ['[CVE-1234-12345] Remove admin login backdoor', 'Remove admin login backdoor', 'Security'],
             ['[cve-1234-12345] added admin login backdoor', 'added admin login backdoor', 'Security'],
