@@ -5,6 +5,9 @@ namespace SilverStripe\Cow\Steps\Release;
 use Exception;
 use SilverStripe\Cow\Commands\Command;
 use SilverStripe\Cow\Commands\Release\Branch;
+use SilverStripe\Cow\Model\Changelog\Changelog;
+use SilverStripe\Cow\Model\Changelog\ChangelogItem;
+use SilverStripe\Cow\Model\Changelog\ChangelogLibrary;
 use SilverStripe\Cow\Model\Modules\Library;
 use SilverStripe\Cow\Model\Modules\Project;
 use SilverStripe\Cow\Model\Release\LibraryRelease;
@@ -12,6 +15,7 @@ use SilverStripe\Cow\Model\Release\Version;
 use SilverStripe\Cow\Steps\Step;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ChoiceQuestion;
 use Symfony\Component\Console\Question\Question;
@@ -435,9 +439,11 @@ class PlanRelease extends Step
             ],
         ];
 
+        $summary = $this->generateReleaseSummary($selectedVersion);
+
         foreach ($versions as $key => $options) {
             $question = new Question(
-                sprintf($options['text'], $selectedVersion->getLibrary()->getName()),
+                $summary . sprintf($options['text'], $selectedVersion->getLibrary()->getName()),
                 $options['default']
             );
             $result = $this->getQuestionHelper()->ask($input, $output, $question);
@@ -630,5 +636,79 @@ class PlanRelease extends Step
     {
         $this->progressBar = $progressBar;
         return $this;
+    }
+
+    /**
+     * @param LibraryRelease $selectedVersion
+     * @return array|string
+     */
+    protected function generateReleaseSummary(LibraryRelease $selectedVersion)
+    {
+        // If the release has already been set to not change then there won't be changes
+        if ((string) $selectedVersion->getVersion() === (string) $selectedVersion->getPriorVersion()) {
+            return '';
+        }
+
+        // Create a changelog for just the chosen package
+        $changelog = new Changelog(new ChangelogLibrary($selectedVersion, $selectedVersion->getPriorVersion()));
+
+        // Prep an output that will contain exception messages (which we can discard)
+        $buffer = new BufferedOutput();
+        $changes = $changelog->getChanges($buffer);
+
+        // Prep a GitHub link for comparing changes
+        $commit = $selectedVersion->getLibrary()->getRepository()->getHeadCommit();
+        $githubCompareLink = sprintf(
+            'Compare on GitHub: https://github.com/%s/compare/%s...%s',
+            $selectedVersion->getLibrary()->getGithubSlug(),
+            $selectedVersion->getPriorVersion(),
+            $commit->getHash()
+        );
+
+        // No changes means we will give a no changes message
+        if (empty($changes)) {
+            return '<comment>Could not find changes to release</comment>' . PHP_EOL .
+                $githubCompareLink . PHP_EOL;
+        }
+
+        // Prep the counts of the various types of changes
+        $typeCount = [
+            ChangelogItem::TYPE_SECURITY => 0,
+            ChangelogItem::TYPE_API => 0,
+            ChangelogItem::TYPE_ENHANCEMENT => 0,
+            ChangelogItem::TYPE_BUGFIX => 0,
+            ChangelogItem::TYPE_OTHER_CHANGES => 0,
+        ];
+
+        // Initialise what will be the array of lines in this summary
+        $summary = [];
+
+        // Loop the changes to get a message for each
+        foreach ($changes as $change) {
+            $typeCount[$change->getType()]++;
+            $summary[] = '    <info>*</info> ' . $change->getMessage();
+        }
+
+        // Exclude categories that have no changes
+        $typeCount = array_filter($typeCount);
+
+        // Prep strings that summarise the count of each type of changes
+        $countStrings = [];
+        foreach ($typeCount as $type => $count) {
+            $countStrings[] = $count . ' ' . strtolower($type);
+        }
+
+        // Prepend a lead-in
+        array_unshift($summary, sprintf(
+            'Since prior version (%s): <comment>%s changes (%s)</comment>',
+            $selectedVersion->getPriorVersion(),
+            array_sum($typeCount),
+            implode(', ', $countStrings)
+        ));
+
+        // And append a link to compare with
+        $summary[] = $githubCompareLink;
+
+        return implode(PHP_EOL, $summary) . PHP_EOL;
     }
 }

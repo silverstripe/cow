@@ -65,7 +65,7 @@ class Changelog
                 ->getLog($range);
 
             foreach ($log->getCommits() as $commit) {
-                $change = new ChangelogItem($changelogLibrary, $commit, $this->getIncludeOtherChanges());
+                $change = new ChangelogItem($changelogLibrary, $commit);
 
                 // Detect duplicates and skip ignored items
                 $key = $change->getDistinctDetails();
@@ -105,7 +105,7 @@ class Changelog
      * @param OutputInterface $output
      * @return ChangelogItem[]
      */
-    protected function getChanges(OutputInterface $output)
+    public function getChanges(OutputInterface $output)
     {
         $changes = array();
         $libraries = $this->getRootLibrary()->getAllItems(true);
@@ -226,7 +226,7 @@ class Changelog
         $output = '';
         foreach ($commits as $commit) {
             // Skip untyped commits
-            if (!$commit->getType()) {
+            if ($this->getIncludeOtherChanges() || $commit->getType() !== ChangelogItem::TYPE_OTHER_CHANGES) {
                 continue;
             }
             /** @var ChangelogItem $commit */

@@ -12,6 +12,15 @@ use SilverStripe\Cow\Utility\Format;
 class ChangelogItem
 {
     /**
+     * Type definitions for commit messages
+     */
+    const TYPE_SECURITY = 'Security';
+    const TYPE_API = 'API Changes';
+    const TYPE_ENHANCEMENT = 'Features and Enhancements';
+    const TYPE_BUGFIX = 'Bugfixes';
+    const TYPE_OTHER_CHANGES = 'Other changes';
+
+    /**
      * Changelog library reference this item belongs to
      *
      * @var ChangelogLibrary
@@ -57,19 +66,19 @@ class ChangelogItem
      * @var array
      */
     protected static $types = array(
-        'Security' => array(
+        self::TYPE_SECURITY => array(
             // E.g. "[ss-2015-016]: Security fix" - deliberately case insensitive here
             '/^(\[SS-2(\d){3}-(\d){3}\]):?/i',
             // E.g. "[cve-2019-12345]: Security fix"
             '/^(\[CVE-(\d){4}-(\d){4,}\]):?/i',
         ),
-        'API Changes' => array(
+        self::TYPE_API => array(
             '/^(APICHANGE|API-CHANGE|API CHANGE|API)\b:?/'
         ),
-        'Features and Enhancements' => array(
+        self::TYPE_ENHANCEMENT => array(
             '/^(ENHANCEMENT|ENHNACEMENT|ENH|FEATURE|NEW)\b:?/'
         ),
-        'Bugfixes' => array(
+        self::TYPE_BUGFIX => array(
             '/^(BUG FIX|BUGFIX|BUGFUX|BUG|FIXED|FIXING|FIX)\b:?/',
         )
     );
@@ -90,11 +99,10 @@ class ChangelogItem
      * @param ChangelogLibrary $changelogLibrary
      * @param Commit $commit
      */
-    public function __construct(ChangelogLibrary $changelogLibrary, Commit $commit, $includeAllCommits = false)
+    public function __construct(ChangelogLibrary $changelogLibrary, Commit $commit)
     {
         $this->setChangelogLibrary($changelogLibrary);
         $this->setCommit($commit);
-        $this->setIncludeOtherChanges($includeAllCommits);
     }
 
     /**
@@ -222,9 +230,9 @@ class ChangelogItem
     }
 
     /**
-     * Get category for this type
+     * Get category for this type matching one of the type constants in this file
      *
-     * @return string|null Return the category of this commit, or null if uncategorised
+     * @return string
      */
     public function getType()
     {
@@ -240,15 +248,11 @@ class ChangelogItem
 
         // Check for security identifier (not at start of string)
         if ($this->getSecurityCVE()) {
-            return 'Security';
+            return self::TYPE_SECURITY;
         }
 
         // Fallback check to see if we should include all commits
-        if ($this->getIncludeOtherChanges()) {
-            return 'Other changes';
-        }
-
-        return null;
+        return self::TYPE_OTHER_CHANGES;
     }
 
     /**
@@ -343,24 +347,6 @@ class ChangelogItem
     public function setChangelogLibrary($changelogLibrary)
     {
         $this->changelogLibrary = $changelogLibrary;
-        return $this;
-    }
-
-    /**
-     * @return bool
-     */
-    public function getIncludeOtherChanges()
-    {
-        return $this->includeOtherChanges;
-    }
-
-    /**
-     * @param bool $includeOtherChanges
-     * @return $this
-     */
-    public function setIncludeOtherChanges($includeOtherChanges)
-    {
-        $this->includeOtherChanges = (bool) $includeOtherChanges;
         return $this;
     }
 }
