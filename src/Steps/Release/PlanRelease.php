@@ -189,6 +189,9 @@ class PlanRelease extends Step
             $parentRelease->getVersion()
         );
 
+        // Check if the prior release is known
+        $priorRelease = $parentRelease->getPriorVersionForChild($childModule);
+
         // Upgrade to self.version
         if ($constraint->isSelfVersion()) {
             $candidateVersion = $parentRelease->getVersion();
@@ -198,7 +201,7 @@ class PlanRelease extends Step
                     . $candidateVersion->getValue() . " without a new release"
                 );
             }
-            return new LibraryRelease($childModule, $candidateVersion);
+            return new LibraryRelease($childModule, $candidateVersion, $priorRelease);
         }
 
         // Get all stable tags that match the given composer constraint
@@ -225,7 +228,7 @@ class PlanRelease extends Step
         // Upgrade to highest version
         $tags = Version::sort($candidates, 'descending');
         $candidateVersion = reset($tags);
-        return new LibraryRelease($childModule, $candidateVersion);
+        return new LibraryRelease($childModule, $candidateVersion, $priorRelease);
     }
 
     /**
@@ -245,17 +248,21 @@ class PlanRelease extends Step
             $parentRelease->getVersion()
         );
 
+
+        // Check if the prior release is known
+        $priorRelease = $parentRelease->getPriorVersionForChild($childModule);
+
         // Upgrade to self.version
         if ($constraint->isSelfVersion()) {
             $candidateVersion = $parentRelease->getVersion();
 
             // If this is already tagged, just upgrade without a new release
             if (array_key_exists($candidateVersion->getValue(), $tags)) {
-                return new LibraryRelease($childModule, $candidateVersion);
+                return new LibraryRelease($childModule, $candidateVersion, $priorRelease);
             }
 
             // Build release
-            return new LibraryRelease($childModule, $candidateVersion);
+            return new LibraryRelease($childModule, $candidateVersion, $priorRelease);
         }
 
         // Get stability to use for the new tag
@@ -286,7 +293,7 @@ class PlanRelease extends Step
         }
 
         // Report new tag
-        return new LibraryRelease($childModule, $version);
+        return new LibraryRelease($childModule, $version, $priorRelease);
     }
 
     /**
