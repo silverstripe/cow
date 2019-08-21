@@ -3,6 +3,7 @@
 
 namespace SilverStripe\Cow\Model\Release;
 
+use Exception;
 use Generator;
 use SilverStripe\Cow\Commands\Release\Branch;
 use SilverStripe\Cow\Model\Modules\Library;
@@ -138,6 +139,30 @@ class LibraryRelease
         }
 
         return null;
+    }
+
+    /**
+     * @param string $name The name of the library to find the parent of
+     * @return LibraryRelease
+     * @throws Exception
+     */
+    public function getParentOfItem($name)
+    {
+        if ($name === $this->getLibrary()->getName()) {
+            throw new Exception('There is no parent of the current release!');
+        }
+
+        foreach ($this->items as $child) {
+            if ($child->getLibrary()->getName() === $name) {
+                return $this;
+            }
+
+            if (count($child->getItems())) {
+                return $child->getParentOfItem($name);
+            }
+        }
+
+        throw new Exception(sprintf('Could not determine parent of %s. Does the given library exist?', $name));
     }
 
     /**

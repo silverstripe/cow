@@ -8,10 +8,10 @@ use SilverStripe\Cow\Commands\Release\Branch;
 use SilverStripe\Cow\Model\Changelog\Changelog;
 use SilverStripe\Cow\Model\Changelog\ChangelogItem;
 use SilverStripe\Cow\Model\Changelog\ChangelogLibrary;
-use SilverStripe\Cow\Model\Modules\Library;
 use SilverStripe\Cow\Model\Modules\Project;
 use SilverStripe\Cow\Model\Release\LibraryRelease;
 use SilverStripe\Cow\Model\Release\Version;
+use SilverStripe\Cow\Service\VersionResolver;
 use SilverStripe\Cow\Steps\Step;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputInterface;
@@ -159,11 +159,8 @@ class PlanRelease extends Step
         $childModules = $parent->getLibrary()->getChildrenExclusive();
         foreach ($childModules as $childModule) {
             // For the given child module, guess the upgrade mechanism (upgrade or new tag)
-            if ($parent->getLibrary()->isChildUpgradeOnly($childModule->getName())) {
-                $release = $this->generateUpgradeRelease($parent, $childModule);
-            } else {
-                $release = $this->proposeNewReleaseVersion($parent, $childModule);
-            }
+            $resolver = new VersionResolver($childModule, $parent);
+            $release = $resolver->createRelease();
             $parent->addItem($release);
 
             // If this release tag doesn't match an existing tag, then recurse.
@@ -174,130 +171,6 @@ class PlanRelease extends Step
                 $this->generateChildReleases($release);
             }
         }
-    }
-
-    /**
-     * Determine the best existing stable tag to upgrade a dependency to
-     *
-     * @param LibraryRelease $parentRelease
-     * @param Library $childModule
-     * @return LibraryRelease
-     * @throws Exception
-     */
-    protected function generateUpgradeRelease(LibraryRelease $parentRelease, Library $childModule)
-    {
-        // Get tags and composer constraint to filter by
-        $tags = $childModule->getTags();
-        $constraint = $parentRelease->getLibrary()->getChildConstraint(
-            $childModule->getName(),
-            $parentRelease->getVersion()
-        );
-
-        // Check if the prior release is known
-        $priorRelease = $parentRelease->getPriorVersionForChild($childModule);
-
-        // Upgrade to self.version
-        if ($constraint->isSelfVersion()) {
-            $candidateVersion = $parentRelease->getVersion();
-            if (!array_key_exists($candidateVersion->getValue(), $tags)) {
-                throw new Exception(
-                    "Library " . $childModule->getName() . " cannot be upgraded to version "
-                    . $candidateVersion->getValue() . " without a new release"
-                );
-            }
-            return new LibraryRelease($childModule, $candidateVersion, $priorRelease);
-        }
-
-        // Get all stable tags that match the given composer constraint
-        $candidates = $constraint->filterVersions($tags);
-
-        // If releasing a stable version, remove all unstable dependencies
-        if ($parentRelease->getVersion()->isStable()) {
-            foreach ($candidates as $tag => $version) {
-                if (!$version->isStable()) {
-                    unset($candidates[$tag]);
-                }
-            }
-        }
-
-        // Check if we have any candidates left
-        if (empty($candidates)) {
-            throw new Exception(
-                "Library " . $childModule->getName() . " has no available tags that matches "
-                . $constraint->getValue()
-                . ". Please remove upgrade-only for this module, or tag a new release."
-            );
-        }
-
-        // Upgrade to highest version
-        $tags = Version::sort($candidates, 'descending');
-        $candidateVersion = reset($tags);
-        return new LibraryRelease($childModule, $candidateVersion, $priorRelease);
-    }
-
-    /**
-     * Propose a new version to tag for a given dependency
-     *
-     * @param LibraryRelease $parentRelease
-     * @param Library $childModule
-     * @return mixed|Version
-     * @throws Exception
-     */
-    protected function proposeNewReleaseVersion(LibraryRelease $parentRelease, Library $childModule)
-    {
-        // Get tags and composer constraint to filter by
-        $tags = $childModule->getTags();
-        $constraint = $parentRelease->getLibrary()->getChildConstraint(
-            $childModule->getName(),
-            $parentRelease->getVersion()
-        );
-
-
-        // Check if the prior release is known
-        $priorRelease = $parentRelease->getPriorVersionForChild($childModule);
-
-        // Upgrade to self.version
-        if ($constraint->isSelfVersion()) {
-            $candidateVersion = $parentRelease->getVersion();
-
-            // If this is already tagged, just upgrade without a new release
-            if (array_key_exists($candidateVersion->getValue(), $tags)) {
-                return new LibraryRelease($childModule, $candidateVersion, $priorRelease);
-            }
-
-            // Build release
-            return new LibraryRelease($childModule, $candidateVersion, $priorRelease);
-        }
-
-        // Get stability to use for the new tag
-        $useSameStability = $parentRelease->getLibrary()->isStabilityInherited($childModule);
-        if ($useSameStability) {
-            $stability = $parentRelease->getVersion()->getStability();
-            $stabilityVersion = $parentRelease->getVersion()->getStabilityVersion();
-        } else {
-            $stability = '';
-            $stabilityVersion = null;
-        }
-
-        // Filter versions
-        $candidates = $constraint->filterVersions($tags);
-        $tags = Version::sort($candidates, 'descending');
-
-        // Determine which best tag to create (with the correct stability)
-        $existingTag = reset($tags);
-        if ($existingTag) {
-            // Increment from to guess next version
-            $version = $existingTag->getNextVersion($stability, $stabilityVersion);
-        } else {
-            // In this case, the lower bounds of the constraint isn't a valid tag,
-            // so this is our new candidate
-            $version = clone $constraint->getMinVersion();
-            $version->setStability($stability);
-            $version->setStabilityVersion($stabilityVersion);
-        }
-
-        // Report new tag
-        return new LibraryRelease($childModule, $version, $priorRelease);
     }
 
     /**
@@ -430,20 +303,21 @@ class PlanRelease extends Step
     ) {
         $versions = [
             'new_version' => [
-                'text' => 'Please enter a new version to release for <info>%s</info>: ',
+                'text' => $this->generateReleaseSummary($selectedVersion)
+                    . 'Please enter a new version to release for <info>%s</info>: ',
                 'default' => $selectedVersion->getVersion(),
             ],
             'prior_version' => [
-                'text' => 'Optional: modify the prior version for <info>%s</info>: ',
+                'text' => 'Optional: modify the prior version ('
+                    . $selectedVersion->getPriorVersion()
+                    . ') for <info>%s</info>: ',
                 'default' => $selectedVersion->getPriorVersion(),
             ],
         ];
 
-        $summary = $this->generateReleaseSummary($selectedVersion);
-
         foreach ($versions as $key => $options) {
             $question = new Question(
-                $summary . sprintf($options['text'], $selectedVersion->getLibrary()->getName()),
+                sprintf($options['text'], $selectedVersion->getLibrary()->getName()),
                 $options['default']
             );
             $result = $this->getQuestionHelper()->ask($input, $output, $question);
@@ -645,23 +519,25 @@ class PlanRelease extends Step
     protected function generateReleaseSummary(LibraryRelease $selectedVersion)
     {
         // If the release has already been set to not change then there won't be changes
-        if ((string) $selectedVersion->getVersion() === (string) $selectedVersion->getPriorVersion()) {
+        $priorVersion = $selectedVersion->getPriorVersion();
+        if ((string) $selectedVersion->getVersion() === (string)$priorVersion) {
             return '';
         }
 
         // Create a changelog for just the chosen package
-        $changelog = new Changelog(new ChangelogLibrary($selectedVersion, $selectedVersion->getPriorVersion()));
+        $changelog = new Changelog(new ChangelogLibrary($selectedVersion, $priorVersion));
 
         // Prep an output that will contain exception messages (which we can discard)
         $buffer = new BufferedOutput();
         $changes = $changelog->getChanges($buffer);
 
         // Prep a GitHub link for comparing changes
-        $commit = $selectedVersion->getLibrary()->getRepository()->getHeadCommit();
+        $repository = $selectedVersion->getLibrary()->getRepository();
+        $commit = $repository->getHeadCommit();
         $githubCompareLink = sprintf(
             'Compare on GitHub: https://github.com/%s/compare/%s...%s',
             $selectedVersion->getLibrary()->getGithubSlug(),
-            $selectedVersion->getPriorVersion(),
+            $priorVersion,
             $commit->getHash()
         );
 
@@ -683,9 +559,42 @@ class PlanRelease extends Step
         // Initialise what will be the array of lines in this summary
         $summary = [];
 
+        // Get the list of "versions" that exist from the given prior version
+        $tags = Version::sort(array_map(function ($version) {
+            return new Version($version);
+        }, array_filter(explode(PHP_EOL, $repository->run(
+            'tag', ['--contains', (string)$priorVersion]
+        )))));
+
+        // Cull everything that's between the prior version and the latest existing version (based on the constraint)
+        $latestExistingVersion = (new VersionResolver(
+            $selectedVersion->getLibrary(),
+            $this->getReleasePlan()->getParentOfItem($selectedVersion->getLibrary()->getName())
+        ))->getLatestExistingVersion();
+
+        $tags = array_filter($tags, function (Version $version) use ($latestExistingVersion, $priorVersion) {
+            return $version->compareTo($latestExistingVersion) <= 0 && $version->compareTo($priorVersion) >= 0;
+        });
+
+        $nextExpectedTag = array_shift($tags);
         // Loop the changes to get a message for each
         foreach ($changes as $change) {
             $typeCount[$change->getType()]++;
+
+            $tagsWithCommit = array_filter(explode(PHP_EOL, $repository->run(
+                'tag', ['--contains', (string) $change->getCommit()->getHash()]
+            )));
+
+            $tagDetail = [];
+            while ($nextExpectedTag && in_array((string) $nextExpectedTag, $tagsWithCommit)) {
+                $tagDetail[] = $nextExpectedTag;
+                $nextExpectedTag = array_shift($tags);
+            }
+            if (count($tagDetail)) {
+                $tagDetail = implode(' ', $tagDetail);
+                $summary[] = "      <comment>-> {$tagDetail}</comment>";
+            }
+
             $summary[] = '    <info>*</info> ' . $change->getMessage();
         }
 
@@ -701,7 +610,7 @@ class PlanRelease extends Step
         // Prepend a lead-in
         array_unshift($summary, sprintf(
             'Since prior version (%s): <comment>%s changes (%s)</comment>',
-            $selectedVersion->getPriorVersion(),
+            $priorVersion,
             array_sum($typeCount),
             implode(', ', $countStrings)
         ));
