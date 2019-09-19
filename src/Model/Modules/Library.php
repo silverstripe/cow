@@ -625,20 +625,6 @@ class Library
     }
 
     /**
-     * Get list of archives to create for this release
-     *
-     * @return array
-     */
-    public function getArchives()
-    {
-        $data = $this->getCowData();
-        if (isset($data['archives'])) {
-            return $data['archives'];
-        }
-        return [];
-    }
-
-    /**
      * Gets cow config
      *
      * @array
