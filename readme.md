@@ -18,9 +18,6 @@ echo 'export PATH=$PATH:~/.composer/vendor/bin/'  >> ~/.bash_profile
 
 Now you can run `cow` at any time, and `composer global update` to perform time-to-time upgrades.
 
-Make sure that you setup your AWS credentials properly, and create a separate profile named `silverstripe`
-for this. You'll also need the aws cli installed.
-
 If you're feeling lonely, or just want to test your install, you can run `cow moo`.
 
 ## Dependencies
@@ -28,8 +25,6 @@ If you're feeling lonely, or just want to test your install, you can run `cow mo
 * See [the transifex client docs](https://github.com/transifex/transifex-client) for instructions on
   installing transifex-client. Cow requires at least version 0.12.
 * The yamlclean ruby gem is also required for localisation. Install yamlclean gem using `gem install yamlclean`.
-* For uploading of archive to s3 you must also install the
-  [AWS CLI tools](http://docs.aws.amazon.com/cli/latest/userguide/installing.html).
 * A `GITHUB_ACCESS_TOKEN` environment variable set for GitHub commands.
 
 ## Commands
@@ -97,18 +92,11 @@ This command has these options:
 * `--directory <directory>` to specify the folder to look for the project created in the prior step. As with
   above, it will be guessed if omitted. You can run this command in the `./release-<version>` directory and
   omit this option.
-* `--aws-profile <profile>` to specify the AWS profile name for uploading releases to s3. Check with
-  damian@silverstripe.com if you don't have an AWS key setup.
-* `--skip-archive-upload` to disable both "archive" and "upload". This is useful if doing a private release and
-  you don't want to upload this file to AWS.
-* `--skip-upload` to disable the "upload" command (but not archive)
 
 The release process, as with the initial `cow release` command, will actually be composed of several sub-commands,
 each of which could be run separately.
 
 * `release:tag` Add annotated tags to each module and pushes
-* `release:archive` Generate tar.gz and zip archives of this release
-* `release:upload` Upload archived projects to silverstripe.org
 
 After the push step, `release:publish` will automatically wait for this version to be available in packagist.org
 before continuing.

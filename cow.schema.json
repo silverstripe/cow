@@ -76,23 +76,6 @@
       "items": {
         "type": "string"
       }
-    },
-    "archives": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "recipe": {
-            "type": "string"
-          },
-          "files": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        }
-      }
     }
   }
 }

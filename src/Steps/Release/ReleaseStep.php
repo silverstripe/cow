@@ -5,7 +5,6 @@ namespace SilverStripe\Cow\Steps\Release;
 use Generator;
 use SilverStripe\Cow\Commands\Command;
 use SilverStripe\Cow\Model\Modules\Project;
-use SilverStripe\Cow\Model\Release\Archive;
 use SilverStripe\Cow\Model\Release\LibraryRelease;
 use SilverStripe\Cow\Steps\Step;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -98,30 +97,5 @@ abstract class ReleaseStep extends Step
         foreach ($this->getReleasePlan()->getAllItems() as $item) {
             yield $item;
         }
-    }
-    /**
-     * Get all archive files to publish
-     *
-     * @param OutputInterface $output
-     * @return Archive[] List of archives to generate, key is recipe name
-     */
-    protected function getArchives(OutputInterface $output)
-    {
-        $archives = [];
-        $rootVersion = $this->getReleasePlan()->getVersion();
-        foreach ($this->getProject()->getArchives() as $archive) {
-            // Get release from release plan
-            $release = $this->getReleasePlan()->getItem($archive['recipe']);
-            if ($release) {
-                // Note: Use root version for naming recipe to be consistent
-                $archives[$archive['recipe']] = new Archive($release, $archive['files'], $rootVersion);
-            } else {
-                $this->log(
-                    $output,
-                    "<error>Warning: Archive recipe {$archive['recipe']} is not a part of this release</error>"
-                );
-            }
-        }
-        return $archives;
     }
 }
