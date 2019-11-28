@@ -9,6 +9,14 @@ The ineptly named tool which may one day supercede the older [build tools](https
 
 ## Install
 
+### Docker
+
+Assuming you have docker, docker-compose and bash installed, you don't need any extra steps and can use cow straight away through `docker/run` script. You can use it from any other place on your drive - it will automatically mount the current folder as the working directory.
+
+E.g: `../cow/docker/run release:create 4.5.1`
+
+### Native
+
 You can install this globally with the following commands
 
 ```
