@@ -5,6 +5,7 @@ namespace SilverStripe\Cow\Steps\Release;
 use Exception;
 use SilverStripe\Cow\Commands\Command;
 use SilverStripe\Cow\Commands\Release\Branch;
+use SilverStripe\Cow\Commands\Release\Release;
 use SilverStripe\Cow\Model\Changelog\Changelog;
 use SilverStripe\Cow\Model\Changelog\ChangelogItem;
 use SilverStripe\Cow\Model\Changelog\ChangelogLibrary;
@@ -38,6 +39,13 @@ class PlanRelease extends Step
      * @var LibraryRelease
      */
     protected $releasePlan;
+
+    /**
+     * The version resolver service that helps to suggest versions for libraries
+     *
+     * @var VersionResolver
+     */
+    protected $versionResolver;
 
     /**
      * Branching strategy
@@ -83,13 +91,15 @@ class PlanRelease extends Step
         Project $project,
         Version $version,
         $branching,
-        ProgressBar $progressBar
+        ProgressBar $progressBar,
+        VersionResolver $versionResolver
     ) {
         parent::__construct($command);
         $this->setProject($project);
         $this->setVersion($version);
         $this->setBranching($branching);
         $this->setProgressBar($progressBar);
+        $this->versionResolver = $versionResolver;
     }
 
     public function getStepName()
@@ -157,10 +167,24 @@ class PlanRelease extends Step
     {
         // Get children
         $childModules = $parent->getLibrary()->getChildrenExclusive();
+        $unresolvedVersions = [];
+
         foreach ($childModules as $childModule) {
-            // For the given child module, guess the upgrade mechanism (upgrade or new tag)
-            $resolver = new VersionResolver($childModule, $parent);
-            $release = $resolver->createRelease();
+            // See if we can guess a version for this new release\
+            $newVersion = $this->versionResolver->proposeVersion($childModule, $parent);
+            $priorVersion = $parent->getPriorVersionForChild($childModule);
+
+            if (!$newVersion) {
+                $release = new LibraryRelease(
+                    $childModule,
+                    $this->versionResolver->proposeNewReleaseVersion($childModule, $parent),
+                    $priorVersion
+                );
+                $unresolvedVersions[$childModule->getName()] = $release;
+            } else {
+                $release = new LibraryRelease($childModule, $newVersion, $priorVersion);
+            }
+
             $parent->addItem($release);
 
             // If this release tag doesn't match an existing tag, then recurse.
@@ -169,6 +193,26 @@ class PlanRelease extends Step
             $tags = $childModule->getTags();
             if (!array_key_exists($release->getVersion()->getValue(), $tags)) {
                 $this->generateChildReleases($release);
+            }
+        }
+
+        while (!empty($unresolvedVersions)) {
+            /** @var LibraryRelease $unresolved */
+            $unresolved = array_shift($unresolvedVersions);
+
+            $hasChanges = false;
+            foreach ($unresolved->getItems() as $release) {
+                // Check to see if a release within this release is also listed as unresolved
+                if (isset($unresolvedVersions[$release->getLibrary()->getName()])) {
+                    $unresolvedVersions[] = $unresolved;
+                    continue 2;
+                }
+
+                $hasChanges |= $release->getIsNewRelease();
+            }
+
+            if (!$hasChanges) {
+                $unresolved->setVersion($unresolved->getPriorVersion());
             }
         }
     }
@@ -567,13 +611,14 @@ class PlanRelease extends Step
         )))));
 
         // Cull everything that's between the prior version and the latest existing version (based on the constraint)
-        $latestExistingVersion = (new VersionResolver(
+        $latestExistingVersion = $this->versionResolver->getLatestExistingVersion(
             $selectedVersion->getLibrary(),
             $this->getReleasePlan()->getParentOfItem($selectedVersion->getLibrary()->getName())
-        ))->getLatestExistingVersion();
+        );
 
         $tags = array_filter($tags, function (Version $version) use ($latestExistingVersion, $priorVersion) {
-            return $version->compareTo($latestExistingVersion) <= 0 && $version->compareTo($priorVersion) >= 0;
+            return (!$latestExistingVersion || $version->compareTo($latestExistingVersion) <= 0)
+                && $version->compareTo($priorVersion) >= 0;
         });
 
         $nextExpectedTag = array_shift($tags);

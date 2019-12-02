@@ -6,6 +6,7 @@ use InvalidArgumentException;
 use SilverStripe\Cow\Commands\Command;
 use SilverStripe\Cow\Model\Modules\Project;
 use SilverStripe\Cow\Model\Release\Version;
+use SilverStripe\Cow\Service\VersionResolver;
 use SilverStripe\Cow\Steps\Release\CreateChangelog;
 use SilverStripe\Cow\Steps\Release\CreateProject;
 use SilverStripe\Cow\Steps\Release\PlanRelease;
@@ -13,8 +14,10 @@ use SilverStripe\Cow\Steps\Release\RewriteReleaseBranches;
 use SilverStripe\Cow\Steps\Release\RunTests;
 use SilverStripe\Cow\Steps\Release\UpdateTranslations;
 use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\Output;
+use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * Execute each release step in order to publish a new version
@@ -24,6 +27,13 @@ class Release extends Command
     protected $name = 'release';
 
     protected $description = 'Execute each release step in order to publish a new version';
+
+    /**
+     * The version resolver service that helps to suggest versions for libraries
+     *
+     * @var VersionResolver
+     */
+    protected $versionResolver;
 
     protected function configureOptions()
     {
@@ -71,6 +81,13 @@ class Release extends Command
             );
     }
 
+    protected function execute(InputInterface $input, OutputInterface $output)
+    {
+        $this->versionResolver = new VersionResolver();
+
+        return parent::execute($input, $output);
+    }
+
     protected function fire()
     {
         // Get arguments
@@ -86,7 +103,7 @@ class Release extends Command
         $branching = $this->getBranching();
 
         // Build and confirm release plan
-        $buildPlan = new PlanRelease($this, $project, $version, $branching, $this->progressBar);
+        $buildPlan = new PlanRelease($this, $project, $version, $branching, $this->progressBar, $this->versionResolver);
         $buildPlan->run($this->input, $this->output);
         $releasePlan = $buildPlan->getReleasePlan();
 
