@@ -272,11 +272,11 @@ class LibraryRelease
             $constraint = $composerData['require'][$childName];
 
             // Attempt to resolve a specific version from the constraint
-            if (!preg_match('/^\d+\.\d+\.\d+/', $constraint, $matches)) {
+            if (!Version::parse($constraint)) {
                 continue;
             }
 
-            $childPriorVersions[$childName] = new Version($matches[0]);
+            $childPriorVersions[$childName] = new Version($constraint);
         }
 
         return $this->childPriorVersions = $childPriorVersions;
