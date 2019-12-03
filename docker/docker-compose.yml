@@ -1,0 +1,27 @@
+version: '3.7'
+
+x-build-args: &build-args
+  UID: ${USER_ID}
+
+x-entrypoint: &entrypoint
+  - /bin/bash
+  - /app/docker/entrypoint.sh
+
+x-volumes: &volumes
+  - '..:/app'
+  - './cache/composer:/home/cow/.composer/cache'
+
+x-build-context: &build-context .
+
+x-wdir: &wdir /app
+
+services:
+  cow_dev:
+    build:
+      context: *build-context
+      target: dev
+      args: *build-args
+    working_dir: *wdir
+    network_mode: 'host'
+    volumes: *volumes
+    entrypoint: *entrypoint
