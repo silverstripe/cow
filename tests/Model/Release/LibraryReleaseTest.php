@@ -70,7 +70,6 @@ class LibraryReleaseTest extends PHPUnit_Framework_TestCase
     {
         /** @var Library|PHPUnit_Framework_MockObject_MockObject $library */
         $library = $this->createMock(Library::class);
-
         $children = array_map(
             function($name) {
                 $lib = $this->createMock(Library::class);
@@ -80,7 +79,8 @@ class LibraryReleaseTest extends PHPUnit_Framework_TestCase
             [
                 'silverstripe/framework',
                 'silverstripe/admin',
-                'silverstripe/new-module','silverstripe/loose-constraint'
+                'silverstripe/new-module',
+                'silverstripe/loose-constraint'
             ]
         );
 
@@ -108,6 +108,10 @@ class LibraryReleaseTest extends PHPUnit_Framework_TestCase
             'deprecated-module and loose-constraint module are not be in the child prior version list');
         $this->assertEquals('4.3.2', $actual['silverstripe/framework']->getValue());
         $this->assertEquals('1.3.4', $actual['silverstripe/admin']->getValue());
+        $this->assertEquals('4.3.2', $release->getPriorVersionForChild($children[0])->getValue());
+        $this->assertEquals('1.3.4', $release->getPriorVersionForChild($children[1])->getValue());
+        $this->assertEmpty($release->getPriorVersionForChild($children[2]));
+        $this->assertEmpty($release->getPriorVersionForChild($children[3]));
 
         $actual = $release->getChildPriorVersions();
         $this->assertCount(2, $actual,'getChildPriorVersions hits the cache the second time');
