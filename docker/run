@@ -1,0 +1,11 @@
+#!/bin/bash
+
+TGT_DIR=$(pwd)  # the target folder where we run cow from
+
+export USER_ID=$(id -u)
+
+CUR_FILE=$(readlink -f "$0")
+CUR_DIR=$(dirname $CUR_FILE)
+
+cd $CUR_DIR && \
+docker-compose run -e UID=$USER_ID -u $USER_ID --rm -v "$TGT_DIR:/mnt" -w /mnt cow_dev $@

@@ -2,3 +2,5 @@
 /coverage
 composer.lock
 /temp
+.idea/
+/docker/cache/composer
