@@ -1,11 +1,21 @@
 #!/bin/bash
 
-TGT_DIR=$(pwd)  # the target folder where we run cow from
+TGT_DIR=$(readlink -f $(pwd))  # the target folder where we run cow from
 
 export USER_ID=$(id -u)
 
 CUR_FILE=$(readlink -f "$0")
 CUR_DIR=$(dirname $CUR_FILE)
+COW_DIR=$(dirname $CUR_DIR)
 
-cd $CUR_DIR && \
-docker-compose run -e UID=$USER_ID -u $USER_ID --rm -v "$TGT_DIR:/mnt" -w /mnt cow_dev $@
+run_docker_compose()
+{
+    cd $CUR_DIR && \
+    docker-compose run -e UID=$USER_ID -e COW_DIR="$COW_DIR" -u $USER_ID --rm -v "$COW_DIR:$COW_DIR" -v "$TGT_DIR:$TGT_DIR" -v "$CUR_DIR:$CUR_DIR" -w "$TGT_DIR" $1 ${@:2}
+}
+
+if [ ! -z "$SKIP_RUN_EXEC" ] ; then
+    return;
+fi
+
+run_docker_compose cow_dev $@

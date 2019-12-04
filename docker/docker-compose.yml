@@ -25,3 +25,16 @@ services:
     network_mode: 'host'
     volumes: *volumes
     entrypoint: *entrypoint
+
+  cow_debug:
+    build:
+      context: *build-context
+      target: debug
+      args: *build-args
+    working_dir: *wdir
+    network_mode: 'host'
+    volumes: *volumes
+    entrypoint: *entrypoint
+    environment:
+      DEBUG_COW: 1
+      XDEBUG_CONFIG: 'remote_enable=1 remote_mode=req remote_port=9000 remote_host=127.0.0.1 remote_connect_back=0'
