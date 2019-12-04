@@ -5,6 +5,7 @@ namespace SilverStripe\Cow\Tests\Model\Release;
 use PHPUnit_Framework_MockObject_MockObject;
 use PHPUnit_Framework_TestCase;
 use SilverStripe\Cow\Model\Modules\Library;
+use SilverStripe\Cow\Model\Modules\Project;
 use SilverStripe\Cow\Model\Release\LibraryRelease;
 use SilverStripe\Cow\Model\Release\Version;
 
@@ -38,6 +39,63 @@ class LibraryReleaseTest extends PHPUnit_Framework_TestCase
             $release->getPriorVersion(true),
             'Fallback to getting the prior version from current versions list of tags'
         );
+    }
+
+    /**
+     * Asserts that prior versions can be found via composer, not just by github tags
+     * for example:
+     *  given a module with 1.0.0 as the latest tag
+     *  and the latest release was 0.9.0
+     *  the prior version will be 0.9.0 for that module, not 1.0.0
+     */
+    public function testGetPriorVersionFromComposer()
+    {
+//        create our child library
+        /** @var Library|PHPUnit_Framework_MockObject_MockObject $library */
+        $childLibrary = $this->getMockBuilder(Library::class)
+            ->disableOriginalConstructor()
+            ->setMethods(['getName'])
+            ->getMock();
+
+        $childLibrary->expects($this->any())->method('getName')->willReturn('some/module');
+
+//        create our project, containing the child library
+        /** @var Project|PHPUnit_Framework_MockObject_MockObject $project */
+        $project = $this->getMockBuilder(Project::class)
+            ->disableOriginalConstructor()
+            ->setMethods(['getComposerData', 'getHistoryComposerData', 'isChildLibrary', 'getChildren'])
+            ->getMock();
+
+        $project->expects($this->any())->method('getComposerData')->willReturn([
+            'name' => 'my-project',
+            'require' => [
+                'some/module' => '1.0.0'
+            ]
+        ]);
+
+        $project->expects($this->any())->method('getHistoryComposerData')->willReturn([
+            'name' => 'my-project',
+            'require' => [
+                'some/module' => '0.9.0'
+            ]
+        ]);
+
+        $project->expects($this->any())->method('getChildren')->willReturn([
+            $childLibrary
+        ]);
+
+//        setup the library release
+        /** @var LibraryRelease|PHPUnit_Framework_MockObject_MockObject $library */
+        $parentRelease = $this->getMockBuilder(LibraryRelease::class)
+            ->setConstructorArgs([$project, new Version('1.1.0')])
+            ->setMethods(['getPriorVersion'])
+            ->getMock();
+        $parentRelease->expects($this->any())->method('getPriorVersion')->willReturn('1.0.0');
+
+        // assert the version uses composer data
+        $priorRelease = $parentRelease->getPriorVersionForChild($childLibrary);
+        $priorReleaseNumber = $priorRelease->getValue();
+        $this->assertEquals('0.9.0', $priorReleaseNumber, 'Uses composer for prior module versions');
     }
 
     public function testCountAllItems()

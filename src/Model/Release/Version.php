@@ -230,7 +230,7 @@ class Version
      * Guess the best prior version to release as changelog.
      * E.g. 4.1.1 -> 4.1.0, or 4.1.1-alpha2 -> 4.1.1-alpha1
      *
-     * Returns null if this cannot be determined programatically.
+     * Returns null if this cannot be determined programmatically.
      * E.g. 4.0.0
      *
      * @return Version
@@ -367,7 +367,7 @@ class Version
      */
     public function getPriorVersionFromTags($tags)
     {
-        // If we can programatically detect a prior version, then use this
+        // If we can programmatically detect a prior version, then use this
         $prior = $this->getPriorVersion();
         if ($prior && array_key_exists($prior->getValue(), $tags)) {
             return $prior;
