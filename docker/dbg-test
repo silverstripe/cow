@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# Run XDebug session for phpunit tests
+
+SKIP_RUN_EXEC="1"
+. "$(dirname $(readlink -f "$0"))/run"
+
+run_docker_compose cow_debug_test $@

@@ -14,4 +14,10 @@ if [[ ! -d "$DIR/vendor" ]] ; then
     cd -;
 fi
 
+if [ ! -z "$TEST_COW" ] ; then
+    cd $DIR;
+    ./vendor/bin/phpunit $@;
+    exit;
+fi
+
 $DIR/bin/cow $@
