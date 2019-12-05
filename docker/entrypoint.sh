@@ -20,4 +20,10 @@ if [ ! -z "$TEST_COW" ] ; then
     exit;
 fi
 
+if [ ! -z "$PHPCS_COW" ] ; then
+    cd $DIR;
+    ./vendor/bin/phpcs --standard=PSR12 bin/ src/ tests/ $@;
+    exit;
+fi
+
 $DIR/bin/cow $@

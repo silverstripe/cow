@@ -67,3 +67,15 @@ services:
       TEST_COW: 1
       DEBUG_COW: 1
       XDEBUG_CONFIG: *x-debug-env-var
+
+  cow_phpcs:
+    build:
+      context: *build-context
+      target: dev
+      args: *build-args
+    working_dir: *wdir
+    network_mode: 'host'
+    volumes: *volumes
+    entrypoint: *entrypoint
+    environment:
+      PHPCS_COW: 1
