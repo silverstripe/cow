@@ -1,6 +1,5 @@
 <?php
 
-
 namespace SilverStripe\Cow\Model\Release;
 
 use Generator;

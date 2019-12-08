@@ -1,6 +1,5 @@
 <?php
 
-
 namespace SilverStripe\Cow\Commands\Release;
 
 use SilverStripe\Cow\Steps\Release\PlanRelease;

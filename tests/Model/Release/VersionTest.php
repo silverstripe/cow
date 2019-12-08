@@ -1,6 +1,5 @@
 <?php
 
-
 namespace SilverStripe\Cow\Tests\Model\Release;
 
 use PHPUnit_Framework_TestCase;

@@ -1,6 +1,5 @@
 <?php
 
-
 namespace SilverStripe\Cow\Utility;
 
 class Format

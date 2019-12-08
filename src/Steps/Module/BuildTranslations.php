@@ -1,6 +1,5 @@
 <?php
 
-
 namespace SilverStripe\Cow\Steps\Module;
 
 use SilverStripe\Cow\Commands\Command;
