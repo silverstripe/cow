@@ -52,37 +52,25 @@ class LibraryReleaseTest extends PHPUnit_Framework_TestCase
     {
 //        create our child library
         /** @var Library|PHPUnit_Framework_MockObject_MockObject $library */
-        $childLibrary = $this->getMockBuilder(Library::class)
-            ->disableOriginalConstructor()
-            ->setMethods(['getName'])
-            ->getMock();
-
-        $childLibrary->expects($this->any())->method('getName')->willReturn('some/module');
+        $childLibrary = $this->createMock(Library::class);
+        $childLibrary->method('getName')->willReturn('some/module');
 
 //        create our project, containing the child library
         /** @var Project|PHPUnit_Framework_MockObject_MockObject $project */
-        $project = $this->getMockBuilder(Project::class)
-            ->disableOriginalConstructor()
-            ->setMethods(['getComposerData', 'getHistoryComposerData', 'isChildLibrary', 'getChildren'])
-            ->getMock();
-
-        $project->expects($this->any())->method('getComposerData')->willReturn([
+        $project = $this->createMock(Project::class);
+        $project->method('getComposerData')->willReturn([
             'name' => 'my-project',
             'require' => [
                 'some/module' => '1.0.0'
             ]
         ]);
-
-        $project->expects($this->any())->method('getHistoryComposerData')->willReturn([
+        $project->method('getHistoryComposerData')->willReturn([
             'name' => 'my-project',
             'require' => [
                 'some/module' => '0.9.0'
             ]
         ]);
-
-        $project->expects($this->any())->method('getChildren')->willReturn([
-            $childLibrary
-        ]);
+        $project->method('getChildren')->willReturn([$childLibrary]);
 
 //        setup the library release
         /** @var LibraryRelease|PHPUnit_Framework_MockObject_MockObject $library */
@@ -90,7 +78,7 @@ class LibraryReleaseTest extends PHPUnit_Framework_TestCase
             ->setConstructorArgs([$project, new Version('1.1.0')])
             ->setMethods(['getPriorVersion'])
             ->getMock();
-        $parentRelease->expects($this->any())->method('getPriorVersion')->willReturn('1.0.0');
+        $parentRelease->method('getPriorVersion')->willReturn('1.1.0');
 
         // assert the version uses composer data
         $priorRelease = $parentRelease->getPriorVersionForChild($childLibrary);
