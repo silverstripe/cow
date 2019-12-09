@@ -1,6 +1,5 @@
 <?php
 
-
 namespace SilverStripe\Cow\Model\Release;
 
 use Generator;
@@ -53,6 +52,13 @@ class LibraryRelease
      * @var Version
      */
     protected $priorVersion;
+
+    /**
+     * Cached prior versions for children calculated from composer data from the prior release against this library
+     *
+     * @var array|null
+     */
+    private $childPriorVersions;
 
     /**
      * LibraryRelease constructor.
@@ -227,7 +233,63 @@ class LibraryRelease
     public function setPriorVersion(Version $version)
     {
         $this->priorVersion = $version;
+
+        // Clear the child prior versions known as this now might change
+        $this->childPriorVersions = null;
+
         return $this;
+    }
+
+    /**
+     * Attempt to determine what prior versions of child modules were released by looking up the composer information
+     * for the prior release of this module
+     *
+     * @return array
+     */
+    public function getChildPriorVersions()
+    {
+        if ($this->childPriorVersions !== null) {
+            return $this->childPriorVersions;
+        }
+
+        $priorVersion = $this->getPriorVersion();
+
+        if (!$priorVersion) {
+            return [];
+        }
+
+        $composerData = $this->getLibrary()->getHistoryComposerData($priorVersion);
+        $childReleases = $this->getLibrary()->getChildren();
+        $childPriorVersions = [];
+
+        foreach ($childReleases as $child) {
+            $childName = $child->getName();
+            if (!isset($composerData['require'][$childName])) {
+                continue;
+            }
+
+            $constraint = $composerData['require'][$childName];
+
+            // Attempt to resolve a specific version from the constraint
+            if (!Version::parse($constraint)) {
+                continue;
+            }
+
+            $childPriorVersions[$childName] = new Version($constraint);
+        }
+
+        return $this->childPriorVersions = $childPriorVersions;
+    }
+
+    /**
+     * Given a child library - attempt to resolve what version was specified in the constraints for the prior release
+     *
+     * @param Library $childLibrary
+     * @return Version|null
+     */
+    public function getPriorVersionForChild(Library $childLibrary)
+    {
+        return $this->getChildPriorVersions()[$childLibrary->getName()] ?? null;
     }
 
     /**

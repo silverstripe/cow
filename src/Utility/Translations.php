@@ -1,6 +1,5 @@
 <?php
 
-
 namespace SilverStripe\Cow\Utility;
 
 use SilverStripe\Cow\Model\Modules\Module;

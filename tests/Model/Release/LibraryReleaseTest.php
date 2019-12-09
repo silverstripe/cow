@@ -5,6 +5,7 @@ namespace SilverStripe\Cow\Tests\Model\Release;
 use PHPUnit_Framework_MockObject_MockObject;
 use PHPUnit_Framework_TestCase;
 use SilverStripe\Cow\Model\Modules\Library;
+use SilverStripe\Cow\Model\Modules\Project;
 use SilverStripe\Cow\Model\Release\LibraryRelease;
 use SilverStripe\Cow\Model\Release\Version;
 
@@ -40,6 +41,51 @@ class LibraryReleaseTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * Asserts that prior versions can be found via composer, not just by github tags
+     * for example:
+     *  given a module with 1.0.0 as the latest tag
+     *  and the latest release was 0.9.0
+     *  the prior version will be 0.9.0 for that module, not 1.0.0
+     */
+    public function testGetPriorVersionFromComposer()
+    {
+//        create our child library
+        /** @var Library|PHPUnit_Framework_MockObject_MockObject $library */
+        $childLibrary = $this->createMock(Library::class);
+        $childLibrary->method('getName')->willReturn('some/module');
+
+//        create our project, containing the child library
+        /** @var Project|PHPUnit_Framework_MockObject_MockObject $project */
+        $project = $this->createMock(Project::class);
+        $project->method('getComposerData')->willReturn([
+            'name' => 'my-project',
+            'require' => [
+                'some/module' => '1.0.0'
+            ]
+        ]);
+        $project->method('getHistoryComposerData')->willReturn([
+            'name' => 'my-project',
+            'require' => [
+                'some/module' => '0.9.0'
+            ]
+        ]);
+        $project->method('getChildren')->willReturn([$childLibrary]);
+
+//        setup the library release
+        /** @var LibraryRelease|PHPUnit_Framework_MockObject_MockObject $library */
+        $parentRelease = $this->getMockBuilder(LibraryRelease::class)
+            ->setConstructorArgs([$project, new Version('1.1.0')])
+            ->setMethods(['getPriorVersion'])
+            ->getMock();
+        $parentRelease->method('getPriorVersion')->willReturn('1.1.0');
+
+        // assert the version uses composer data
+        $priorRelease = $parentRelease->getPriorVersionForChild($childLibrary);
+        $priorReleaseNumber = $priorRelease->getValue();
+        $this->assertEquals('0.9.0', $priorReleaseNumber, 'Uses composer for prior module versions');
+    }
+
     public function testCountAllItems()
     {
         /** @var Library[]|PHPUnit_Framework_MockObject_MockObject[] $libraries */
@@ -64,5 +110,59 @@ class LibraryReleaseTest extends PHPUnit_Framework_TestCase
 
         $this->assertSame(3, $parent->countAllItems(false));
         $this->assertSame(4, $parent->countAllItems(true));
+    }
+
+    public function testGetChildPriorVersions()
+    {
+        /** @var Library|PHPUnit_Framework_MockObject_MockObject $library */
+        $library = $this->createMock(Library::class);
+        $children = array_map(
+            function ($name) {
+                $lib = $this->createMock(Library::class);
+                $lib->method('getName')->willReturn($name);
+                return $lib;
+            },
+            [
+                'silverstripe/framework',
+                'silverstripe/admin',
+                'silverstripe/new-module',
+                'silverstripe/loose-constraint'
+            ]
+        );
+
+        $composerData = ['require' => [
+            'silverstripe/framework' => '4.3.2',
+            'silverstripe/admin' => '1.3.4',
+            'silverstripe/deprecated-module' => '0.1.2',
+            'silverstripe/loose-constraint' => '~1.2.3',
+        ]];
+
+
+        $library->method('getChildren')->willReturn($children);
+        $library->method('getHistoryComposerData')->willReturn($composerData);
+
+        $version = new Version('1.2.3');
+        $priorVersion = new Version('1.1.0');
+
+        $library->expects($this->once())->method('getChildren');
+        $library->expects($this->once())->method('getHistoryComposerData')->with($priorVersion);
+
+        $release = new LibraryRelease($library, $version, $priorVersion);
+
+        $actual = $release->getChildPriorVersions();
+        $this->assertCount(
+            2,
+            $actual,
+            'deprecated-module and loose-constraint module are not be in the child prior version list'
+        );
+        $this->assertEquals('4.3.2', $actual['silverstripe/framework']->getValue());
+        $this->assertEquals('1.3.4', $actual['silverstripe/admin']->getValue());
+        $this->assertEquals('4.3.2', $release->getPriorVersionForChild($children[0])->getValue());
+        $this->assertEquals('1.3.4', $release->getPriorVersionForChild($children[1])->getValue());
+        $this->assertEmpty($release->getPriorVersionForChild($children[2]));
+        $this->assertEmpty($release->getPriorVersionForChild($children[3]));
+
+        $actual = $release->getChildPriorVersions();
+        $this->assertCount(2, $actual, 'getChildPriorVersions hits the cache the second time');
     }
 }

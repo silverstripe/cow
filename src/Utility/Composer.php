@@ -227,7 +227,8 @@ class Composer
             (?<version>\d+(?:\.\d+(?:\.\d+)?)?)
         /x';
 
-        if (preg_match_all($regex, $versionDefinition, $matches)
+        if (
+            preg_match_all($regex, $versionDefinition, $matches)
             && isset($matches['version'])
             && count($matches['version'])
         ) {

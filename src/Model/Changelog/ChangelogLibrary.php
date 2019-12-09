@@ -1,6 +1,5 @@
 <?php
 
-
 namespace SilverStripe\Cow\Model\Changelog;
 
 use Generator;
