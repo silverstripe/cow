@@ -27,17 +27,17 @@ class Library
     /**
      * Dependencies are tagged at exact version (1.0.0)
      */
-    const DEPENDENCY_EXACT = 'exact';
+    public const DEPENDENCY_EXACT = 'exact';
 
     /**
      * Dependencies allow loose-compatible upgrade (~1.0.0)
      */
-    const DEPENDENCY_LOOSE = 'loose';
+    public const DEPENDENCY_LOOSE = 'loose';
 
     /**
      * Dependencies allow any semver-compatible upgrade (^1.0.0)
      */
-    const DEPENDENCY_SEMVER = 'semver';
+    public const DEPENDENCY_SEMVER = 'semver';
 
     /**
      * Parent project (installer module)

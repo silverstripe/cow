@@ -15,12 +15,12 @@ class ChangelogRenderer
     /**
      * Below this line, any text will be automatically regenerated
      */
-    const TOP_DELIMITER = '<!--- Changes below this line will be automatically regenerated -->';
+    public const TOP_DELIMITER = '<!--- Changes below this line will be automatically regenerated -->';
 
     /**
      * Above this line, any text will be automatically regenerated
      */
-    const BOTTOM_DELIMITER = '<!--- Changes above this line will be automatically regenerated -->';
+    public const BOTTOM_DELIMITER = '<!--- Changes above this line will be automatically regenerated -->';
 
     /**
      * Renders a basic changelog, with a version title and the provided logs.

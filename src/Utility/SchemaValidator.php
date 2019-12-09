@@ -13,7 +13,7 @@ class SchemaValidator
     /**
      * @var string
      */
-    const SCHEMA_FILENAME = 'cow.schema.json';
+    public const SCHEMA_FILENAME = 'cow.schema.json';
 
     /**
      * Loads and return the cow schema

@@ -13,7 +13,7 @@ class GitHubApi
     /**
      * @var string
      */
-    const TOKEN_ENV_VAR = 'GITHUB_ACCESS_TOKEN';
+    public const TOKEN_ENV_VAR = 'GITHUB_ACCESS_TOKEN';
 
     /**
      * @var Client
