@@ -13,12 +13,12 @@ class Changelog
     /**
      * Groups changes by type (e.g. bug, enhancement, etc)
      */
-    const FORMAT_GROUPED = 'grouped';
+    public const FORMAT_GROUPED = 'grouped';
 
     /**
      * Formats list as flat list
      */
-    const FORMAT_FLAT = 'flat';
+    public const FORMAT_FLAT = 'flat';
 
     /**
      * @var ChangelogLibrary

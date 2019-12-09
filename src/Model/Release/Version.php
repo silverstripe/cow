@@ -12,9 +12,9 @@ use SilverStripe\Cow\Utility\Format;
  */
 class Version
 {
-    const ASC = 'ascending';
+    public const ASC = 'ascending';
 
-    const DESC = 'descending';
+    public const DESC = 'descending';
 
     /**
      * Original string value (may have `v` prefix)

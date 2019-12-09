@@ -20,47 +20,47 @@ class Branch extends Release
     /**
      * Will branch to minor version (e.g. 1.1) for all stable releases only
      */
-    const AUTO = 'auto'; // Automatic branching
+    public const AUTO = 'auto'; // Automatic branching
 
     /**
      * Auto description
      */
-    const AUTO_DESCRIPTION = 'Uses <info>minor</info> for stable tags, <info>none</info> for unstable tags';
+    public const AUTO_DESCRIPTION = 'Uses <info>minor</info> for stable tags, <info>none</info> for unstable tags';
 
     /**
      * Branch to major version (e.g. 1) unless already on specific minor branch
      */
-    const MAJOR = 'major';
+    public const MAJOR = 'major';
 
     /**
      * Major description
      */
-    const MAJOR_DESCRIPTION = 'Branch to major version (e.g. 1) unless already on specific minor branch';
+    public const MAJOR_DESCRIPTION = 'Branch to major version (e.g. 1) unless already on specific minor branch';
 
     /**
      * Branch to minor version (E.g. 1.1)
      */
-    const MINOR = 'minor';
+    public const MINOR = 'minor';
 
     /**
      * Minor description
      */
-    const MINOR_DESCRIPTION = 'Branch to minor version (E.g. 1.1)';
+    public const MINOR_DESCRIPTION = 'Branch to minor version (E.g. 1.1)';
 
     /**
      * No branching will occur
      */
-    const NONE = 'none';
+    public const NONE = 'none';
 
     /**
      * None description
      */
-    const NONE_DESCRIPTION = 'No branching will occur';
+    public const NONE_DESCRIPTION = 'No branching will occur';
 
     /**
      * List of valid options
      */
-    const OPTIONS = [
+    public const OPTIONS = [
         self::AUTO => self::AUTO_DESCRIPTION,
         self::MAJOR => self::MAJOR_DESCRIPTION,
         self::MINOR => self::MINOR_DESCRIPTION,

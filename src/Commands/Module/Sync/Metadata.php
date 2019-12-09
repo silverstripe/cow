@@ -23,7 +23,7 @@ class Metadata extends AbstractSyncCommand
      *
      * @var string[]
      */
-    const SYNC_FILES = [
+    public const SYNC_FILES = [
         'templates/LICENSE.md',
     ];
 

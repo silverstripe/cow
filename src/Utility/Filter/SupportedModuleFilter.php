@@ -9,12 +9,12 @@ class SupportedModuleFilter implements FilterInterface
     /**
      * @var string
      */
-    const TYPE_SUPPORTED_MODULE = 'supported-module';
+    public const TYPE_SUPPORTED_MODULE = 'supported-module';
 
     /**
      * @var string
      */
-    const TYPE_SUPPORTED_DEPENDENCY = 'supported-dependency';
+    public const TYPE_SUPPORTED_DEPENDENCY = 'supported-dependency';
 
     /**
      * Filters an array of modules by "supported-module" types
