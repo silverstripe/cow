@@ -10,8 +10,10 @@ x-entrypoint: &entrypoint
 x-volumes: &volumes
   - '..:/app'
   - './cache/composer:/home/cow/.composer/cache'
+  - '${GIT_CONFIG}:/home/cow/.gitconfig:ro'
+  - '~/.ssh:/home/cow/.ssh:ro'
 
-x-debug-env-var: &x-debug-env-var 'remote_enable=1 remote_mode=req remote_port=9000 remote_host=127.0.0.1 remote_connect_back=0'
+x-debug-env-var: &x-debug-env-var 'remote_enable=1 remote_mode=req remote_port=${XDEBUG_PORT} remote_host=${XDEBUG_HOST} remote_connect_back=0'
 
 x-build-context: &build-context .
 
