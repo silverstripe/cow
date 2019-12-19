@@ -14,7 +14,7 @@ installing all the PHP extensions necessary as well as 3rd party dependencies of
 (such as git, composer, ruby gems and transifex client).
 
 `docker-compose.yml` contains a set of configurations for different use cases such as running cow for development, debugging, running tests, debugging tests, running code sniffer and running cow in production mode.
-Although you may run any of these configs straightforwardly by runnig docker-compose if you want, the idea is to run them
+Although you may run any of these configs straightforwardly by running docker-compose if you want, the idea is to run them
 through `shims` that facilitate environment control, propagation of environment variables and required settings.
 
 
