@@ -74,11 +74,13 @@ class PublishRelease extends ReleaseStep
         $versionName = $releasePlanNode->getVersion()->getValue();
         $this->log($output, "Releasing library <info>{$name}</info> at version <info>{$versionName}</info>");
 
-        // Step 1: Push development branch to origin before tagging
-        $library->pushTo('origin');
+        if (!is_null($branch)) { // skip if it's already detached
+            // Step 1: Push development branch to origin before tagging
+            $library->pushTo('origin');
 
-        // Step 2: Detatch head from current branch before modifying
-        $this->detachBranch($output, $library);
+            // Step 2: Detach head from current branch before modifying
+            $this->detachBranch($output, $library);
+        }
 
         // Step 3: Rewrite composer.json on this head to all tagged versions only
         $this->stabiliseRequirements($output, $releasePlanNode);
@@ -86,8 +88,10 @@ class PublishRelease extends ReleaseStep
         // Step 4: Tag and push this tag
         $this->publishTag($output, $releasePlanNode);
 
-        // Step 5: Restore back to dev branch
-        $library->checkout($output, $branch);
+        if (!is_null($branch)) {
+            // Step 5: Restore back to dev branch
+            $library->checkout($output, $branch);
+        }
     }
 
     /**
