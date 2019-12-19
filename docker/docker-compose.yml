@@ -10,6 +10,10 @@ x-entrypoint: &entrypoint
 x-volumes: &volumes
   - '..:/app'
   - './cache/composer:/home/cow/.composer/cache'
+  - '${GIT_CONFIG}:/home/cow/.gitconfig:ro'
+  - '~/.ssh:/home/cow/.ssh:ro'
+
+x-debug-env-var: &x-debug-env-var 'remote_enable=1 remote_mode=req remote_port=${XDEBUG_PORT} remote_host=${XDEBUG_HOST} remote_connect_back=0'
 
 x-build-context: &build-context .
 
@@ -25,3 +29,55 @@ services:
     network_mode: 'host'
     volumes: *volumes
     entrypoint: *entrypoint
+
+  cow_debug:
+    build:
+      context: *build-context
+      target: debug
+      args: *build-args
+    working_dir: *wdir
+    network_mode: 'host'
+    volumes: *volumes
+    entrypoint: *entrypoint
+    environment:
+      DEBUG_COW: 1
+      XDEBUG_CONFIG: *x-debug-env-var
+
+  cow_test:
+    build:
+      context: *build-context
+      target: dev
+      args: *build-args
+    working_dir: *wdir
+    network_mode: 'host'
+    volumes: *volumes
+    entrypoint: *entrypoint
+    environment:
+      TEST_COW: 1
+      DEBUG_COW: 1
+
+  cow_debug_test:
+    build:
+      context: *build-context
+      target: debug
+      args: *build-args
+    working_dir: *wdir
+    network_mode: 'host'
+    volumes: *volumes
+    entrypoint: *entrypoint
+    environment:
+      TEST_COW: 1
+      DEBUG_COW: 1
+      XDEBUG_CONFIG: *x-debug-env-var
+
+  cow_phpcs:
+    build:
+      context: *build-context
+      target: dev
+      args: *build-args
+    working_dir: *wdir
+    network_mode: 'host'
+    volumes: *volumes
+    entrypoint: *entrypoint
+    environment:
+      PHPCS_COW: 1

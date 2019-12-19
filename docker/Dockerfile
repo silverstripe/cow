@@ -1,7 +1,4 @@
-FROM php:7.3-cli-stretch as base
-
-ARG UID=1000
-ARG GID=${UID}
+FROM php:7.3-cli-stretch as php
 
 RUN apt-get update -y \
  && apt-get install -y \
@@ -39,13 +36,18 @@ RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
  && php composer-setup.php --install-dir=/bin --filename=composer \
  && php -r "unlink('composer-setup.php');"
 
+
+FROM php as base
+
+ARG UID=1000
+ARG GID=${UID}
+
 RUN echo "Group ID: ${GID}" \
  && echo "User ID: ${UID}" \
  && groupadd -f -g ${GID} cow \
  && useradd -g ${GID} -d /home/cow -m -u ${UID} cow \
  && mkdir -p /home/cow/.composer/cache \
  && chown -R cow:cow /home/cow/.composer
-
 
 FROM base as stable
 
