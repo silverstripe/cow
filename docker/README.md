@@ -25,7 +25,7 @@ through `shims` that facilitate environment control, propagation of environment 
 Running `./bin/cow` transparently within a container.
 
 This script runs cow in development mode by mounting current folder (`$(pwd)`) into the container preserving the path.
-It also uses the current cow folder as is, so if you patched any scripts, the changes will be runnnig exactly as is within the container.
+It also uses the current cow folder as is, so if you patched any scripts, the changes will be running exactly as is within the container.
 
 ## ./docker/test
 
