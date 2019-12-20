@@ -329,13 +329,14 @@ class Version
         throw new LogicException("Internal error");
     }
 
-    /**
+     /**
      * Given a list of tags, determine which is the best "from" version
      *
      * @param Version[] $tags List of tags to search
+     * @param bool $skipUnstable Do not return unstable versions (alpha, beta, rc)
      * @return Version
      */
-    public function getPriorVersionFromTags($tags)
+    public function getPriorVersionFromTags($tags, $skipUnstable = true)
     {
         // If we can programmatically detect a prior version, then use this
         $prior = $this->getPriorVersion();
@@ -347,7 +348,7 @@ class Version
         $best = null;
         foreach ($tags as $tag) {
             // Skip pre-releases
-            if ($tag->getStability()) {
+            if ($skipUnstable && $tag->getStability()) {
                 continue;
             }
 
