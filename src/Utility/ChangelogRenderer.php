@@ -54,7 +54,10 @@ class ChangelogRenderer
 
         return (new Template())->renderTemplateStringWithContext(
             $template,
-            ['logs' => $logs, 'version' => $version->getValue()]
+            [
+                'logs' => $logs,
+                'version' => $version,
+            ]
         );
     }
 
