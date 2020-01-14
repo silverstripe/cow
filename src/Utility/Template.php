@@ -2,7 +2,6 @@
 
 namespace SilverStripe\Cow\Utility;
 
-use Exception;
 use Twig\Environment;
 use Twig\Loader\ArrayLoader;
 
@@ -17,14 +16,8 @@ class Template
      */
     public function renderTemplateStringWithContext(string $template, array $context): string
     {
-        try {
-            $twig = new Environment(new ArrayLoader(['template' => $template]), ['autoescape' => false]);
+        $twig = new Environment(new ArrayLoader(['template' => $template]), ['autoescape' => false]);
 
-            return $twig->render('template', $context);
-        } catch (Exception $e) {
-            error_log($e->getMessage());
-
-            return '';
-        }
+        return $twig->render('template', $context);
     }
 }
