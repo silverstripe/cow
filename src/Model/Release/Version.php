@@ -179,7 +179,7 @@ class Version
     }
 
     /**
-     * Get stable version this version is targetting (ignoring rc, beta, etc)
+     * Get stable version this version is targeting (ignoring rc, beta, etc)
      *
      * @return string
      */
