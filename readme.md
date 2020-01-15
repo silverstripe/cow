@@ -9,7 +9,13 @@ The ineptly named tool which may one day supercede the older [build tools](https
 
 ## Install
 
-### Docker
+### Use a Dockerhub version
+
+Use a pre-built docker image hosted on dockerhub
+
+Read [dockerhub docs](./dockerhub/README.md) for more info
+
+### Build a fresh docker image
 
 Assuming you have docker, docker-compose and bash installed, you don't need any extra steps and can use cow straight away through `docker/run` script. You can use it from any other place on your drive - it will automatically mount the current folder as the working directory.
 
