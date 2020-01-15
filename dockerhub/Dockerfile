@@ -31,6 +31,7 @@ RUN docker-php-source extract \
  && yes '' | pecl install apcu && docker-php-ext-enable apcu \
  && docker-php-source delete
 
+# If composer-setup.php fails verification then install then execution will halt
 RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
  && php -r "if (hash_file('sha384', 'composer-setup.php') === '$(wget -q -O - https://composer.github.io/installer.sig)') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;" \
  && php composer-setup.php --install-dir=/bin --filename=composer \
@@ -63,3 +64,6 @@ RUN ln -s /home/cow/.composer/vendor/bin/cow /usr/bin/. \
  && ln -s /home/cow/.composer/vendor/bin/satis /usr/bin/.
 
 USER cow
+
+ENTRYPOINT ["/bin/bash"]
+WORKDIR "/home/cow"

@@ -9,28 +9,24 @@ You can update the image on hub.docker.com by editing the Dockerfile in this dir
 - Tagged versions are created in hub.docker.com pushing semver tags to github
 
 ## Running cow
-Spin up a new container by pulling a pre-built image from hub.docker.com
+Spin up a new container by pulling a pre-built image from hub.docker.com.
+You will be automatically SSH'd into the container and be in the /home/cow directory
 ```
 docker run \
   --name mycowcontainer \
-  -dit \
+  -it \
   --rm \
   -v ~/.gitconfig:/home/cow/.gitconfig:ro \
   -v ~/.ssh:/home/cow/.ssh:ro \
   -v ~/.transifexrc:/home/cow/.transifexrc:ro \
   emteknetnz/silverstripe-cow:latest
-````
-
-SSH in to the container
-`docker exec -it mycowcontainer /bin/bash`
+```
 
 Run cow from within the container
-`cd ~`
 `cow [commands] e.g. cow release`
 
-When finished
+When finished, exit the container and the container will be automatically deleted for you
 `exit`
-`docker stop mycowcontainer`
 
 ## hub.docker.com setup
 Automated builds in hub.docker.com should be setup as follows: 
