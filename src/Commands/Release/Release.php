@@ -68,6 +68,12 @@ class Release extends Command
                 null,
                 InputOption::VALUE_NONE,
                 'Include other changes in the changelog (default: false)'
+            )
+            ->addOption(
+                'include-upgrade-only',
+                null,
+                InputOption::VALUE_NONE,
+                'Include upgrade-only changes in the changelog (default: false)'
             );
     }
 
@@ -278,5 +284,15 @@ class Release extends Command
 
         // Default value
         return false;
+    }
+
+    /**
+     * Whether to include upgrade-only changes.
+     *
+     * @return bool
+     */
+    public function getIncludeUpgradeOnly(): bool
+    {
+        return $this->input->hasOption('include-upgrade-only');
     }
 }
