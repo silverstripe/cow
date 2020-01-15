@@ -1,4 +1,5 @@
-# This is a copy paste from Dockerfile, minus xdebug and all of the multi-stage FROM commands
+# This is a copy paste from ../docker/Dockerfile, minus xdebug and all of the multi-stage FROM commands
+# hub.docker.com is setup to create an automatic build from this Dockerfile in this directory
 
 FROM php:7.3-cli-stretch
 
