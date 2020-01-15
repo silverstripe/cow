@@ -22,7 +22,7 @@ docker run \
   emteknetnz/silverstripe-cow:latest
 ```
 
-Run cow from within the container
+Run cow from within the container.  You can read more about the cow commands used in the [standard release process](https://docs.silverstripe.org/en/4/contributing/making_a_silverstripe_core_release/#standard-release-process) and also get a [detailed breakdown](../readme.md)
 `cow [commands] e.g. cow release`
 
 When finished, exit the container and the container will be automatically deleted for you
