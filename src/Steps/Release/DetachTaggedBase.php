@@ -79,14 +79,14 @@ class DetachTaggedBase extends Step
             $planItem = $this->plan->getItem($lib->getName());
 
             if (!$planItem) {
-                $this->log($output, "Skip the module {$lib->getName()} (couldn't find in the Plan)");
+                $this->log($output, "Skipped module {$lib->getName()} (couldn't find in the Plan)");
                 continue;
             }
 
             $libVersion = $planItem->getVersion();
 
             if (!$libVersion) {
-                $this->log($output, "Skip the module {$lib->getName()} (couldn't determine the version)");
+                $this->log($output, "Skipped module {$lib->getName()} (couldn't determine the version)");
                 continue;
             }
 

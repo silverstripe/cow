@@ -2,7 +2,7 @@
 
 namespace SilverStripe\Cow\Commands\Release;
 
-use SilverStripe\Cow\Steps\Release\DetachTaggedBase as TheStep;
+use SilverStripe\Cow\Steps\Release\DetachTaggedBase as DetachTaggedBaseStep;
 
 /**
  * release:detach-tagged-base command implementation
@@ -27,7 +27,7 @@ class DetachTaggedBase extends Release
         $version = $this->getInputVersion();
         $project = $this->getProject();
 
-        $step = new TheStep($this, $project, $version, $this->progressBar);
+        $step = new DetachTaggedBaseStep($this, $project, $version, $this->progressBar);
         $step->run($this->input, $this->output);
     }
 }
