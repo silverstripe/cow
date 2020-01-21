@@ -1,4 +1,5 @@
 FROM php:7.3-cli-stretch
+ARG COW_VERSION=dev-master
 
 RUN apt-get update -y \
  && apt-get install -y \
@@ -55,16 +56,13 @@ RUN apt-get update -y \
  && apt-get install -y ruby \
  && gem install yamlclean
 
-# Automatically require the latest version of silverstripe/cow when the container is spun up
-# These commands in .bashrc will be execuated on `docker run`
-# This method allows us to avoid an extra entrypoint.sh file
-# Note: silverstripe/cow must be required before requiring composer/satis to prevent a requirements conflict
 USER cow
+
+# silverstripe/cow must be required before requiring composer/satis to prevent a requirements conflict
+RUN composer -vvv global require silverstripe/cow:$COW_VERSION composer/satis:^1
+
+# make cow globally available when the container is run
 RUN echo "export PATH=~/.composer/vendor/bin:$PATH" >> ~/.bashrc
-RUN echo "echo \"================================================================================\"" >> ~/.bashrc
-RUN echo "echo \"Now composer requiring the latest version of silverstripe/cow and composer/satis\"" >> ~/.bashrc
-RUN echo "echo \"================================================================================\"" >> ~/.bashrc
-RUN echo "composer -vvv global require silverstripe/cow:dev-master composer/satis:^1" >> ~/.bashrc
 
 ENTRYPOINT ["/bin/bash"]
 WORKDIR "/home/cow"

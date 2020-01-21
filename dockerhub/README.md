@@ -29,7 +29,7 @@ dependencies in the image e.g. updating transifex-client.  You will need to have
 
 ```
 cd ./cow/dockerhub
-docker build -t silverstripe/cow .
-docker push silverstripe/cow:latest
-docker push silverstripe/cow:1.2 (substitute with relevant tag)
+export COW_VERSION=1.2.0 [tagged release | 1.x-dev | dev-master]
+docker build --build-arg COW_VERSION=$COW_VERSION -t silverstripe/cow:$COW_VERSION .
+docker push silverstripe/cow:$COW_VERSION
 ```
