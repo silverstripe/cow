@@ -1,15 +1,10 @@
 ## Overview
-The idea with this approach is to use an image built and hosted on hub.docker.com, then manually run cow commands
-
-The Dockerfile in this directory is very similar to the one in the /docker directory, minus xdebug and the
-multi-stage builds
-
-You can update the image on hub.docker.com by editing the Dockerfile in this directory.
-- The `latest` tag is added when the Dockerfile on the master branch is updated in github.
-- Tagged versions are created in hub.docker.com pushing semver tags to github
+This Dockerfile is used to create an image that is hosted on hub.docker.com.  Users can then pull this image and
+manually run cow commands.
 
 ## Running cow
 Spin up a new container by pulling a pre-built image from hub.docker.com.
+The latest version of silverstripe/cow will be automatically  composer required.
 You will be automatically SSH'd into the container and be in the /home/cow directory
 ```
 docker run \
@@ -28,19 +23,13 @@ Run cow from within the container.  You can read more about the cow commands use
 When finished, exit the container and the container will be automatically deleted for you
 `exit`
 
-## hub.docker.com setup
-Automated builds in hub.docker.com should be setup as follows: 
+## Updating docker image on hub.docker.com
+Manually update the image on hub.docker.com if you make changes to the Dockerfile, or if you just need to update the
+dependencies in the image e.g. updating transifex-client.  You will need to have write access to the dockerhub repository.
 
-### Build 1 (latest)
-Source type = Branch
-Source = master
-Docker Tag = latest
-Dockerfile location = Dockerfile
-Build context = /dockerhub/
-
-### Build 2 (tagged)
-Source type = Tag
-Source = /^[0-9.]+$/
-Docker Tag = {sourceref}
-Dockerfile location = Dockerfile
-Build context = /dockerhub/
+```
+cd ./cow/dockerhub
+docker build -t silverstripe/cow .
+docker push silverstripe/cow:latest
+docker push silverstripe/cow:1.2 (substitute with relevant tag)
+```

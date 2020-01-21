@@ -31,7 +31,7 @@ RUN docker-php-source extract \
  && yes '' | pecl install apcu && docker-php-ext-enable apcu \
  && docker-php-source delete
 
-# If composer-setup.php fails verification then install then execution will halt
+# If composer-setup.php fails verification to install, then execution will be halted
 RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
  && php -r "if (hash_file('sha384', 'composer-setup.php') === '$(wget -q -O - https://composer.github.io/installer.sig)') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;" \
  && php composer-setup.php --install-dir=/bin --filename=composer \
@@ -55,15 +55,16 @@ RUN apt-get update -y \
  && apt-get install -y ruby \
  && gem install yamlclean
 
+# Automatically require the latest version of silverstripe/cow when the container is spun up
+# These commands in .bashrc will be execuated on `docker run`
+# This method allows us to avoid an extra entrypoint.sh file
+# Note: silverstripe/cow must be required before requiring composer/satis to prevent a requirements conflict
 USER cow
-RUN composer -vvv global require silverstripe/cow:dev-master \
- && composer -vvv global require composer/satis ^1
-
-USER root
-RUN ln -s /home/cow/.composer/vendor/bin/cow /usr/bin/. \
- && ln -s /home/cow/.composer/vendor/bin/satis /usr/bin/.
-
-USER cow
+RUN echo "export PATH=~/.composer/vendor/bin:$PATH" >> ~/.bashrc
+RUN echo "echo \"================================================================================\"" >> ~/.bashrc
+RUN echo "echo \"Now composer requiring the latest version of silverstripe/cow and composer/satis\"" >> ~/.bashrc
+RUN echo "echo \"================================================================================\"" >> ~/.bashrc
+RUN echo "composer -vvv global require silverstripe/cow:dev-master composer/satis:^1" >> ~/.bashrc
 
 ENTRYPOINT ["/bin/bash"]
 WORKDIR "/home/cow"
