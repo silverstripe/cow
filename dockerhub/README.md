@@ -3,8 +3,7 @@ This Dockerfile is used to create an image that is hosted on hub.docker.com.  Us
 manually run cow commands.
 
 ## Running cow
-Spin up a new container by pulling a pre-built image from hub.docker.com.
-The latest version of silverstripe/cow will be automatically  composer required.
+Spin up a new container by pulling a pre-built image from hub.docker.com
 You will be automatically SSH'd into the container and be in the /home/cow directory
 ```
 docker run \
