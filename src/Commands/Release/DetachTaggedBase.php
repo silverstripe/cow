@@ -2,6 +2,7 @@
 
 namespace SilverStripe\Cow\Commands\Release;
 
+use Exception;
 use SilverStripe\Cow\Steps\Release\DetachTaggedBase as DetachTaggedBaseStep;
 
 /**
@@ -21,6 +22,9 @@ class DetachTaggedBase extends Release
 
     protected $description = 'Checkout and detach tagged commits for every module';
 
+    /**
+     * @throws Exception
+     */
     protected function fire()
     {
         // Get arguments

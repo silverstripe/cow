@@ -5,6 +5,7 @@ namespace SilverStripe\Cow\Steps\Release;
 use Exception;
 use SilverStripe\Cow\Commands\Command;
 use SilverStripe\Cow\Model\Modules\Project;
+use SilverStripe\Cow\Model\Release\LibraryRelease;
 use SilverStripe\Cow\Model\Release\Version;
 use SilverStripe\Cow\Steps\Step;
 use Symfony\Component\Console\Helper\ProgressBar;
@@ -22,6 +23,12 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class DetachTaggedBase extends Step
 {
+    const MODULE_RESULT_UNCHANGED = 1;
+
+    const MODULE_RESULT_SKIPPED = 2;
+
+    const MODULE_RESULT_DETACHED = 3;
+
     /**
      * @var Project
      */
@@ -38,11 +45,16 @@ class DetachTaggedBase extends Step
     protected $progressBar;
 
     /**
+     * @var LibraryRelease|null
+     */
+    protected $plan;
+
+    /**
      * @param Command $command
      * @param Project $project
      * @param Version $version
-     * @param string $branching Override branching strategy
      * @param ProgressBar $progressBar
+     * @throws Exception
      */
     public function __construct(
         Command $command,
@@ -71,22 +83,30 @@ class DetachTaggedBase extends Step
         $name = $this->project->getName();
         $version = $this->version->getValue();
 
+        $scannedModulePaths = [];
+
         foreach ($this->project->getAllChildren() as $lib) {
             $repo = $lib->getRepository($output);
 
             $path = $repo->getPath();
 
+            if (isset($scannedModulePaths[$path])) {
+                continue;
+            }
+
             $planItem = $this->plan->getItem($lib->getName());
 
             if (!$planItem) {
-                $this->log($output, "Skipped module {$lib->getName()} (couldn't find in the Plan)");
+                $this->log($output, "Skipped module '<fg=green>{$lib->getName()}</>' (couldn't find in the Plan)");
+                $scannedModulePaths[$path] = self::MODULE_RESULT_SKIPPED;
                 continue;
             }
 
             $libVersion = $planItem->getVersion();
 
             if (!$libVersion) {
-                $this->log($output, "Skipped module {$lib->getName()} (couldn't determine the version)");
+                $this->log($output, "Skipped module '<fg=green>{$lib->getName()}</>' (couldn't determine the version)");
+                $scannedModulePaths[$path] = self::MODULE_RESULT_SKIPPED;
                 continue;
             }
 
@@ -104,7 +124,13 @@ class DetachTaggedBase extends Step
                     "'<fg=yellow>{$base}</>' (<fg=yellow>$commitsCount</> commits behind)"
                 );
                 $repo->run('checkout', [$base]);
+
+                $scannedModulePaths[$path] = self::MODULE_RESULT_DETACHED;
+                continue;
             }
+
+            $this->log($output, "Module '<fg=green>{$lib->getName()}</>' already in correct position");
+            $scannedModulePaths[$path] = self::MODULE_RESULT_UNCHANGED;
         }
     }
 }
