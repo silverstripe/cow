@@ -23,11 +23,11 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class DetachTaggedBase extends Step
 {
-    const MODULE_RESULT_UNCHANGED = 1;
+    public const MODULE_RESULT_UNCHANGED = 1;
 
-    const MODULE_RESULT_SKIPPED = 2;
+    public const MODULE_RESULT_SKIPPED = 2;
 
-    const MODULE_RESULT_DETACHED = 3;
+    public const MODULE_RESULT_DETACHED = 3;
 
     /**
      * @var Project
@@ -80,9 +80,6 @@ class DetachTaggedBase extends Step
 
     public function run(InputInterface $input, OutputInterface $output)
     {
-        $name = $this->project->getName();
-        $version = $this->version->getValue();
-
         $scannedModulePaths = [];
 
         foreach ($this->project->getAllChildren() as $lib) {
