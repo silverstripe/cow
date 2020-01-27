@@ -9,39 +9,52 @@ The ineptly named tool which may one day supercede the older [build tools](https
 
 ## Install
 
-### Use a Dockerhub version
+Requires Docker.
 
-Use a pre-built docker image hosted on dockerhub
+*You do not need to know how Docker works*, but you need to have it [installed and running](https://www.docker.com/get-started).
 
-Read [dockerhub docs](./dockerhub/README.md) for more info
+For production purposes Cow should be run via the Docker-based scripts included in the `./docker/bin` folder, rather than via direct invocation on your machine. That ensures use of consistent versions of all 3rd party libraries and tools and is the only supported installation option.
 
-### Build a fresh docker image
+Tested on `Linux` and `macOS`, but should work on Windows too (with either `Cygwin` or `WSL`).
 
-Assuming you have docker, docker-compose and bash installed, you don't need any extra steps and can use cow straight away through `docker/run` script. You can use it from any other place on your drive - it will automatically mount the current folder as the working directory.
+When it's installed, to run Cow launch `./docker/bin/run` script.
+That will automatically download the latest released version of Cow docker image and launch it
+transparently in your terminal.
 
-E.g: `../cow/docker/run release:create 4.5.1`
+When publishing a release, use the `./docker/bin/release` script. This is similar to `run`, but performs extra checks for GitHub authentication through your local SSH-Agent.
 
-Read [docker docs](./docker/README.md) for more info
+For more details on these and other available scripts, see [docker/README.md](./docker/README.md).
+
+
+### Adding Cow to your $PATH (optional)
+
+If you want to run Cow globally, you can create a symlink to `docker/bin/release` in a folder that is included in your `$PATH`.
+
+Here's an example (feel free to reuse any of your existing folders from yor $PATH)
+```sh
+mkdir -p ~/.local/bin;  # ensure existing ~/.local/bin
+ln -s ./docker/bin/release ~/.local/bin/cow  # create symlink to the launcher and name it cow
+echo 'export PATH=$PATH:~/.local/bin' >> ~/.bashrc  # add ~/.local/bin to the $PATH
+```
+
+After you reload your session (e.g. reopen the terminal) you may launch `cow` from anywhere on your system:
+
+```sh
+cd ./my-project;
+cow moo
+```
+
 
 ### Native
 
-You can install this globally with the following commands
+To run Cow without Docker, reference the `Dockerfile` for system requirements.
 
-```
-composer global require silverstripe/cow:dev-master
-echo 'export PATH=$PATH:~/.composer/vendor/bin/'  >> ~/.bash_profile
-```
 
-Now you can run `cow` at any time, and `composer global update` to perform time-to-time upgrades.
+## Extra setup
 
-If you're feeling lonely, or just want to test your install, you can run `cow moo`.
+* For translation steps you may need the Transifex API Key and ~/.transifexrc (run `./docker/bin/tx init` to generate it).
+* When publishing to GitHub make sure you have `ssh-agent` running and your SSH keys loaded (run `ssh-add`)
 
-## Dependencies
-
-* See [the transifex client docs](https://github.com/transifex/transifex-client) for instructions on
-  installing transifex-client. Cow requires at least version 0.12.
-* The yamlclean ruby gem is also required for localisation. Install yamlclean gem using `gem install yamlclean`.
-* A `GITHUB_ACCESS_TOKEN` environment variable set for GitHub commands.
 
 ## Commands
 
@@ -190,4 +203,4 @@ You will need `git` available in your system path, as well as write permission t
 The [cow schema file](cow.schema.json) is in the root of this project.
 
 You can run `cow schema:validate` to check the `.cow.json` configuration file in your project or module to
-ensure it matches against the cow schema.
+ensure it matches against the Cow schema.

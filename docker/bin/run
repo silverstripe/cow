@@ -1,0 +1,67 @@
+#!/bin/bash
+
+# Portable versions of the path functions (should work on Linux, MacOS and Windows)
+function _dirname() { python -c 'import sys; from os.path import realpath, dirname; print(dirname(realpath(sys.argv[-1])))' $@ ; }
+function _realpath() { python -c 'import sys; from os.path import realpath; print(realpath(sys.argv[-1]))' $@ ; }
+
+TGT_DIR=$(_realpath $(pwd))  # the target folder where we run cow from
+
+export USER_ID=$(id -u)
+
+CUR_FILE=$(_realpath "$0")  # abs path of this script
+BIN_DIR=$(_dirname $CUR_FILE)  # abs path to the folder of this script
+DOCKER_DIR=$(_dirname $BIN_DIR) # abs path to the docker folder of the cow installation
+COW_DIR=$(_dirname $DOCKER_DIR)   # abs path to the cow installation of this script
+
+# Identify the host machine global git config
+export GIT_CONFIG=$(git config --show-origin --global -l | head -n 1 | awk '{ print substr($1, index($1, ":")+1); }')
+
+if grep -q 'XDEBUG_HOST=localhost' "$DOCKER_DIR/.env" ; then
+    if [ "$(uname)" = "Darwin" ] ; then
+        ## Docker for Mac is run within a VM, so container localhost will be the VM
+        ## the host machine can be referenced by a special DNS - host.docker.internal
+        ## see https://docs.docker.com/docker-for-mac/networking/
+        export XDEBUG_HOST='host.docker.internal'
+    fi
+fi
+
+if [ "$(uname)" = "Darwin" ] ; then
+    ## Docker for Mac is run within a VM, so ssh-agent socket path within the VM
+    ## is different from the host machine
+    ## see https://github.com/docker/for-mac/issues/410
+    export SSH_AUTH_SOCK='/run/host-services/ssh-auth.sock'
+fi
+
+docker_compose_params()
+{
+    echo "-e UID=$USER_ID" \
+        -e COW_DIR="$COW_DIR" \
+        -e GIT_CONFIG="$GIT_CONFIG" \
+        -u $USER_ID \
+        -v "$COW_DIR:$COW_DIR" \
+        -v "$TGT_DIR:$TGT_DIR" \
+        -v "$DOCKER_DIR:$DOCKER_DIR" \
+        -w "$TGT_DIR"
+}
+
+docker_compose_run()
+{
+    # make sure .transifexrc exists (otherwise docker creates a folder there
+    [ -f ~/.transifexrc ] || touch ~/.transifexrc;
+
+    cd $DOCKER_DIR && \
+    docker-compose run --rm $(docker_compose_params) $EXTRA_FLAGS $1 ${@:2}
+}
+
+docker_compose_pull()
+{
+    cd $DOCKER_DIR && \
+    GIT_CONFIG=$GIT_CONFIG USER_ID=$USER_ID docker-compose pull $EXTRA_FLAGS $1 ${@:2}
+}
+
+if [ ! -z "$SKIP_RUN_EXEC" ] ; then
+    return;
+fi
+
+docker_compose_pull stable
+docker_compose_run stable $@

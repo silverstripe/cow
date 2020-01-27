@@ -37,6 +37,9 @@ RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
  && php -r "unlink('composer-setup.php');"
 
 
+
+######## Target: base
+
 FROM php as base
 
 ARG UID=1000
@@ -49,18 +52,22 @@ RUN echo "Group ID: ${GID}" \
  && mkdir -p /home/cow/.composer/cache \
  && chown -R cow:cow /home/cow/.composer
 
-FROM base as stable
-
-USER root
 RUN apt-get update -y \
- && apt-get install -y git python3-pip \
+ && apt-get install -y git python3-pip openssh-client \
  && pip3 install -U pip \
  && pip install transifex-client awscli \
  && apt-get install -y ruby \
  && gem install yamlclean
 
+
+
+######## Target: stable
+
+FROM base as stable
+
+ARG COW_VERSION=dev-master
 USER cow
-RUN composer -vvv global require silverstripe/cow:dev-master \
+RUN composer -vvv global require silverstripe/cow:${COW_VERSION} \
  && composer -vvv global require composer/satis ^1
 
 USER root
@@ -69,12 +76,13 @@ RUN ln -s /home/cow/.composer/vendor/bin/cow /usr/bin/. \
 
 USER cow
 
+ENTRYPOINT [ /bin/bash ]
+WORKDIR /home/cow
 
-FROM stable as dev
-USER cow
 
+######## Target: debug
 
-FROM dev as debug
+FROM base as debug
 
 USER root
 

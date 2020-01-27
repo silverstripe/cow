@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Run COW tests (phpunit)
+# Run Release mode (mounts ssh-agent and scans github ssh keys)
 
 # Portable versions of the path functions (should work on Linux, MacOS and Windows)
 function _dirname() { python -c 'import sys; from os.path import realpath, dirname; print(dirname(realpath(sys.argv[-1])))' $@ ; }
@@ -9,4 +9,7 @@ function _realpath() { python -c 'import sys; from os.path import realpath; prin
 SKIP_RUN_EXEC="1"
 . "$(_dirname $(_realpath "$0"))/run"
 
-run_docker_compose cow_test $@
+docker_compose_pull stable
+
+EXTRA_FLAGS="-e COW_MODE_RELEASE=1"
+docker_compose_run stable $@
