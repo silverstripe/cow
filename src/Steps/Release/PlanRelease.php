@@ -557,6 +557,10 @@ class PlanRelease extends Step
             $version .= ', prior version <comment>' . $previous->getValue() . '</comment>';
         }
 
+        if ($node->getLibrary()->isUpgradeOnly()) {
+            $version .= ' <fg=yellow;options=bold>(upgrade only)</>';
+        }
+
         // Build string
         $options[$node->getLibrary()->getName()] = $formatting . $node->getLibrary()->getName() . $version;
 
