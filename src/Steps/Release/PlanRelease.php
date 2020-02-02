@@ -155,20 +155,14 @@ class PlanRelease extends Step
         $childModules = $parent->getLibrary()->getChildrenExclusive();
         foreach ($childModules as $childModule) {
             // For the given child module, guess the upgrade mechanism (upgrade or new tag)
-            if ($parent->getLibrary()->isChildUpgradeOnly($childModule->getName())) {
+            if ($childModule->isUpgradeOnly() || $parent->getLibrary()->isUpgradeOnly()) {
                 $release = $this->generateUpgradeRelease($parent, $childModule);
             } else {
                 $release = $this->proposeNewReleaseVersion($parent, $childModule);
             }
             $parent->addItem($release);
 
-            // If this release tag doesn't match an existing tag, then recurse.
-            // If the tag exists, then we are simply updating the dependency to
-            // an existing tag, so there's no need to recursie.
-            $tags = $childModule->getTags();
-            if (!array_key_exists($release->getVersion()->getValue(), $tags)) {
-                $this->generateChildReleases($release);
-            }
+            $this->generateChildReleases($release);
         }
     }
 
@@ -561,6 +555,10 @@ class PlanRelease extends Step
         $previous = $node->getPriorVersion();
         if ($previous && $previous->getValue() !== $node->getVersion()->getValue()) {
             $version .= ', prior version <comment>' . $previous->getValue() . '</comment>';
+        }
+
+        if ($node->getLibrary()->isUpgradeOnly()) {
+            $version .= ' <fg=yellow;options=bold>(upgrade only)</>';
         }
 
         // Build string

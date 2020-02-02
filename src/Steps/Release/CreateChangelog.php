@@ -20,8 +20,14 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class CreateChangelog extends ReleaseStep
 {
+    /**
+     * @var bool
+     */
+    protected $includeUpgradeOnly = false;
+
     public function run(InputInterface $input, OutputInterface $output)
     {
+        $this->includeUpgradeOnly = $input->hasOption('include-upgrade-only');
         $this->log($output, "Generating changelog content for all releases in this plan");
 
         // Generate changelogs for each element in this plan
@@ -79,10 +85,18 @@ class CreateChangelog extends ReleaseStep
             . '<info>' . $release->getVersion()->getValue() . '</info>)'
         );
 
+        if ($this->includeUpgradeOnly) {
+            $this->log(
+                $output,
+                'Including "upgrade-only" modules in changelog'
+            );
+        }
+
         // Given a from version for this release, determine the "from" version for all child dependencies.
         // This does a deep search through composer dependencies and recursively checks out old versions
-        // of composer.json to determine historic version information
-        $changelogLibrary = $this->getChangelogLibrary($release, $fromVersion);
+        // of composer.json to determine historic version information. It will filter any modules marked
+        // as upgrade-only unless the --include-upgrade-only option is passed.
+        $changelogLibrary = $this->getChangelogLibrary($release, $fromVersion, $this->includeUpgradeOnly);
 
         // Preview diffs to generate for this changelog
         $count = $changelogLibrary->count();
@@ -161,10 +175,14 @@ class CreateChangelog extends ReleaseStep
      *
      * @param LibraryRelease $newRelease
      * @param Version $historicVersion
+     * @param bool $includeUpgradeOnly
      * @return ChangelogLibrary Changelog information for a library
      */
-    protected function getChangelogLibrary(LibraryRelease $newRelease, Version $historicVersion)
-    {
+    protected function getChangelogLibrary(
+        LibraryRelease $newRelease,
+        Version $historicVersion,
+        bool $includeUpgradeOnly = false
+    ): ChangelogLibrary {
         // Build root release node
         $historicRelease = new ChangelogLibrary($newRelease, $historicVersion);
 
@@ -172,10 +190,22 @@ class CreateChangelog extends ReleaseStep
         $preferStable = $newRelease->getVersion()->isStable();
 
         // Check all dependencies from this past commit.
-        // Note that we flatten both current and historic dependecy trees in case dependencies
+        // Note that we flatten both current and historic dependency trees in case dependencies
         // have been re-arranged since the prior tag.
         $pastComposer = null;
         foreach ($newRelease->getAllItems() as $childNewRelease) {
+            $childNewReleaseLibrary = $childNewRelease->getLibrary();
+
+            // Unless specifically requested, we need to skip upgrade-only dependencies for changelog generation
+            $skipLibrary = !$includeUpgradeOnly && (
+                    $childNewReleaseLibrary->isUpgradeOnly() ||
+                    $childNewReleaseLibrary->getParent()->isUpgradeOnly()
+                );
+
+            if ($skipLibrary) {
+                continue;
+            }
+
             /** LibraryRelease $childNewRelease */
             // Lazy-load historic composer content as needed
             if (!isset($pastComposer)) {
@@ -186,7 +216,7 @@ class CreateChangelog extends ReleaseStep
             }
 
             // Check if this release has a historic tag.
-            $childReleaseName = $childNewRelease->getLibrary()->getName();
+            $childReleaseName = $childNewReleaseLibrary->getName();
             if (empty($pastComposer['require'][$childReleaseName])) {
                 continue;
             }
@@ -206,7 +236,7 @@ class CreateChangelog extends ReleaseStep
                         $childReleaseName
                     );
 
-                    $childHistoricVersion = $childNewRelease->getLibrary()->getOldestVersionMatching(
+                    $childHistoricVersion = $childNewReleaseLibrary->getOldestVersionMatching(
                         $historicConstraint,
                         $childNewRelease->getVersion()->isStable()
                     );

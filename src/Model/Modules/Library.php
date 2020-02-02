@@ -1041,6 +1041,7 @@ class Library
             'Changelog' => $plan->getChangelog(),
             'Items' => [],
             'Branching' => $plan->getBranching(null), // Only store internal value don't failover
+            'UpgradeOnly' => $plan->getLibrary()->isUpgradeOnly(), // Stored for reference, never unserialized
         ];
         foreach ($plan->getItems() as $item) {
             $content[$name]['Items'] = array_merge(
