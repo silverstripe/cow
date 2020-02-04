@@ -2,7 +2,14 @@
 
 if [ ! -z "$COW_MODE_RELEASE" ] ; then
     set -e
-    mkdir ~/.ssh
+
+    echo -n "Running SSH Agent... ";
+    eval $(ssh-agent);
+
+    echo "Loading SSH Keys into the SSH Agent..."
+    ssh-add;
+
+    echo "Scanning github.com keys, verifying github authentication"
     ssh-keyscan -H github.com 2> /dev/null 1> ~/.ssh/known_hosts
     ssh -qT git@github.com 2>&1 | grep "successfully authenticated" || (echo "GitHub authentication error" && exit 1)
     /usr/bin/cow $@;

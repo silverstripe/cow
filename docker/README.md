@@ -92,7 +92,7 @@ This script is a simple shortcut for `vendor/bin/phpcs` that launches within a c
 
 #### ./docker/bin/release
 
-Same as `docker/bin/run`, but always pulls the latest container image and adds extra checks for SSH access to GitHub.
+Same as `docker/bin/run`, but with ssh-agent reading your keys for accessing GitHub from within the container
 
 
 #### ./docker/bin/run

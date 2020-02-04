@@ -12,7 +12,8 @@ x-volumes: &volumes
   - '..:/app'
   - './cache/composer:/home/cow/.composer/cache'
   - '${GIT_CONFIG}:/home/cow/.gitconfig:ro'
-  - '${SSH_AUTH_SOCK}:${SSH_AUTH_SOCK}:rw'
+  # - '${SSH_AUTH_SOCK}:${SSH_AUTH_SOCK}:rw'  # macOS socket is not writeable by non-root users
+  - '~/.ssh:/home/cow/.ssh'
   - '~/.transifexrc:/home/cow/.transifexrc'
 
 x-debug-env-var: &x-debug-env-var 'remote_enable=1 remote_mode=req remote_port=${XDEBUG_PORT} remote_host=${XDEBUG_HOST} remote_connect_back=0'
@@ -22,7 +23,7 @@ x-build-context: &build-context ''
 x-wdir: &wdir /app
 
 x-environment: &environment
-  SSH_AUTH_SOCK: ${SSH_AUTH_SOCK}
+  # SSH_AUTH_SOCK: ${SSH_AUTH_SOCK}
   XDEBUG_CONFIG: *x-debug-env-var
   USER_ID: ${USER_ID}
   GROUP_ID: ${GROUP_ID}

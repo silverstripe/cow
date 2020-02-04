@@ -26,12 +26,13 @@ if grep -q 'XDEBUG_HOST=localhost' "$DOCKER_DIR/.env" ; then
     fi
 fi
 
-if [ "$(uname)" = "Darwin" ] ; then
-    ## Docker for Mac is run within a VM, so ssh-agent socket path within the VM
-    ## is different from the host machine
-    ## see https://github.com/docker/for-mac/issues/410
-    export SSH_AUTH_SOCK='/run/host-services/ssh-auth.sock'
-fi
+# Does not work because macOS ssh-agent socket is not writeable by non-root users
+# if [ "$(uname)" = "Darwin" ] ; then
+#     ## Docker for Mac is run within a VM, so ssh-agent socket path within the VM
+#     ## is different from the host machine
+#     ## see https://github.com/docker/for-mac/issues/410
+#     export SSH_AUTH_SOCK='/run/host-services/ssh-auth.sock'
+# fi
 
 docker_compose_params()
 {
