@@ -1,7 +1,8 @@
 version: '3.7'
 
 x-build-args: &build-args
-  UID: ${USER_ID}
+  USER_ID: ${USER_ID}
+  GROUP_ID: ${GROUP_ID}
 
 x-entrypoint: &entrypoint
   - /bin/bash
@@ -16,19 +17,23 @@ x-volumes: &volumes
 
 x-debug-env-var: &x-debug-env-var 'remote_enable=1 remote_mode=req remote_port=${XDEBUG_PORT} remote_host=${XDEBUG_HOST} remote_connect_back=0'
 
-x-build-context: &build-context .
+x-build-context: &build-context ''
 
 x-wdir: &wdir /app
 
 x-environment: &environment
   SSH_AUTH_SOCK: ${SSH_AUTH_SOCK}
   XDEBUG_CONFIG: *x-debug-env-var
+  USER_ID: ${USER_ID}
+  GROUP_ID: ${GROUP_ID}
 
 
 services:
   # Using the stable prebuilt image
-  stable:
-    image: docker.pkg.github.com/silverstripe/cow/master:latest
+  release:
+    build:
+      context: './release'
+      args: *build-args
     working_dir: *wdir
     network_mode: 'host'
     volumes: *volumes
@@ -39,7 +44,7 @@ services:
   dev:
     build:
       context: *build-context
-      target: base
+      target: stable
       args: *build-args
     working_dir: *wdir
     network_mode: 'host'

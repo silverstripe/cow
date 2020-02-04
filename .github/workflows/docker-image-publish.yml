@@ -33,7 +33,7 @@ jobs:
           echo "::set-env name=COW_VERSION::$COW_VERSION"
 
           # Building a new image and tag it as "cow-image"
-          docker build -t 'cow-image' --target stable --build-arg COW_VERSION=$COMPOSER_COW_VERSION -f docker/Dockerfile .
+          docker build -t 'cow-image' --target stable --build-arg COW_VERSION=$COMPOSER_COW_VERSION - < docker/Dockerfile
 
       - name: Log into GitHub Packages registry
         run: |

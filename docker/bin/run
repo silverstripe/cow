@@ -7,6 +7,7 @@ function _realpath() { python -c 'import sys; from os.path import realpath; prin
 TGT_DIR=$(_realpath $(pwd))  # the target folder where we run cow from
 
 export USER_ID=$(id -u)
+export GROUP_ID=$(id -g)
 
 CUR_FILE=$(_realpath "$0")  # abs path of this script
 BIN_DIR=$(_dirname $CUR_FILE)  # abs path to the folder of this script
@@ -34,10 +35,9 @@ fi
 
 docker_compose_params()
 {
-    echo "-e UID=$USER_ID" \
+    echo "-e USER_ID=$USER_ID -e GROUP_ID=$GROUP_ID" \
         -e COW_DIR="$COW_DIR" \
         -e GIT_CONFIG="$GIT_CONFIG" \
-        -u $USER_ID \
         -v "$COW_DIR:$COW_DIR" \
         -v "$TGT_DIR:$TGT_DIR" \
         -v "$DOCKER_DIR:$DOCKER_DIR" \
@@ -56,12 +56,12 @@ docker_compose_run()
 docker_compose_pull()
 {
     cd $DOCKER_DIR && \
-    GIT_CONFIG=$GIT_CONFIG USER_ID=$USER_ID docker-compose pull $EXTRA_FLAGS $1 ${@:2}
+    GIT_CONFIG=$GIT_CONFIG USER_ID=$USER_ID GROUP_ID=$GROUP_ID docker-compose build --pull $1 ${@:2}
 }
 
 if [ ! -z "$SKIP_RUN_EXEC" ] ; then
     return;
 fi
 
-docker_compose_pull stable
-docker_compose_run stable $@
+docker_compose_pull release
+docker_compose_run release $@

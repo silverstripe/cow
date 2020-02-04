@@ -40,6 +40,13 @@ The scripts run Cow and mount current folder (`$(pwd)`) into the container prese
 
 # Appendix
 
+
+### release/Dockerfile
+
+`docker/release/Dockerfile` contains the description of a Docker image that takes latest release
+and amends the internal `cow` user User ID and Group ID to match those on the host machine.
+This makes the files created within the container to seamlessly belong to the same user between host and guest (container).
+
 ### Dockerfile
 
 `docker/Dockerfile` contains the description of Docker image build targets (aka stages):

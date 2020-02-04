@@ -7,5 +7,5 @@ function _realpath() { python -c 'import sys; from os.path import realpath; prin
 SKIP_RUN_EXEC="1"
 . "$(_dirname $(_realpath "$0"))/run"
 
-EXTRA_FLAGS="--entrypoint /bin/bash"
+EXTRA_FLAGS="--entrypoint /bin/bash $EXTRA_FLAGS"
 docker_compose_run $@
