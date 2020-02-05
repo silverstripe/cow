@@ -37,49 +37,49 @@ RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
  && php -r "unlink('composer-setup.php');"
 
 
+
+######## Target: base
+
 FROM php as base
 
-ARG UID=1000
-ARG GID=${UID}
-
-RUN echo "Group ID: ${GID}" \
- && echo "User ID: ${UID}" \
- && groupadd -f -g ${GID} cow \
- && useradd -g ${GID} -d /home/cow -m -u ${UID} cow \
- && mkdir -p /home/cow/.composer/cache \
- && chown -R cow:cow /home/cow/.composer
-
-FROM base as stable
-
-USER root
 RUN apt-get update -y \
- && apt-get install -y git python3-pip \
+ && apt-get install -y git python3-pip openssh-client \
  && pip3 install -U pip \
  && pip install transifex-client awscli \
  && apt-get install -y ruby \
  && gem install yamlclean
 
+
+
+######## Target: stable
+
+FROM base as stable
+
+ARG COW_VERSION=dev-master
+ARG USER_ID=1000
+ARG GROUP_ID=${USER_ID}
+
+RUN composer -vvv global require silverstripe/cow:${COW_VERSION} \
+ && composer -vvv global require composer/satis ^1 \
+ && chmod 755 /root \
+ && ln -s /root/.composer/vendor/bin/cow /usr/bin/. \
+ && ln -s /root/.composer/vendor/bin/satis /usr/bin/. \
+ && groupadd -f -g ${GROUP_ID} cow \
+ && useradd -g ${GROUP_ID} -d /home/cow -m -u ${USER_ID} cow \
+ && mkdir -p /home/cow/.composer/cache \
+ && chown -R cow:cow /home/cow/.composer
+
 USER cow
-RUN composer -vvv global require silverstripe/cow:dev-master \
- && composer -vvv global require composer/satis ^1
+WORKDIR /home/cow
+ENTRYPOINT [ /bin/bash ]
+
+
+######## Target: debug
+
+FROM stable as debug
 
 USER root
-RUN ln -s /home/cow/.composer/vendor/bin/cow /usr/bin/. \
- && ln -s /home/cow/.composer/vendor/bin/satis /usr/bin/.
-
-USER cow
-
-
-FROM stable as dev
-USER cow
-
-
-FROM dev as debug
-
-USER root
-
 RUN docker-php-source extract \
  && yes '' | pecl install xdebug-2.7.0beta1 && docker-php-ext-enable xdebug \
  && docker-php-source delete
-
 USER cow

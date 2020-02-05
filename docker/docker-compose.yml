@@ -1,7 +1,8 @@
 version: '3.7'
 
 x-build-args: &build-args
-  UID: ${USER_ID}
+  USER_ID: ${USER_ID}
+  GROUP_ID: ${GROUP_ID}
 
 x-entrypoint: &entrypoint
   - /bin/bash
@@ -11,26 +12,49 @@ x-volumes: &volumes
   - '..:/app'
   - './cache/composer:/home/cow/.composer/cache'
   - '${GIT_CONFIG}:/home/cow/.gitconfig:ro'
-  - '~/.ssh:/home/cow/.ssh:ro'
+  # - '${SSH_AUTH_SOCK}:${SSH_AUTH_SOCK}:rw'  # macOS socket is not writeable by non-root users
+  - '~/.ssh:/home/cow/.ssh'
+  - '~/.transifexrc:/home/cow/.transifexrc'
 
 x-debug-env-var: &x-debug-env-var 'remote_enable=1 remote_mode=req remote_port=${XDEBUG_PORT} remote_host=${XDEBUG_HOST} remote_connect_back=0'
 
-x-build-context: &build-context .
+x-build-context: &build-context ''
 
 x-wdir: &wdir /app
 
+x-environment: &environment
+  # SSH_AUTH_SOCK: ${SSH_AUTH_SOCK}
+  XDEBUG_CONFIG: *x-debug-env-var
+  USER_ID: ${USER_ID}
+  GROUP_ID: ${GROUP_ID}
+
+
 services:
-  cow_dev:
+  # Using the stable prebuilt image
+  release:
     build:
-      context: *build-context
-      target: dev
+      context: './release'
       args: *build-args
     working_dir: *wdir
     network_mode: 'host'
     volumes: *volumes
     entrypoint: *entrypoint
+    environment: *environment
 
-  cow_debug:
+  # Build a new local image WITHOUT Xdebug and run localhost version of Cow in there
+  dev:
+    build:
+      context: *build-context
+      target: stable
+      args: *build-args
+    working_dir: *wdir
+    network_mode: 'host'
+    volumes: *volumes
+    entrypoint: *entrypoint
+    environment: *environment
+
+  # Build a new local image WITH Xdebug and run localhost version of Cow in there
+  debug:
     build:
       context: *build-context
       target: debug
@@ -39,45 +63,4 @@ services:
     network_mode: 'host'
     volumes: *volumes
     entrypoint: *entrypoint
-    environment:
-      DEBUG_COW: 1
-      XDEBUG_CONFIG: *x-debug-env-var
-
-  cow_test:
-    build:
-      context: *build-context
-      target: dev
-      args: *build-args
-    working_dir: *wdir
-    network_mode: 'host'
-    volumes: *volumes
-    entrypoint: *entrypoint
-    environment:
-      TEST_COW: 1
-      DEBUG_COW: 1
-
-  cow_debug_test:
-    build:
-      context: *build-context
-      target: debug
-      args: *build-args
-    working_dir: *wdir
-    network_mode: 'host'
-    volumes: *volumes
-    entrypoint: *entrypoint
-    environment:
-      TEST_COW: 1
-      DEBUG_COW: 1
-      XDEBUG_CONFIG: *x-debug-env-var
-
-  cow_phpcs:
-    build:
-      context: *build-context
-      target: dev
-      args: *build-args
-    working_dir: *wdir
-    network_mode: 'host'
-    volumes: *volumes
-    entrypoint: *entrypoint
-    environment:
-      PHPCS_COW: 1
+    environment: *environment
