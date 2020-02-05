@@ -10,7 +10,7 @@ x-entrypoint: &entrypoint
 
 x-volumes: &volumes
   - '..:/app'
-  - './cache/composer:/home/cow/.composer/cache'
+  - './cache/composer:/home/cow/.composer'
   - '${GIT_CONFIG}:/home/cow/.gitconfig:ro'
   # - '${SSH_AUTH_SOCK}:${SSH_AUTH_SOCK}:rw'  # macOS socket is not writeable by non-root users
   - '~/.ssh:/home/cow/.ssh'

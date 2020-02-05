@@ -21,6 +21,11 @@ if [ ! -z "$COW_MODE_TRANSIFEX" ] ; then
     exit;
 fi
 
+if [ ! -z "$COW_MODE_COMPOSER" ] ; then
+    composer $@
+    exit;
+fi
+
 if [ ! -z "$COW_MODE_DEBUG" ] ; then
     DIR="$COW_DIR";
 else
