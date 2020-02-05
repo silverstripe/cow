@@ -9,5 +9,5 @@ function _realpath() { python -c 'import sys; from os.path import realpath; prin
 SKIP_RUN_EXEC="1"
 . "$(_dirname $(_realpath "$0"))/run"
 
-EXTRA_FLAGS="-e COW_MODE_TRANSIFEX=1"
+EXTRA_FLAGS="-e COW_MODE_COMPOSER=1"
 docker_compose_run release $@
