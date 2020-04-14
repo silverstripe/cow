@@ -111,7 +111,7 @@ class DetachTaggedBase extends Step
 
             $headCommitHash = trim($repo->getHeadCommit()->getHash());
 
-            $base = trim($repo->run('merge-base', [$priorVersion->getValue(), $headCommitHash]));
+            $base = trim($repo->run('merge-base', [$priorVersion->getOriginalString(), $headCommitHash]));
 
             if ($base !== $headCommitHash) {
                 $commitsCount = trim($repo->run('rev-list', ['--count', "$base...HEAD"]));
