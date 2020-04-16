@@ -27,7 +27,7 @@ class CreateChangelog extends ReleaseStep
 
     public function run(InputInterface $input, OutputInterface $output)
     {
-        $this->includeUpgradeOnly = $input->hasOption('include-upgrade-only');
+        $this->includeUpgradeOnly = $input->getOption('include-upgrade-only');
         $this->log($output, "Generating changelog content for all releases in this plan");
 
         // Generate changelogs for each element in this plan
