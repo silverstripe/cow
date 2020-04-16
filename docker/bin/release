@@ -11,5 +11,5 @@ SKIP_RUN_EXEC="1"
 
 docker_compose_pull release
 
-EXTRA_FLAGS="-e COW_MODE_RELEASE=1 $EXTRA_FLAGS"
+EXTRA_FLAGS="-e COW_MODE_RELEASE=1 $EXTRA_FLAGS -e GITHUB_API_TOKEN=$GITHUB_API_TOKEN"
 docker_compose_run release $@

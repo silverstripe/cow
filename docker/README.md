@@ -92,7 +92,8 @@ This script is a simple shortcut for `vendor/bin/phpcs` that launches within a c
 
 #### ./docker/bin/release
 
-Same as `docker/bin/run`, but with ssh-agent reading your keys for accessing GitHub from within the container
+Same as `docker/bin/run`, but with ssh-agent reading your keys for accessing GitHub from within the container.
+Adds some extra checks for your environment (e.g. GITHUB_API_TOKEN)
 
 
 #### ./docker/bin/run
