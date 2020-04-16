@@ -293,6 +293,6 @@ class Release extends Command
      */
     public function getIncludeUpgradeOnly(): bool
     {
-        return $this->input->hasOption('include-upgrade-only');
+        return $this->input->getOption('include-upgrade-only');
     }
 }
