@@ -91,13 +91,13 @@ class RewriteReleaseBranches extends ReleaseStep
         if (empty($target) || $target === $currentBranch) {
             $this->log(
                 $output,
-                "Releasing library <info>{$libraryName}</info> from branch <info>{$currentBranch}</info>"
+                "Module <info>{$libraryName}</info> already on correct branch (<info>{$currentBranch}</info>)"
             );
         } else {
             // Check versions to checkout
             $this->log(
                 $output,
-                "Branching library <info>{$libraryName}</info> as <info>{$target}</info> "
+                "Branching module <info>{$libraryName}</info> as <info>{$target}</info> "
                 . "(from <comment>{$currentBranch}</comment>)"
             );
 
