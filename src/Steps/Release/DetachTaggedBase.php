@@ -107,11 +107,52 @@ class DetachTaggedBase extends Step
                 continue;
             }
 
-            $priorVersion = $libVersion->getPriorVersionFromTags($lib->getTags(), false);
-
+            // Get the current HEAD of the module
             $headCommitHash = trim($repo->getHeadCommit()->getHash());
 
-            $base = trim($repo->run('merge-base', [$priorVersion->getValue(), $headCommitHash]));
+            // Figure out if it's upgrade-only (or it's in a recipe that is upgrade-only)
+            $isUpgradeOnly = $planItem->getLibrary()->isUpgradeOnly();
+            if (!$isUpgradeOnly) {
+                $parentRef = $planItem->getLibrary()->getParent();
+
+                while (!$isUpgradeOnly && $parentRef) {
+                    $isUpgradeOnly = $parentRef->isUpgradeOnly();
+                    $parentRef = $parentRef->getParent();
+                }
+            }
+
+            // find the latest released version equal or less than libVersion
+            $versions = array_filter($lib->getTags(), static function ($version) use ($libVersion) {
+                return $libVersion->compareTo($version) >= 0;
+            });
+
+            // sort the versions in descending order
+            usort($versions, static function ($versionA, $versionB) {
+                return $versionB->compareTo($versionA);
+            });
+
+
+            // Identify the priorVersion.
+            // Beware, this is NOT the priorVersion from the release plan (.cow.pat.json).
+            // Instead, THIS priorVersion is what has already been tagged and what we want
+            // to be released as the new module version.
+            // Optionally, after running this "detach-tagged-base" command, some security
+            // patches may be applied to the module on top of the "priorVersion".
+            // One of the use cases is promoting RC1 to Stable. In that case
+            // THIS priorVersion could be "2.6.0-RC1", whereas the release plan priorVersion would be "2.5.2".
+            if (count($versions)) {
+                $priorVersion = $versions[0];
+            } else {
+                // if there are no versions, assuming the current version might be not tagged
+                // this is a "safe" default, but maybe we should "continue" the loop here
+                $priorVersion = $libVersion;
+            }
+
+            // for Upgrade-Only modules we're aiming at the planned version
+            // otherwise, revert to the latest tagged version planned (priorVersion)
+            $baseVersion = $isUpgradeOnly ? $libVersion->getValue() : $priorVersion->getValue();
+
+            $base = trim($repo->run('merge-base', [$baseVersion, $headCommitHash]));
 
             if ($base !== $headCommitHash) {
                 $commitsCount = trim($repo->run('rev-list', ['--count', "$base...HEAD"]));
