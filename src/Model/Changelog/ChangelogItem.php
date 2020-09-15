@@ -33,16 +33,16 @@ class ChangelogItem
      *
      * @var array
      */
-    protected $ignoreRules = array(
-        '/^Merge/',
-        '/branch alias/',
-        '/^Added(.*)changelog$/',
-        '/^Blocked revisions/',
-        '/^Initialized merge tracking /',
-        '/^Created (branches|tags)/',
-        '/^NOTFORMERGE/',
-        '/^\s*$/'
-    );
+    protected $ignoreRules = [
+        // '/^Merge/',
+        // '/branch alias/',
+        // '/^Added(.*)changelog$/',
+        // '/^Blocked revisions/',
+        // '/^Initialized merge tracking /',
+        // '/^Created (branches|tags)/',
+        // '/^NOTFORMERGE/',
+        // '/^\s*$/'
+    ];
 
     /**
      * Url for CVE release notes
@@ -57,21 +57,32 @@ class ChangelogItem
      * @var array
      */
     protected static $types = array(
-        'Security' => array(
-            // E.g. "[ss-2015-016]: Security fix" - deliberately case insensitive here
-            '/^(\[SS-2(\d){3}-(\d){3}\]):?/i',
-            // E.g. "[cve-2019-12345]: Security fix"
+        'Security' => [
+            // E.g. "[CVE-2019-12345]: Security fix"
             '/^(\[?CVE-(\d){4}-(\d){4,}\]?):?/i',
-        ),
-        'API Changes' => array(
-            '/^(APICHANGE|API-CHANGE|API CHANGE|API)\b:?/'
-        ),
-        'Features and Enhancements' => array(
-            '/^(ENHANCEMENT|ENHNACEMENT|ENH|FEATURE|NEW)\b:?/'
-        ),
-        'Bugfixes' => array(
-            '/^(BUG FIX|BUGFIX|BUGFUX|BUG|FIXED|FIXING|FIX)\b:?/',
-        )
+        ],
+        'API Changes' => [
+            '/^API\b:?/'
+        ],
+        'Features and Enhancements' => [
+            '/^(ENH(ANCEMENT)?|NEW)\b:?/'
+        ],
+        'Bugfixes' => [
+            '/^(FIX|BUG)\b:?/',
+        ],
+        'Documentation' => [
+            '/^(DOCS?)\b:?/',
+        ],
+        'Merge' => [
+            '/^Merge/',
+        ],
+        'Dependencies' => [
+            '/^(DEP)\b:?/',
+        ],
+        'Maintenance' => [
+            '/^(MNT)\b:?/',
+            '/\btravis\b/'
+        ],
     );
 
     /**
@@ -192,7 +203,9 @@ class ChangelogItem
             // lowercase then we'll include them in the commit message, e.g. "Fixing regex rules" as opposed to
             // "FIX Regex rules now work"
             foreach ($rules as $rule) {
-                $message = trim(preg_replace($rule, '', $message));
+                if (substr($rule, 0, 2) === '/^') {
+                    $message = trim(preg_replace($rule, '', $message));
+                }
             }
         }
 
@@ -280,11 +293,6 @@ class ChangelogItem
      */
     public function getSecurityCVE()
     {
-        // Old SS style security identifiers
-        if (preg_match('/^\[(?<ssid>SS-2(\d){3}-(\d){3})\]/i', $this->getRawMessage(), $matches)) {
-            return strtolower($matches['ssid']);
-        }
-
         // New CVE style identifiers
         if (preg_match('/^\[(?<cve>CVE-(\d){4}-(\d){4,})\]/i', $this->getRawMessage(), $matches)) {
             return strtolower($matches['cve']);

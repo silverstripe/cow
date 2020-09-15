@@ -1120,11 +1120,13 @@ class Library
         $data = $this->getCowData();
         // Default tagging
         if (empty($data['changelog-type'])) {
-            return Changelog::FORMAT_GROUPED;
+            return Changelog::FORMAT_GROUPED_BY_LIB;
+            // return Changelog::FORMAT_GROUPED;
         }
         // Validate tagging type
         switch ($data['changelog-type']) {
             case Changelog::FORMAT_GROUPED:
+            case Changelog::FORMAT_GROUPED_BY_LIB:
             case Changelog::FORMAT_FLAT:
                 return $data['changelog-type'];
             default:

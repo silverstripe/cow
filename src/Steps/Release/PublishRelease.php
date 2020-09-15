@@ -187,7 +187,7 @@ class PublishRelease extends ReleaseStep
         $repo->run("add", [$path]);
         $status = $repo->run("status");
         if (stripos($status, 'Changes to be committed:')) {
-            $repo->run("commit", ["-m", "Update development dependencies"]);
+            $repo->run("commit", ["-m", "MNT Update development dependencies"]);
         }
     }
 
