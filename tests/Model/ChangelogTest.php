@@ -65,12 +65,12 @@ class ChangelogTest extends PHPUnit_Framework_TestCase
             ]),
             new Commit($repository, sha1('damn'), [
                 'shortHash' => 'shortdamn',
-                'subjectMessage' => '[SS-2015-123] Someone forgot the coffee!',
+                'subjectMessage' => '[CVE-2015-1234] Someone forgot the coffee!',
                 'authorName' => 'Charlie Charizard',
                 'authorDate' => new DateTime('2015-04-20 04:20:00'),
             ]),
             new Commit($repository, sha1('anotherdamn'), [
-                'subjectMessage' => '[SS-2015-123] Someone forgot the coffee!',
+                'subjectMessage' => '[CVE-2015-1234] Someone forgot the coffee!',
                 'authorName' => 'Charlie Charizard',
                 'authorDate' => new DateTime('2015-04-20 04:20:00'),
             ]),

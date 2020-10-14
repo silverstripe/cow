@@ -164,7 +164,7 @@ class RewriteReleaseBranches extends ReleaseStep
         $repo->run("add", array($path));
         $status = $repo->run("status");
         if (stripos($status, 'Changes to be committed:')) {
-            $repo->run("commit", array("-m", "Remove obsolete branch-alias"));
+            $repo->run("commit", array("-m", "MNT Remove obsolete branch-alias"));
         }
     }
 
@@ -230,7 +230,7 @@ class RewriteReleaseBranches extends ReleaseStep
             $repo->run("add", array($path));
             $status = $repo->run("status");
             if (stripos($status, 'Changes to be committed:')) {
-                $repo->run("commit", array("-m", "Update development dependencies"));
+                $repo->run("commit", array("-m", "MNT Update development dependencies"));
             }
         }
     }

@@ -28,14 +28,4 @@ class CreateChangelogTest extends \PHPUnit_Framework_TestCase
 
         $this->assertSame('changelog', $step->getStepName());
     }
-
-    public function testCommitChanges()
-    {
-        $this->markTestSkipped('Not yet implemented');
-    }
-
-    public function testRun()
-    {
-        $this->markTestSkipped('Not yet implemented');
-    }
 }
