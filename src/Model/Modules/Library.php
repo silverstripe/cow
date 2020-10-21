@@ -1109,6 +1109,11 @@ class Library
         return $this->getCowData()['changelog-template'] ?? null;
     }
 
+    public function getChangelogLogsTemplatePath()
+    {
+        return $this->getCowData()['changelog-logs-template'] ?? null;
+    }
+
     /**
      * Get Changelog format type
      *
@@ -1120,11 +1125,13 @@ class Library
         $data = $this->getCowData();
         // Default tagging
         if (empty($data['changelog-type'])) {
+            // return Changelog::FORMAT_GROUPED_BY_LIB;
             return Changelog::FORMAT_GROUPED;
         }
         // Validate tagging type
         switch ($data['changelog-type']) {
             case Changelog::FORMAT_GROUPED:
+            case Changelog::FORMAT_GROUPED_BY_LIB:
             case Changelog::FORMAT_FLAT:
                 return $data['changelog-type'];
             default:

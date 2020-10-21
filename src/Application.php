@@ -35,6 +35,14 @@ class Application extends Console\Application
     }
 
     /**
+     * Returns the folder of Cow Twig templates
+     */
+    public static function getTwigTemplateDir(): string
+    {
+        return realpath(__DIR__.'/../templates');
+    }
+
+    /**
      * Get the name of the application used to run the command, eg: cow or bin/cow
      *
      * @return string

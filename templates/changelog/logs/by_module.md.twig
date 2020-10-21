@@ -1,0 +1,64 @@
+{% set PRINT_OTHER_CHANGES_SECTION = true %}
+
+{%- set SECTIONS_INCLUDE = [
+    'Security',
+    'API Changes',
+    'Features and Enhancements',
+    'Bugfixes',
+    'Documentation'
+    ] %}
+
+{%- set SECTIONS_EXCLUDE = [
+    'Maintenance',
+    'Merge'
+    ] %}
+
+{%- macro print_change(change) %}
+  * {{ change.date }} [{{ change.shortHash }}]({{ change.link }}) {{ change.shortMessage }} ({{ change.author }}){% if change.cve %} - See [{{ change.cve }}]({{ change['cve-url'] }}){% endif %}
+{% endmacro %}
+
+{%- macro print_section(changes, title) %}
+  {%~ if changes.by_type[title] %}
+
+    {{~ '#### ' ~ title }}
+
+    {%~ for change in changes.by_type[title] %}
+      {{~ _self.print_change(change) }}
+    {%~ endfor %}
+  {%~ endif %}
+{%- endmacro %}
+
+{%- macro print_everything(changes, sections_exclude) %}
+    {%- set output_flag = false %}
+    {%- for change in changes.all %}
+        {%- if change.type not in sections_exclude %}
+            {%- if not output_flag %}
+                {{~ '#### Other changes' }}
+                {%~ set output_flag = true %}
+            {%- endif %}
+            {{~ _self.print_change(change) }}
+        {%~ endif %}
+    {%- endfor %}
+{%- endmacro %}
+
+{%- macro print_library(library, sections_include, sections_exclude, print_other_changes_section) %}
+    {%- set changes = library.changes %}
+    {%- set output_flag = false %}
+    {%- for change in changes.all if not output_flag and change.type not in sections_exclude %}
+
+
+        {{~ '### ' ~ library.name ~ '  (' ~ library.version.prior ~ ' -> ' ~ library.version.release ~ ')' }}
+        {%~ set output_flag = true %}
+
+    {%~ endfor %}
+    {%~ for section in sections_include if changes.by_type[section]|length > 0 %}
+        {{~ _self.print_section(changes, section) }}
+    {%~ endfor %}
+    {%~ if print_other_changes_section %}{{ _self.print_everything(changes, sections_exclude) }}{% endif %}
+{%- endmacro %}
+
+## Change Log
+
+{% for library in libs %}
+    {{~ _self.print_library(library, SECTIONS_INCLUDE, SECTIONS_EXCLUDE, PRINT_OTHER_CHANGES_SECTION) }}
+{%- endfor %}

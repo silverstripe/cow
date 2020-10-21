@@ -4,6 +4,7 @@ namespace SilverStripe\Cow\Steps\Release;
 
 use Exception;
 use LogicException;
+use SilverStripe\Cow\Application;
 use SilverStripe\Cow\Model\Changelog\Changelog;
 use SilverStripe\Cow\Model\Changelog\ChangelogLibrary;
 use SilverStripe\Cow\Model\Modules\Library;
@@ -25,9 +26,18 @@ class CreateChangelog extends ReleaseStep
      */
     protected $includeUpgradeOnly = false;
 
+    /**
+     * Use legacy changelog format, hardcoded in the Changelog model
+     *
+     * @var bool
+     */
+    protected $useLegacyChangelogFormat = false;
+
     public function run(InputInterface $input, OutputInterface $output)
     {
         $this->includeUpgradeOnly = $input->getOption('include-upgrade-only');
+        $this->useLegacyChangelogFormat = $input->getOption('changelog--use-legacy-format');
+
         $this->log($output, "Generating changelog content for all releases in this plan");
 
         // Generate changelogs for each element in this plan
@@ -117,7 +127,11 @@ class CreateChangelog extends ReleaseStep
             $this->log($output, 'Including "other changes" in changelog');
         }
 
-        $content = $changelog->getMarkdown($output, $release->getLibrary()->getChangelogFormat());
+        if ($this->useLegacyChangelogFormat) {
+            $content = $changelog->getMarkdown($output, $changelog->getRootLibrary()->getRelease()->getLibrary()->getChangelogFormat());
+        } else {
+            $content = $this->renderChangelogLogs($output, $changelog);
+        }
 
         // Store this changelog
         $this->storeChangelog($output, $changelogLibrary, $content);
@@ -135,6 +149,7 @@ class CreateChangelog extends ReleaseStep
         $library = $changelogLibrary->getRelease()->getLibrary();
         $changelogHolder = $library->getChangelogHolder();
         $changelogTemplatePath = $library->getChangelogTemplatePath();
+        $changelogLogsTemplate = $library->getChangelogLogsTemplatePath();
 
         // Store in local path
         $path = $library->getChangelogPath($version);
@@ -284,6 +299,50 @@ class CreateChangelog extends ReleaseStep
         }
 
         return $renderer->updateChangelog($existingContent, $logs);
+    }
+
+    protected function renderChangelogLogs(OutputInterface $output, Changelog $changelog): string
+    {
+        $changelogLibrary = $changelog->getRootLibrary();
+        $release = $changelogLibrary->getRelease();
+        $library = $release->getLibrary();
+        $templatePath = $library->getChangelogLogsTemplatePath();
+
+        if (is_null($templatePath)) {
+            $fullTemplatePath = sprintf(
+                // '%s/changelog/logs/plain.md.twig',
+                // '%s/changelog/logs/by_module.md.twig',
+                '%s/changelog/logs/by_type.md.twig',
+                Application::getTwigTemplateDir()
+            );
+            $this->log($output, sprintf('Changelog logs template not set, fall back to default: %s', $fullTemplatePath));
+        } else {
+            $fullTemplatePath = implode([
+                $this->getProject()->getDirectory(),
+                DIRECTORY_SEPARATOR,
+                $templatePath
+            ]);
+        }
+
+        // Fall back to basic output if no template is specified or if the template is missing
+        if (!file_exists($fullTemplatePath)) {
+            throw new \Exception(sprintf('No changelog template found in %s', $fullTemplatePath));
+        }
+
+        $template = file_get_contents($fullTemplatePath);
+        $changelogData = $changelog->getChangesRenderData($output);
+
+        // print_r($changelogData['changes']['by_type']['Security']);exit();
+        // print_r(['HOBA' => $changelogData]);exit();
+        $content = (new Template())->renderTemplateStringWithContext($template, $changelogData);
+        print_r(['YOBA' => $content]);exit();
+        // $content = 'YOBA';
+
+        if (strpos($content, ChangelogRenderer::TOP_DELIMITER) === false) {
+            $this->log($output, "Warning: Logs not included in changelog template", "error");
+        }
+
+        return $content;
     }
 
     /**

@@ -74,6 +74,12 @@ class Release extends Command
                 null,
                 InputOption::VALUE_NONE,
                 'Include upgrade-only changes in the changelog (default: false)'
+            )
+            ->addOption(
+                'changelog--use-legacy-format',
+                null,
+                InputOption::VALUE_NONE,
+                'Use legacy changelog format, hardcoded in Changelog model'
             );
     }
 

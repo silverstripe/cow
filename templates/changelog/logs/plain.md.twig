@@ -1,0 +1,50 @@
+{% set PRINT_OTHER_CHANGES_SECTION = true %}
+
+{%- set SECTIONS_INCLUDE = [
+    'Security',
+    'API Changes',
+    'Features and Enhancements',
+    'Bugfixes',
+    'Documentation'
+] %}
+
+{%- set SECTIONS_EXCLUDE = [
+    'Maintenance',
+    'Merge'
+] %}
+
+{%- macro print_change(change) %}
+  * {{ change.date }} [{{ change.shortHash }}]({{ change.link }}) {{ change.shortMessage }} ({{ change.author }}){% if change.cve %} - See [{{ change.cve }}]({{ change['cve-url'] }}){% endif %}
+{% endmacro %}
+
+{%- macro print_section(changes, title) %}
+  {%~ if changes.by_type[title] %}
+
+    {{~ '### ' ~ title }}
+
+    {%~ for change in changes.by_type[title] %}
+      {{~ _self.print_change(change) }}
+    {%~ endfor %}
+  {%~ endif %}
+{% endmacro %}
+
+{%- macro print_everything(changes, sections_exclude) %}
+    {%- set output_flag = false %}
+    {%- for change in changes.all %}
+        {%- if change.type not in sections_exclude %}
+            {%- if not output_flag %}
+                {{~ '### Other changes' }}
+                {%~ set output_flag = true %}
+            {%- endif %}
+            {{~ _self.print_change(change) }}
+        {%~ endif %}
+    {%- endfor %}
+{% endmacro %}
+
+
+## Change Log
+
+{% for section in SECTIONS_INCLUDE %}
+    {{~ _self.print_section(changes, section) }}
+{% endfor %}
+{% if PRINT_OTHER_CHANGES_SECTION %}{{ _self.print_everything(changes, SECTIONS_EXCLUDE) }}{% endif %}

@@ -21,6 +21,11 @@ class Changelog
     public const FORMAT_FLAT = 'flat';
 
     /**
+     * Groups changes by module
+     */
+    public const FORMAT_GROUPED_BY_LIB = 'grouped_by_lib';
+
+    /**
      * @var ChangelogLibrary
      */
     protected $rootLibrary;
@@ -118,6 +123,96 @@ class Changelog
     }
 
     /**
+     * Returns the data for rendering the logs.
+     * Split by library.
+     */
+    public function getChangesRenderData(OutputInterface $output): array
+    {
+        $libraries = $this->getRootLibrary()->getAllItems(true);
+
+        $libs = [];
+        $logs = [];
+
+        foreach ($libraries as $library) {
+            $libLogs = $this->sortByDate($this->getLibraryLog($output, $library));
+            $composerData = $library->getRelease()->getLibrary()->getComposerData();
+            $name = strtolower(trim($composerData['name']));
+
+            $libs[$name] = [
+                'name' => $name,
+                'link' => 'https://packagist.org/packages/'.$name,
+                'version' => [
+                    'prior' => $library->getRelease()->getPriorVersion()->getValue(),
+                    'release' => $library->getRelease()->getVersion()->getValue()
+                ],
+                'changes' => [
+                    'all' => $libLogs,
+                    'by_type' => $this->sortByType($libLogs)
+                ]
+            ];
+
+            $logs = array_merge($logs, $libLogs);
+        }
+
+        $logs = $this->sortByDate($logs);
+
+        $data = [
+            'libs' => $libs,
+            'changes' => [
+                'all' => $logs,
+                'by_type' => $this->sortByType($logs)
+            ]
+        ];
+
+        // Recursively converts ChangelogItems into plain arrays within the given array
+        // via ChangelogItem->getRenderData() invocation
+        $fetchChangeData = static function ($value) use (&$fetchChangeData) {
+            if (is_array($value)) {
+                return array_map($fetchChangeData, $value);
+            } else if ($value instanceof ChangelogItem) {
+                return $value->getRenderData();
+            } else {
+                return $value;
+            }
+        };
+
+        return array_map($fetchChangeData, $data);
+    }
+
+    protected function getChangesGroupedByLib(OutputInterface $output)
+    {
+        $libChanges = [];
+        $libraries = $this->getRootLibrary()->getAllItems(true);
+
+        foreach ($libraries as $library) {
+            $composerData = $library->getRelease()->getLibrary()->getComposerData();
+            $name = strtolower(trim($composerData['name'])); // $library->getRelease()->getLibrary()->getName();
+            $link = 'https://packagist.org/packages/'.$name;
+            $changes = $this->getLibraryLog($output, $library);
+            $libChanges[$name]['link'] = $link;
+            $libChanges[$name]['version'] = [
+                'prior' => $library->getRelease()->getPriorVersion()->getValue(),
+                'release' => $library->getRelease()->getVersion()->getValue()
+            ];
+            $libChanges[$name]['log'] = $this->sortByType($this->sortByDate($changes));
+
+            $libChanges[$name]['is_blank'] = true;
+
+            foreach ($libChanges[$name]['log'] as $groupName => $commits) {
+                if (in_array($groupName, ['Merge', 'Maintenance'], true)) {
+                    continue;
+                }
+                if (count($commits)) {
+                    $libChanges[$name]['is_blank'] = false;
+                    break;
+                }
+            }
+        }
+
+        return $libChanges;
+    }
+
+    /**
      * Generate output in markdown format
      *
      * @param OutputInterface $output
@@ -131,6 +226,8 @@ class Changelog
                 return $this->getMarkdownGrouped($output);
             case self::FORMAT_FLAT:
                 return $this->getMarkdownFlat($output);
+            case self::FORMAT_GROUPED_BY_LIB:
+                return $this->getMarkdownGroupedByLib($output);
             default:
                 throw new \InvalidArgumentException("Unknown changelog format $formatType");
         }
@@ -159,6 +256,98 @@ class Changelog
                 $output .= $commit->getMarkdown($this->getLineFormat(), $this->getSecurityFormat());
             }
         }
+
+        return $output;
+    }
+
+    /**
+     * Generates markdown with changelogs grouped by library (aka module)
+     *
+     * @param OutputInterface $output
+     * @return string
+     */
+    protected function getMarkdownGroupedByLib(OutputInterface $output)
+    {
+        // $groupedLog = $this->getGroupedChanges($output);
+
+        $log = $this->getChangesGroupedByLib($output);
+
+        // Convert to string and generate markdown (add list to beginning of each item)
+        $output = "\n\n## Change Log\n";
+
+        $output .= "\n### Release map\n\n";
+        $output .= "| Recipe / Module | Prior | New |\n";
+        $output .= "| --- | --- | --- |\n";
+
+        foreach ($log as $library => $data) {
+            $priorVersion = $data['version']['prior'];
+            $releaseVersion = $data['version']['release'];
+
+            $output .= '| ['.addcslashes($library, '|').']('.$data['link'].') | '.$priorVersion.' | '.$releaseVersion." |\n";
+        }
+        $output .= "\n\n";
+
+        foreach ($log as $library => $data) {
+            if ($data['is_blank']) {
+                continue;
+            }
+
+            $priorVersion = $data['version']['prior'];
+            $releaseVersion = $data['version']['release'];
+
+            $versionUpdate = " ($priorVersion -> $releaseVersion)";
+
+            $output .= "\n### $library $versionUpdate\n\n";
+
+            $output .= '| Category | Date | Commit | Author | Description |'."\n";
+            $output .= '| -------- | ---- | ------ | ------ | ----------- |'."\n";
+
+            foreach ($data['log'] as $groupName => $commits) {
+                if (empty($commits)) {
+                    continue;
+                }
+
+                if (in_array($groupName, ['Merge', 'Maintenance'], true)) {
+                    continue;
+                }
+
+                // $output .= "\n#### $groupName\n\n";
+                // foreach ($commits as $commit) {
+                //     /** @var ChangelogItem $commit */
+                //     $output .= $commit->getMarkdown($this->getLineFormat(), $this->getSecurityFormat());
+                // }
+
+                // TABLED
+
+                $groupNamePrinted = false;
+                foreach ($commits as $commit) {
+                    if (!$groupNamePrinted) {
+                        $groupNamePrinted = true;
+                        $output .= "| ".addcslashes($groupName, '|<>'). ' | ';
+                    } else {
+                        $output .= '| | ';
+                    }
+
+                    $output .= $commit->getMarkdown(
+                        // $this->getLineFormat(),
+                        ' {date} | [{shortHash}]({link}) | {author} | {shortMessage} |',
+                        ' - | - | - | [{cve}]({cveURL}) |'
+                    );
+                }
+            }
+        }
+
+        // foreach ($groupedLog as $groupName => $commits) {
+        //     if (empty($commits)) {
+        //         continue;
+        //     }
+
+        //     $output .= "\n### $groupName\n\n";
+        //     foreach ($commits as $commit) {
+        //         /** @var ChangelogItem $commit */
+        //         $output .= $commit->getMarkdown($this->getLineFormat(), $this->getSecurityFormat());
+        //     }
+        // }
 
         return $output;
     }
@@ -246,9 +435,9 @@ class Changelog
     protected function sortByType($commits)
     {
         // List types
-        $groupedByType = array();
+        $groupedByType = [null => []];
         foreach (ChangelogItem::getTypes() as $type) {
-            $groupedByType[$type] = array();
+            $groupedByType[$type] = [];
         }
 
         // Group into type
