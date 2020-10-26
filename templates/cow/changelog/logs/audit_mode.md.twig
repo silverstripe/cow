@@ -1,0 +1,29 @@
+{%- from "changelog/logs/macros.md.twig" import format_commit, print_section_by_type as print_section -%}
+
+{#- Sections defined by ChangelogItem::$types -#}
+{%- set SECTIONS = [
+    'Security',
+    'Features and Enhancements',
+    'Bugfixes',
+    'API Changes',
+    'Dependencies',
+    'Documentation'
+]
+-%}
+
+## Change Log
+
+{% for section in SECTIONS %}
+    {%- if commits.by_type[section]|length > 0 %}
+        {{~ print_section(commits, section, '### ' ~ section) }}
+    {% endif %}
+{% endfor %}
+
+### Other changes
+
+{% for commit in commits.all %}
+    {%- set commit = commit.getRenderData %}
+    {%- if commit.type not in SECTIONS %}
+        {{~ format_commit(commit) }}
+    {%~ endif %}
+{% endfor %}

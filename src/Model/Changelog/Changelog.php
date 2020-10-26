@@ -118,6 +118,56 @@ class Changelog
     }
 
     /**
+     * Returns the data for rendering the changelogs.
+     */
+    public function getChangesRenderData(OutputInterface $output): array
+    {
+        $libraries = $this->getRootLibrary()->getAllItems(true);
+
+        $libs = [];
+        $logs = [];
+        $commitToLibraryMap = [];
+
+        foreach ($libraries as $library) {
+            $libLogs = $this->sortByDate($this->getLibraryLog($output, $library));
+            $composerData = $library->getRelease()->getLibrary()->getComposerData();
+            $name = strtolower(trim($composerData['name']));
+
+            $libs[$name] = [
+                'name' => $name,
+                'link' => 'https://packagist.org/packages/' . $name,
+                'version' => [
+                    'prior' => $library->getRelease()->getPriorVersion()->getValue(),
+                    'release' => $library->getRelease()->getVersion()->getValue()
+                ],
+                'commits' => [
+                    'all' => $libLogs,
+                    'by_type' => $this->sortByType($libLogs)
+                ]
+            ];
+
+            $logs = array_merge($logs, $libLogs);
+
+            foreach ($libLogs as $log) {
+                $commitToLibraryMap[$log->getShortHash()] = $name;
+            }
+        }
+
+        $logs = $this->sortByDate($logs);
+
+        $data = [
+            'libs' => $libs,
+            'commits' => [
+                'all' => $logs,
+                'by_type' => $this->sortByType($logs),
+                'map_to_lib' => $commitToLibraryMap
+            ]
+        ];
+
+        return array_map($fetchChangeData, $data);
+    }
+
+    /**
      * Generate output in markdown format
      *
      * @param OutputInterface $output
@@ -246,9 +296,9 @@ class Changelog
     protected function sortByType($commits)
     {
         // List types
-        $groupedByType = array();
+        $groupedByType = [null => []];
         foreach (ChangelogItem::getTypes() as $type) {
-            $groupedByType[$type] = array();
+            $groupedByType[$type] = [];
         }
 
         // Group into type

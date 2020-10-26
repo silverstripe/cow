@@ -1,0 +1,51 @@
+{#-
+    `format_commit` formats and prints a single commit (change)
+-#}
+{%- macro format_commit(commit) %}
+  * {{ commit.date }} [{{ commit.shortHash }}]({{ commit.link }}) {{ commit.shortMessage }} ({{ commit.author }}){% if commit.cve %} - See [{{ commit.cve }}]({{ commit.cveURL }}){% endif %}
+{% endmacro -%}
+
+
+{#-
+    `print_section_by_type` formats and prints a single section (commit type, e.g. Bugfixes)
+                            if the third parameter given (`title`), prints the title for the section,
+                            but only if there are commits existing (at least one)
+-#}
+{%- macro print_section_by_type(commits, name, title) %}
+  {%~ if commits.by_type[name] %}
+    {%- if title %}
+
+      {{~ title }}
+
+    {%~ endif %}
+    {%~ for commit in commits.by_type[name] %}
+      {%- set commit = commit.getRenderData %}
+      {{~ _self.format_commit(commit) }}
+    {%~ endfor %}
+  {%~ endif %}
+{% endmacro -%}
+
+
+{#-
+    `print_section_by_type_and_module` formats and prints a single section (commit type, e.g. Bugfixes),
+                                       splitting the commits by module within the section.
+-#}
+{%- macro print_section_by_type_and_module(libraries, commits, name, title) %}
+  {%~ if commits.by_type[name] %}
+    {%- if title %}
+
+      {{~ title }}
+
+    {%~ endif %}
+    {%~ for library in libraries %}
+      {%~ if library.commits.by_type[name] %}
+
+        {{~ ' * ' ~ library.name ~ ' (' ~ library.version.prior ~ ' -> ' ~ library.version.release ~ ')' }}
+        {%~ for commit in library.commits.by_type[name] %}
+          {%- set commit = commit.getRenderData %}
+          {{~ '  ' ~ _self.format_commit(commit) }}
+        {%~ endfor %}
+      {%~ endif %}
+    {%~ endfor %}
+  {%~ endif %}
+{% endmacro -%}

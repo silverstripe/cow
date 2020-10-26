@@ -63,6 +63,12 @@ class ChangelogTest extends PHPUnit_Framework_TestCase
                 'authorName' => 'Val Vulcan',
                 'authorDate' => new DateTime('2015-04-20 04:20:00'),
             ]),
+            new Commit($repository, sha1('gee'), [
+                'shortHash' => 'shortgee',
+                'subjectMessage' => 'MNT Some maintenance commit',
+                'authorName' => 'Val Vulcan',
+                'authorDate' => new DateTime('2015-04-20 04:21:00'),
+            ]),
             new Commit($repository, sha1('damn'), [
                 'shortHash' => 'shortdamn',
                 'subjectMessage' => '[CVE-2015-1234] Someone forgot the coffee!',
@@ -194,7 +200,8 @@ class ChangelogTest extends PHPUnit_Framework_TestCase
     {
         $result = $this->changelog->getMarkdown($this->output, $type);
 
-        $this->assertNotContains('Some uncategorised commit', $result, 'Uncategorised are ignored by default');
+        $this->assertNotContains('MNT Some maintenance commit', $result, 'Maintenance are ignored by default');
+        $this->assertContains('Some uncategorised commit', $result, 'Uncategorised are included by default');
     }
 
     /**

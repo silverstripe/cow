@@ -1,0 +1,21 @@
+{%- from "changelog/logs/macros.md.twig" import print_section_by_type_and_module as print_section -%}
+
+{#- Sections defined by ChangelogItem::$types -#}
+{%- set SECTIONS = [
+    'Security',
+    'Features and Enhancements',
+    'Bugfixes',
+    'API Changes',
+    'Dependencies',
+    'Documentation',
+    'Other changes'
+]
+-%}
+
+## Change Log
+
+{% for section in SECTIONS %}
+    {%- if commits.by_type[section]|length > 0 %}
+        {{~ print_section(libs, commits, section, '### ' ~ section) }}
+    {% endif %}
+{% endfor -%}

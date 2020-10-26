@@ -2,6 +2,7 @@
 
 namespace SilverStripe\Cow\Tests\Steps;
 
+use SilverStripe\Cow\Application;
 use SilverStripe\Cow\Commands\Release\Changelog;
 use SilverStripe\Cow\Model\Modules\Project;
 use SilverStripe\Cow\Steps\Release\CreateChangelog;
@@ -24,7 +25,13 @@ class CreateChangelogTest extends \PHPUnit_Framework_TestCase
 
     public function testGetStepName()
     {
-        $step = new CreateChangelog(new Changelog('release:changelog'), new Project(''));
+        $app = new Application();
+        $step = new CreateChangelog(
+            new Changelog($app, 'release:changelog'),
+            new Project(''),
+            null,
+            $app->createTwigEnvironment()
+        );
 
         $this->assertSame('changelog', $step->getStepName());
     }
