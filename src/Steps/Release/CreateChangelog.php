@@ -347,7 +347,7 @@ class CreateChangelog extends ReleaseStep
         $repo->run("add", array($path));
         $status = $repo->run("status");
         if (stripos($status, 'Changes to be committed:')) {
-            $repo->run("commit", array("-m", "Added {$versionName} changelog"));
+            $repo->run("commit", array("-m", "MNT Added {$versionName} changelog"));
         }
     }
 }
