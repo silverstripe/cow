@@ -267,6 +267,10 @@ class ChangelogItem
             return 'Security';
         }
 
+        if ($this->getAuthor() === 'dependabot[bot]') {
+            return 'Dependencies';
+        }
+
         return 'Other changes';
     }
 

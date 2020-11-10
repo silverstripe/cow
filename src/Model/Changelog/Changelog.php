@@ -90,12 +90,16 @@ class Changelog
      * Get all changes grouped by type
      *
      * @param OutputInterface $output
+     * @param ?callable $filter function for array_filter on the list of changes
      * @return ChangelogItem[]
      */
-    protected function getGroupedChanges(OutputInterface $output)
+    protected function getGroupedChanges(OutputInterface $output, ?callable $filter = null)
     {
         // Sort by type
         $changes = $this->getChanges($output);
+        if ($filter) {
+            $changes = array_filter($changes, $filter);
+        }
         return $this->sortByType($changes);
     }
 
@@ -164,7 +168,7 @@ class Changelog
             ]
         ];
 
-        return array_map($fetchChangeData, $data);
+        return $data;
     }
 
     /**
@@ -187,6 +191,34 @@ class Changelog
     }
 
     /**
+     * Returns a function that filters the list of changes
+     * to conform with the legacy changelog format
+     */
+    private function getLegacyChangelogCommitFilter(): callable
+    {
+        static $rules = [
+            '/^Merge/',
+            '/branch alias/',
+            '/^Added(.*)changelog$/',
+            '/^Blocked revisions/',
+            '/^Initialized merge tracking /',
+            '/^Created (branches|tags)/',
+            '/^NOTFORMERGE/',
+            '/^\s*$/'
+        ];
+
+        return static function ($commit) use ($rules) {
+            $message = $commit->getRawMessage();
+            foreach ($rules as $ignoreRule) {
+                if (preg_match($ignoreRule, $message)) {
+                    return false;
+                }
+            }
+            return true;
+        };
+    }
+
+    /**
      * Generates grouped markdown
      *
      * @param OutputInterface $output
@@ -194,7 +226,7 @@ class Changelog
      */
     protected function getMarkdownGrouped(OutputInterface $output)
     {
-        $groupedLog = $this->getGroupedChanges($output);
+        $groupedLog = $this->getGroupedChanges($output, $this->getLegacyChangelogCommitFilter());
 
         // Convert to string and generate markdown (add list to beginning of each item)
         $output = "\n\n## Change Log\n";
@@ -272,6 +304,7 @@ class Changelog
     protected function getMarkdownFlat(OutputInterface $output)
     {
         $commits = $this->getChanges($output);
+        $commits = array_filter($commits, $this->getLegacyChangelogCommitFilter());
 
         $output = '';
         foreach ($commits as $commit) {
