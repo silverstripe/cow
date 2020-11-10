@@ -90,12 +90,16 @@ class Changelog
      * Get all changes grouped by type
      *
      * @param OutputInterface $output
+     * @param ?callable $filter function for array_filter on the list of changes
      * @return ChangelogItem[]
      */
-    protected function getGroupedChanges(OutputInterface $output)
+    protected function getGroupedChanges(OutputInterface $output, ?callable $filter = null)
     {
         // Sort by type
         $changes = $this->getChanges($output);
+        if ($filter) {
+            $changes = array_filter($changes, $filter);
+        }
         return $this->sortByType($changes);
     }
 
@@ -118,6 +122,56 @@ class Changelog
     }
 
     /**
+     * Returns the data for rendering the changelogs.
+     */
+    public function getChangesRenderData(OutputInterface $output): array
+    {
+        $libraries = $this->getRootLibrary()->getAllItems(true);
+
+        $libs = [];
+        $logs = [];
+        $commitToLibraryMap = [];
+
+        foreach ($libraries as $library) {
+            $libLogs = $this->sortByDate($this->getLibraryLog($output, $library));
+            $composerData = $library->getRelease()->getLibrary()->getComposerData();
+            $name = strtolower(trim($composerData['name']));
+
+            $libs[$name] = [
+                'name' => $name,
+                'link' => 'https://packagist.org/packages/' . $name,
+                'version' => [
+                    'prior' => $library->getRelease()->getPriorVersion()->getValue(),
+                    'release' => $library->getRelease()->getVersion()->getValue()
+                ],
+                'commits' => [
+                    'all' => $libLogs,
+                    'by_type' => $this->sortByType($libLogs)
+                ]
+            ];
+
+            $logs = array_merge($logs, $libLogs);
+
+            foreach ($libLogs as $log) {
+                $commitToLibraryMap[$log->getShortHash()] = $name;
+            }
+        }
+
+        $logs = $this->sortByDate($logs);
+
+        $data = [
+            'libs' => $libs,
+            'commits' => [
+                'all' => $logs,
+                'by_type' => $this->sortByType($logs),
+                'map_to_lib' => $commitToLibraryMap
+            ]
+        ];
+
+        return $data;
+    }
+
+    /**
      * Generate output in markdown format
      *
      * @param OutputInterface $output
@@ -137,6 +191,34 @@ class Changelog
     }
 
     /**
+     * Returns a function that filters the list of changes
+     * to conform with the legacy changelog format
+     */
+    private function getLegacyChangelogCommitFilter(): callable
+    {
+        static $rules = [
+            '/^Merge/',
+            '/branch alias/',
+            '/^Added(.*)changelog$/',
+            '/^Blocked revisions/',
+            '/^Initialized merge tracking /',
+            '/^Created (branches|tags)/',
+            '/^NOTFORMERGE/',
+            '/^\s*$/'
+        ];
+
+        return static function ($commit) use ($rules) {
+            $message = $commit->getRawMessage();
+            foreach ($rules as $ignoreRule) {
+                if (preg_match($ignoreRule, $message)) {
+                    return false;
+                }
+            }
+            return true;
+        };
+    }
+
+    /**
      * Generates grouped markdown
      *
      * @param OutputInterface $output
@@ -144,7 +226,7 @@ class Changelog
      */
     protected function getMarkdownGrouped(OutputInterface $output)
     {
-        $groupedLog = $this->getGroupedChanges($output);
+        $groupedLog = $this->getGroupedChanges($output, $this->getLegacyChangelogCommitFilter());
 
         // Convert to string and generate markdown (add list to beginning of each item)
         $output = "\n\n## Change Log\n";
@@ -222,6 +304,7 @@ class Changelog
     protected function getMarkdownFlat(OutputInterface $output)
     {
         $commits = $this->getChanges($output);
+        $commits = array_filter($commits, $this->getLegacyChangelogCommitFilter());
 
         $output = '';
         foreach ($commits as $commit) {
@@ -246,9 +329,9 @@ class Changelog
     protected function sortByType($commits)
     {
         // List types
-        $groupedByType = array();
+        $groupedByType = [null => []];
         foreach (ChangelogItem::getTypes() as $type) {
-            $groupedByType[$type] = array();
+            $groupedByType[$type] = [];
         }
 
         // Group into type

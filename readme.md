@@ -154,6 +154,9 @@ The changelog command takes the follow arguments and options:
 * `recipe` The recipe you're releasing
 * `--include-other-changes` If provided, uncategorised commits will also be included in an "Other changes" section.
   Note that commits which match `ChangelogItem::isIgnored()` will still be excluded, e.g. merge commits.
+* `--changelog--use-legacy-format` If provided, falls back to the old changelog format (used before Oct 2020)
+* `--changelog--audit-mode` swaps changelog format to Audit Mode, which turns on `include-upgrade-only` flag
+  and uses audit template for changelog logs generation (including every single change).
 
 **Pro-tip:** Part of this command involves plan generation and/or confirmation, and you can provide the
 `--skip-fetch-tags` option to prevent Cow from re-fetching all tags from origin if you have already done this

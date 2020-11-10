@@ -74,7 +74,22 @@ class Release extends Command
                 null,
                 InputOption::VALUE_NONE,
                 'Include upgrade-only changes in the changelog (default: false)'
-            );
+            )
+            ->addOption(
+                'changelog--use-legacy-format',
+                null,
+                InputOption::VALUE_NONE,
+                'Use legacy changelog format, hardcoded in Changelog model'
+            )
+            ->addOption(
+                'changelog--audit-mode',
+                null,
+                InputOption::VALUE_NONE,
+                'Generate changelogs for security audit.'
+                . ' Include every change, use audit template.'
+                . '(implicitly activates include-upgrade-only and include-other-changes)'
+            )
+            ;
     }
 
     protected function fire()
@@ -272,7 +287,7 @@ class Release extends Command
     public function getIncludeOtherChanges()
     {
         // If an argument was explicitly passed, use it (true)
-        if ($this->input->getOption('include-other-changes')) {
+        if ($this->input->getOption('include-other-changes') || $this->getChangelogAuditMode()) {
             return true;
         }
 
@@ -293,6 +308,26 @@ class Release extends Command
      */
     public function getIncludeUpgradeOnly(): bool
     {
-        return $this->input->getOption('include-upgrade-only');
+        return $this->input->getOption('include-upgrade-only') || $this->getChangelogAuditMode();
+    }
+
+    /**
+     * Whether to generate changelogs for Security Audit
+     *
+     * @return bool
+     */
+    public function getChangelogAuditMode(): bool
+    {
+        return $this->input->getOption('changelog--audit-mode');
+    }
+
+    /**
+     * Whether generated changelog should use the legacy format
+     *
+     * @return bool
+     */
+    public function getChangelogUseLegacyFormat(): bool
+    {
+        return $this->input->getOption('changelog--use-legacy-format');
     }
 }

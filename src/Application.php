@@ -6,10 +6,16 @@ use SilverStripe\Cow\Commands;
 use SilverStripe\Cow\Utility\SupportedModuleLoader;
 use SilverStripe\Cow\Utility\Config;
 use SilverStripe\Cow\Utility\GitHubApi;
+use SilverStripe\Cow\Utility\Twig;
 use Symfony\Component\Console;
 
 class Application extends Console\Application
 {
+    public function createTwigEnvironment(): Twig\Environment
+    {
+        return new Twig\Environment(new Twig\Loader($this));
+    }
+
     /**
      * Get version of this module
      *
@@ -32,6 +38,14 @@ class Application extends Console\Application
         } else {
             return $this->getVersionInDir(dirname($directory));
         }
+    }
+
+    /**
+     * Returns the folder of Cow Twig templates
+     */
+    public function getTwigTemplateDir(): string
+    {
+        return realpath(__DIR__ . '/../templates');
     }
 
     /**
@@ -71,7 +85,7 @@ class Application extends Console\Application
         $commands[] = new Commands\Release\Branch();
         $commands[] = new Commands\Release\Translate();
         $commands[] = new Commands\Release\Test();
-        $commands[] = new Commands\Release\Changelog();
+        $commands[] = new Commands\Release\Changelog($this);
 
         // Publish sub-commands
         $commands[] = new Commands\Release\Tag();

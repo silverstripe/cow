@@ -99,6 +99,22 @@ class ChangelogItem
         $this->setIncludeOtherChanges($includeAllCommits);
     }
 
+    public function getRenderData()
+    {
+        return [
+            'type' => $this->getType(),
+            'link' => $this->getLink(),
+            'shortHash' => $this->getShortHash(),
+            'date' => $this->getDate()->format('Y-m-d'),
+            'rawMessage' => $this->getRawMessage(),
+            'message' => $this->getMessage(),
+            'shortMessage' => $this->getShortMessage(),
+            'author' => $this->getAuthor(),
+            'cve' => $this->getSecurityCVE(),
+            'cveURL' => $this->getSecurityCVE() ? $this->cveURL . $this->getSecurityCVE() : ''
+        ];
+    }
+
     /**
      * Get details this commit uses to distinguish itself from other duplicate commits.
      * Used to prevent duplicates of the same commit being added from multiple merges, which
@@ -251,12 +267,11 @@ class ChangelogItem
             return 'Security';
         }
 
-        // Fallback check to see if we should include all commits
-        if ($this->getIncludeOtherChanges()) {
-            return 'Other changes';
+        if ($this->getAuthor() === 'dependabot[bot]') {
+            return 'Dependencies';
         }
 
-        return null;
+        return 'Other changes';
     }
 
     /**
@@ -306,26 +321,16 @@ class ChangelogItem
         if (!isset($format)) {
             $format = ' * {date} [{shortHash}]({link}) {shortMessage} ({author})';
         }
-        $content = Format::formatString($format, [
-            'type' => $this->getType(),
-            'link' => $this->getLink(),
-            'shortHash' => $this->getShortHash(),
-            'date' => $this->getDate()->format('Y-m-d'),
-            'rawMessage' => $this->getRawMessage(), // Probably not safe to use
-            'message' => $this->getMessage(),
-            'shortMessage' => $this->getShortMessage(),
-            'author' => $this->getAuthor(),
-        ]);
+        $data = $this->getRenderData();
+
+        $content = Format::formatString($format, $data);
 
         // Append security identifier
-        if ($cve = $this->getSecurityCVE()) {
+        if (!empty($data['cve'])) {
             if (!isset($securityFormat)) {
                 $securityFormat = ' - See [{cve}]({cveURL})';
             }
-            $content .= Format::formatString($securityFormat, [
-                'cve' => $cve,
-                'cveURL' => $this->cveURL . $cve
-            ]);
+            $content .= Format::formatString($securityFormat, $data);
         }
 
         return $content . "\n";

@@ -4,14 +4,18 @@ namespace SilverStripe\Cow\Steps\Release;
 
 use Exception;
 use LogicException;
+use SilverStripe\Cow\Application;
+use SilverStripe\Cow\Commands\Command;
 use SilverStripe\Cow\Model\Changelog\Changelog;
 use SilverStripe\Cow\Model\Changelog\ChangelogLibrary;
 use SilverStripe\Cow\Model\Modules\Library;
+use SilverStripe\Cow\Model\Modules\Project;
 use SilverStripe\Cow\Model\Release\ComposerConstraint;
 use SilverStripe\Cow\Model\Release\LibraryRelease;
 use SilverStripe\Cow\Model\Release\Version;
 use SilverStripe\Cow\Utility\ChangelogRenderer;
 use SilverStripe\Cow\Utility\Template;
+use SilverStripe\Cow\Utility\Twig;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -25,9 +29,33 @@ class CreateChangelog extends ReleaseStep
      */
     protected $includeUpgradeOnly = false;
 
+    /**
+     * @var Twig\Environment
+     */
+    protected $twig;
+
+    /**
+     * Use legacy changelog format, hardcoded in the Changelog model
+     *
+     * @var bool
+     */
+    protected $useLegacyChangelogFormat = false;
+
+    public function __construct(
+        Command $command,
+        Project $project,
+        LibraryRelease $releasePlan = null,
+        Twig\Environment $twig
+    ) {
+        parent::__construct($command, $project, $releasePlan);
+        $this->twig = $twig;
+    }
+
     public function run(InputInterface $input, OutputInterface $output)
     {
-        $this->includeUpgradeOnly = $input->getOption('include-upgrade-only');
+        $this->includeUpgradeOnly = $this->getCommand()->getIncludeUpgradeOnly();
+        $this->useLegacyChangelogFormat = $this->getCommand()->getChangelogUseLegacyFormat();
+
         $this->log($output, "Generating changelog content for all releases in this plan");
 
         // Generate changelogs for each element in this plan
@@ -117,7 +145,14 @@ class CreateChangelog extends ReleaseStep
             $this->log($output, 'Including "other changes" in changelog');
         }
 
-        $content = $changelog->getMarkdown($output, $release->getLibrary()->getChangelogFormat());
+        if ($this->useLegacyChangelogFormat) {
+            $content = $changelog->getMarkdown(
+                $output,
+                $changelog->getRootLibrary()->getRelease()->getLibrary()->getChangelogFormat()
+            );
+        } else {
+            $content = $this->renderChangelogLogs($output, $changelog);
+        }
 
         // Store this changelog
         $this->storeChangelog($output, $changelogLibrary, $content);
@@ -138,6 +173,7 @@ class CreateChangelog extends ReleaseStep
 
         // Store in local path
         $path = $library->getChangelogPath($version);
+
         if ($path) {
             // Generate header
             $fullPath = $changelogHolder->getDirectory() . '/' . $path;
@@ -284,6 +320,31 @@ class CreateChangelog extends ReleaseStep
         }
 
         return $renderer->updateChangelog($existingContent, $logs);
+    }
+
+    protected function renderChangelogLogs(OutputInterface $output, Changelog $changelog): string
+    {
+        $changelogLibrary = $changelog->getRootLibrary();
+        $release = $changelogLibrary->getRelease();
+        $library = $release->getLibrary();
+        $version = $release->getVersion();
+
+        if ($this->getCommand()->getChangelogAuditMode()) {
+            $template = 'changelog/logs/audit_mode.md.twig';
+        } elseif ($library->getChangelogPath($version)) {
+            // the library has changelog-path defined in `.cow.json`
+            // if it is set, then we assume it's the recipe we're releasing from
+            // (e.g. silverstripe/installer or cwp/kitchen-sink)
+            $template = 'changelog/logs/by_module.md.twig';
+        } else {
+            // otherwise, that's just a single library
+            $template = 'changelog/logs/plain.md.twig';
+        }
+
+        $changelogData = $changelog->getChangesRenderData($output);
+        $content = $this->twig->render($template, $changelogData);
+
+        return $content;
     }
 
     /**
