@@ -336,7 +336,7 @@ class UpdateTranslations extends ReleaseStep
             $status = $repo->run("status");
             if (stripos($status, 'Changes to be committed:')) {
                 $this->log($output, "Comitting changes for module " . $module->getName());
-                $repo->run("commit", array("-m", "ENH Update translations"));
+                $repo->run("commit", array("-m", "Update translations"));
             }
 
             // Do push if selected
