@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset>
+
+    <file>bin</file>
+    <file>src</file>
+    <file>tests</file>
+
+    <rule ref="PSR12" />
+</ruleset>
