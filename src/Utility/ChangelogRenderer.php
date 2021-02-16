@@ -88,7 +88,9 @@ class ChangelogRenderer
 
         return implode([
             $beforeLogs,
+            "\n\n",
             $newLogs,
+            "\n\n",
             $afterLogs
         ]);
     }
