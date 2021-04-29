@@ -76,7 +76,8 @@ class PublishRelease extends ReleaseStep
 
         if (!is_null($branch)) { // skip if it's already detached
             // Step 1: Push development branch to origin before tagging
-            $library->pushTo('origin');
+            // sboyd
+            // $library->pushTo('origin');
 
             // Step 2: Detach head from current branch before modifying
             $this->detachBranch($output, $library);
@@ -85,13 +86,14 @@ class PublishRelease extends ReleaseStep
         // Step 3: Rewrite composer.json on this head to all tagged versions only
         $this->stabiliseRequirements($output, $releasePlanNode);
 
+        // sboyd
         // Step 4: Tag and push this tag
-        $this->publishTag($output, $releasePlanNode);
+        // $this->publishTag($output, $releasePlanNode);
 
-        if (!is_null($branch)) {
-            // Step 5: Restore back to dev branch
-            $library->checkout($output, $branch);
-        }
+        // if (!is_null($branch)) {
+        //     // Step 5: Restore back to dev branch
+        //     $library->checkout($output, $branch);
+        // }
     }
 
     /**
@@ -142,6 +144,20 @@ class PublishRelease extends ReleaseStep
             );
         }
 
+        // sboyd
+        // HACK - hardcode graphql version recipe-cms to use `3.5.0@stable || 4.0.0-alpha1` for graphql
+        // - probably change this in 4.8.1
+        // - probably remove this in 4.9.0
+        if (isset($composerData['require']['silverstripe/graphql'])) {
+            // asset-admin, versioned, versioned-admin
+            $constraint = '^3 || ^4';
+            if (preg_match('#/recipe-cms$#', $parentLibrary->getDirectory())) {
+                // recipe-cms
+                $constraint = '3.5.0@stable || 4.0.0-alpha1';
+            }
+            $composerData['require']['silverstripe/graphql'] = $constraint;
+        }
+
         // Save modifications to the composer.json for this module
         if ($composerData !== $originalData) {
             $this->updateComposerData($output, $parentLibrary, $composerData);
@@ -161,6 +177,7 @@ class PublishRelease extends ReleaseStep
 
         // Notify of change
         $childName = $item->getLibrary()->getName();
+
         $this->log(
             $output,
             "Fixing tagged dependency <info>{$childName}</info> to <info>{$childRequirement}</info>"
@@ -187,7 +204,8 @@ class PublishRelease extends ReleaseStep
         $repo->run("add", [$path]);
         $status = $repo->run("status");
         if (stripos($status, 'Changes to be committed:')) {
-            $repo->run("commit", ["-m", "MNT Update development dependencies"]);
+            // sboyd
+            // $repo->run("commit", ["-m", "MNT Update development dependencies"]);
         }
     }
 
@@ -197,6 +215,9 @@ class PublishRelease extends ReleaseStep
      */
     protected function publishTag(OutputInterface $output, LibraryRelease $releasePlan)
     {
+        // sboyd
+        return;
+
         $library = $releasePlan->getLibrary();
         $libraryName = $library->getName();
         $tag = $releasePlan->getVersion()->getValue();
@@ -223,6 +244,9 @@ class PublishRelease extends ReleaseStep
      */
     protected function updateGithubChangelog(OutputInterface $output, LibraryRelease $release)
     {
+        // sboyd
+        return;
+
         $library = $release->getLibrary();
         if (!$library->hasGithubChangelog()) {
             return;
