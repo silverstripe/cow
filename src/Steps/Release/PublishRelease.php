@@ -146,14 +146,13 @@ class PublishRelease extends ReleaseStep
 
         // sboyd
         // HACK - hardcode graphql version recipe-cms to use `3.5.0@stable || 4.0.0-alpha1` for graphql
-        // - probably change this in 4.8.1
-        // - probably remove this in 4.9.0
+        // - Remove this in 4.9.0
         if (isset($composerData['require']['silverstripe/graphql'])) {
             // asset-admin, versioned, versioned-admin
             $constraint = '^3 || ^4';
             if (preg_match('#/recipe-cms$#', $parentLibrary->getDirectory())) {
-                // recipe-cms
-                $constraint = '3.5.0@stable || 4.0.0-alpha1';
+                // recipe-cms - don't use graphql4
+                $constraint = '3.5.0@stable';
             }
             $composerData['require']['silverstripe/graphql'] = $constraint;
         }
