@@ -142,6 +142,18 @@ class PublishRelease extends ReleaseStep
             );
         }
 
+        // HACK - hardcode graphql version recipe-cms to use `3.5.0@stable || 4.0.0-alpha1` for graphql
+        // - Remove this in 4.9.0
+        if (isset($composerData['require']['silverstripe/graphql'])) {
+            // asset-admin, versioned, versioned-admin
+            $constraint = '^3 || ^4';
+            if (preg_match('#/recipe-cms$#', $parentLibrary->getDirectory())) {
+                // recipe-cms - don't use graphql4
+                $constraint = '3.5.0@stable';
+            }
+            $composerData['require']['silverstripe/graphql'] = $constraint;
+        }
+
         // Save modifications to the composer.json for this module
         if ($composerData !== $originalData) {
             $this->updateComposerData($output, $parentLibrary, $composerData);
@@ -161,6 +173,7 @@ class PublishRelease extends ReleaseStep
 
         // Notify of change
         $childName = $item->getLibrary()->getName();
+
         $this->log(
             $output,
             "Fixing tagged dependency <info>{$childName}</info> to <info>{$childRequirement}</info>"
@@ -223,6 +236,7 @@ class PublishRelease extends ReleaseStep
      */
     protected function updateGithubChangelog(OutputInterface $output, LibraryRelease $release)
     {
+
         $library = $release->getLibrary();
         if (!$library->hasGithubChangelog()) {
             return;
