@@ -4,7 +4,6 @@ namespace SilverStripe\Cow\Steps\Release;
 
 use Exception;
 use Generator;
-use InvalidArgumentException;
 use SilverStripe\Cow\Commands\Command;
 use SilverStripe\Cow\Model\Modules\Module;
 use SilverStripe\Cow\Model\Modules\Project;
@@ -51,7 +50,21 @@ class UpdateTranslations extends ReleaseStep
      *
      * @var bool
      */
-    protected $doPush;
+    protected $doGitPush = false;
+
+    /**
+     * Flag whether we should run `tx pull`, i18nTextCollectorTask and js/json update`
+     *
+     * @var bool
+     */
+    protected $doTransifexPullAndUpdate = true;
+
+    /**
+     * Flag whether we should run `tx push -s`
+     *
+     * @var bool
+     */
+    protected $doTransifexPush = false;
 
     /**
      * Map of file paths to original JS master files.
@@ -72,10 +85,9 @@ class UpdateTranslations extends ReleaseStep
      * @param LibraryRelease $plan
      * @param bool $doPush Do git push at end
      */
-    public function __construct(Command $command, Project $project, LibraryRelease $plan, $doPush = false)
+    public function __construct(Command $command, Project $project, LibraryRelease $plan)
     {
         parent::__construct($command, $project, $plan);
-        $this->setDoPush($doPush);
     }
 
     public function getStepName()
@@ -91,15 +103,18 @@ class UpdateTranslations extends ReleaseStep
             $this->log($output, "No modules require translation: skipping");
             return;
         }
-
-        $this->log($output, "Updating translations for {$count} module(s)");
-        $this->storeJavascript($output, $modules);
-        $this->pullSource($output, $modules);
-        $this->cleanYaml($output, $modules);
-        $this->mergeJavascriptMasters($output);
-        $this->collectStrings($output, $modules);
-        $this->generateJavascript($output, $modules);
-        $this->pushSource($output, $modules);
+        if ($this->doTransifexPullAndUpdate) {
+            $this->log($output, "Updating translations for {$count} module(s)");
+            $this->storeJavascript($output, $modules);
+            $this->transifexPullSource($output, $modules);
+            $this->cleanYaml($output, $modules);
+            $this->mergeJavascriptMasters($output);
+            $this->collectStrings($output, $modules);
+            $this->generateJavascript($output, $modules);
+        }
+        if ($this->doTransifexPush) {
+            $this->transifexPushSource($output, $modules);
+        }
         $this->commitChanges($output, $modules);
         $this->log($output, 'Translations complete');
     }
@@ -184,7 +199,7 @@ class UpdateTranslations extends ReleaseStep
      * @param OutputInterface $output
      * @param Module[] $modules List of modules
      */
-    protected function pullSource(OutputInterface $output, $modules)
+    protected function transifexPullSource(OutputInterface $output, $modules)
     {
         foreach ($modules as $module) {
             $name = $module->getName();
@@ -295,16 +310,12 @@ class UpdateTranslations extends ReleaseStep
      * @param OutputInterface $output
      * @param Module[] $modules
      */
-    public function pushSource(OutputInterface $output, $modules)
+    protected function transifexPushSource(OutputInterface $output, $modules)
     {
         $this->log($output, "Pushing updated sources to transifex");
 
         foreach ($modules as $module) {
-            // Run tx pull
-            $pushCommand = sprintf(
-                '(cd %s && tx push -s)',
-                $module->getDirectory()
-            );
+            $pushCommand = sprintf('(cd %s && tx push -s)', $module->getDirectory());
             $moduleName = $module->getName();
             $this->runCommand($output, $pushCommand, "Error pushing module {$moduleName} to origin");
         }
@@ -340,7 +351,7 @@ class UpdateTranslations extends ReleaseStep
             }
 
             // Do push if selected
-            if ($this->doPush) {
+            if ($this->doGitPush) {
                 $this->log($output, "Pushing upstream for module " . $module->getName());
                 $repo->run("push", array("origin"));
             }
@@ -350,18 +361,54 @@ class UpdateTranslations extends ReleaseStep
     /**
      * @return bool
      */
-    public function isDoPush()
+    public function getDoGitPush()
     {
-        return $this->doPush;
+        return $this->doGitPush;
     }
 
     /**
-     * @param bool $doPush
+     * @param bool $doGitPush
      * @return $this
      */
-    public function setDoPush($doPush)
+    public function setDoGitPush($doGitPush)
     {
-        $this->doPush = $doPush;
+        $this->doGitPush = $doGitPush;
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function getDoTransifexPullAndUpdate()
+    {
+        return $this->doTransifexPullAndUpdate;
+    }
+
+    /**
+     * @param bool $doTransifexPullAndUpdate
+     * @return $this
+     */
+    public function setDoTransifexPullAndUpdate($doTransifexPullAndUpdate)
+    {
+        $this->doTransifexPullAndUpdate = $doTransifexPullAndUpdate;
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function getDoTransifexPush()
+    {
+        return $this->doTransifexPush;
+    }
+
+    /**
+     * @param bool $doTransifexPush
+     * @return $this
+     */
+    public function setDoTransifexPush($doTransifexPush)
+    {
+        $this->doTransifexPush = $doTransifexPush;
         return $this;
     }
 

@@ -30,6 +30,10 @@ class Translate extends Release
 
         // Update all translations
         $translate = new UpdateTranslations($this, $project, $releasePlan);
+        $doTxPullAndUpdate = !$this->input->getOption('skip-i18n-translations-pull-and-update');
+        $translate->setDoTransifexPullAndUpdate($doTxPullAndUpdate);
+        $doTxPush = $this->input->getOption('i18n-translations-push');
+        $translate->setDoTransifexPush($doTxPush);
         $translate->run($this->input, $this->output);
     }
 }
