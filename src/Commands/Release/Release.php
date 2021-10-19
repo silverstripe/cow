@@ -46,6 +46,18 @@ class Release extends Command
                 'Skip the text collection task when performing the release'
             )
             ->addOption(
+                'skip-i18n-translations-pull-and-update',
+                null,
+                InputOption::VALUE_NONE,
+                'Skip running tx pull, i18nTextCollectorTask and js/json updates'
+            )
+            ->addOption(
+                'i18n-translations-push',
+                null,
+                InputOption::VALUE_NONE,
+                'Run tx push -s - only do this during the beta1 release of a new minor'
+            )
+            ->addOption(
                 'skip-emulate-requirements',
                 null,
                 InputOption::VALUE_NONE,
@@ -118,6 +130,10 @@ class Release extends Command
         // Update all translations
         if (!$this->input->getOption('skip-i18n')) {
             $translate = new UpdateTranslations($this, $project, $releasePlan);
+            $doTxPullAndUpdate = !$this->input->getOption('skip-i18n-translations-pull-and-update');
+            $translate->setDoTransifexPullAndUpdate($doTxPullAndUpdate);
+            $doTxPush = $this->input->getOption('i18n-translations-push');
+            $translate->setDoTransifexPush($doTxPush);
             $translate->run($this->input, $this->output);
         }
 
