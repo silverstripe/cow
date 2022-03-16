@@ -12,7 +12,7 @@ use SilverStripe\Cow\Utility\Composer;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Github\Client as GithubClient;
-use Http\Adapter\Guzzle6\Client as GuzzleClient;
+use Http\Adapter\Guzzle7\Client as GuzzleClient;
 
 class PublishRelease extends ReleaseStep
 {

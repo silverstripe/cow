@@ -25,7 +25,8 @@
     "gitonomy/gitlib": "~1.0",
     "psr/log": "^1",
     "knplabs/github-api": "^2.1",
-    "php-http/guzzle6-adapter": "^1.1.1",
+    "php-http/guzzle7-adapter": "^1",
+    "guzzlehttp/guzzle": "^7.3",
     "justinrainbow/json-schema": "^5.2",
     "twig/twig": "^3.0"
   },

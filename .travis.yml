@@ -6,13 +6,6 @@ import:
 jobs:
   fast_finish: true
   include:
-    - php: 7.2
-      env:
-        - PHPUNIT_TEST=1
-        - PHPCS_TEST=1
-    - php: 7.3
-      env:
-        - PHPUNIT_COVERAGE_TEST=1
     - php: 7.4
       env:
-        - PHPUNIT_TEST=1
+        - PHPUNIT_COVERAGE_TEST=1
