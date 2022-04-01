@@ -24,7 +24,7 @@ use Symfony\Component\Yaml\Yaml;
  *  - Detect all new translations, making sure to merge in changes
  *      `./framework/sake dev/tasks/i18nTextCollectorTask "flush=all" "merge=1"
  *  - Detect all new JS translations in a similar way (todo)
- *  - Generate javascript from js source files
+ *  - Generate javascript from json source files
  *  - Push up all source translations
  *      `tx push -s`
  *  - Commit changes to source control (without push)
@@ -67,15 +67,24 @@ class UpdateTranslations extends ReleaseStep
     protected $doTransifexPush = false;
 
     /**
-     * Map of file paths to original JS master files.
+     * Map of file paths to original json files.
      * This is necessary prior to pulling master translations, since we need to do a
-     * post-pull merge locally, before pushing up back to transifex. Unlike PHP
-     * translations, text collector is unable to re-generate javascript translations, so
-     * instead we back them up here.
+     * post-pull merge locally, before pushing up back to transifex. This avoids
+     * any new keys that hadn't yet been pushed to transifex from being deleted.
      *
      * @var array
      */
-    protected $originalJSMasters = array();
+    protected $originalJson = array();
+
+    /**
+     * Map of file paths to original yaml files.
+     * This is necessary prior to pulling translations, since we need to do a
+     * post-pull merge locally, before pushing up back to transifex. This avoids
+     * any new keys that hadn't yet been pushed to transifex from being deleted.
+     *
+     * @var array
+     */
+    protected $originalYaml = array();
 
     /**
      * Create a new translation step
@@ -105,10 +114,12 @@ class UpdateTranslations extends ReleaseStep
         }
         if ($this->doTransifexPullAndUpdate) {
             $this->log($output, "Updating translations for {$count} module(s)");
-            $this->storeJavascript($output, $modules);
+            $this->storeJson($output, $modules);
+            $this->storeYaml($output, $modules);
             $this->transifexPullSource($output, $modules);
+            $this->mergeYaml($output);
             $this->cleanYaml($output, $modules);
-            $this->mergeJavascriptMasters($output);
+            $this->mergeJson($output);
             $this->collectStrings($output, $modules);
             $this->generateJavascript($output, $modules);
         }
@@ -129,28 +140,77 @@ class UpdateTranslations extends ReleaseStep
     }
 
     /**
-     * Backup local javascript masters
+     * Backup local yaml files in memory
      *
      * @param OutputInterface $output
      * @param Module[] $modules
      */
-    protected function storeJavascript(OutputInterface $output, $modules)
+    protected function storeYaml(OutputInterface $output, array $modules): void
     {
-        $this->log($output, "Backing up local javascript masters");
-        // Backup files prior to replacing local copies with transifex master
-        $this->originalJSMasters = [];
+        $this->log($output, 'Backing up local yaml files');
+        // Backup files prior to replacing local copies with transifex
+        $this->originalYaml = [];
+        foreach ($modules as $module) {
+            foreach (glob($module->getLangDirectory() . '/*.yml') as $path) {
+                if ($output->isVerbose()) {
+                    $this->log($output, "Backing up <info>$path</info>");
+                }
+                $rawYaml = file_get_contents($path);
+                $this->originalYaml[$path] = Yaml::parse($rawYaml);
+            }
+        }
+        $this->log($output, 'Finished backing up ' . count($this->originalYaml) . ' yaml files');
+    }
+
+    /**
+     * Merge any missing keys from old yaml content into yaml files
+     *
+     * @param OutputInterface $output
+     */
+    protected function mergeYaml(OutputInterface $output): void
+    {
+        // skip if no translations for this run
+        if (empty($this->originalYaml)) {
+            return;
+        }
+        $this->log($output, 'Merging local yaml files');
+        foreach ($this->originalYaml as $path => $contentYaml) {
+            if (file_exists($path)) {
+                // If there are any keys in the original yaml that are missing now, add them back in.
+                $rawYaml = file_get_contents($path);
+                $parsedYaml = Yaml::parse($rawYaml);
+                $contentYaml = $this->arrayMergeRecursive($contentYaml, $parsedYaml);
+            }
+
+            // Write back to local
+            file_put_contents($path, Yaml::dump($contentYaml));
+        }
+        $this->log($output, 'Finished merging ' . count($this->originalYaml) . ' yaml files');
+    }
+
+    /**
+     * Backup local json files
+     *
+     * @param OutputInterface $output
+     * @param Module[] $modules
+     */
+    protected function storeJson(OutputInterface $output, $modules)
+    {
+        $this->log($output, 'Backing up local json files');
+        // Backup files prior to replacing local copies with transifex
+        $this->originalJson = [];
         foreach ($modules as $module) {
             $jsPath = $module->getJSLangDirectories();
-            foreach ((array)$jsPath as $path) {
-                $masterPath = "{$path}/src/en.js";
-                $this->log($output, "Backing up <info>$masterPath</info>");
-                if (file_exists($masterPath)) {
-                    $masterJSON = $this->decodeJSONFile($masterPath);
-                    $this->originalJSMasters[$masterPath] = $masterJSON;
+            foreach ((array)$jsPath as $langDir) {
+                foreach (glob($langDir . '/src/*.json') as $path) {
+                    if ($output->isVerbose()) {
+                        $this->log($output, "Backing up <info>$path</info>");
+                    }
+                    $this->originalJson[$path] = $this->decodeJSONFile($path);
                 }
             }
         }
-        $this->log($output, "Finished backing up " . count($this->originalJSMasters) . " javascript masters");
+        $this->log($output, 'Finished backing up ' . count($this->originalJson) . ' json files');
     }
 
     /**
@@ -168,29 +228,28 @@ class UpdateTranslations extends ReleaseStep
     }
 
     /**
-     * Merge back master files with any local contents
+     * Merge any missing keys from old json content into json files
      *
      * @param OutputInterface $output
      */
-    protected function mergeJavascriptMasters(OutputInterface $output)
+    protected function mergeJson(OutputInterface $output)
     {
-        // skip if no translations for this module
-        if (empty($this->originalJSMasters)) {
+        // skip if no translations for this run
+        if (empty($this->originalJson)) {
             return;
         }
-        $this->log($output, "Merging local javascript masters");
-        foreach ($this->originalJSMasters as $path => $contentJSON) {
+        $this->log($output, 'Merging local json files');
+        foreach ($this->originalJson as $path => $contentJSON) {
             if (file_exists($path)) {
-                $masterJSON = $this->decodeJSONFile($path);
-                $contentJSON = array_merge($masterJSON, $contentJSON);
+                // If there are any keys in the original json that are missing now, add them back in.
+                $parsedJSON = $this->decodeJSONFile($path);
+                $contentJSON = array_merge($contentJSON, $parsedJSON);
             }
-            // Re-order values
-            ksort($contentJSON);
 
             // Write back to local
             file_put_contents($path, json_encode($contentJSON, JSON_PRETTY_PRINT));
         }
-        $this->log($output, "Finished merging " . count($this->originalJSMasters) . " javascript masters");
+        $this->log($output, 'Finished merging ' . count($this->originalJson) . ' json files');
     }
 
     /**
@@ -220,8 +279,9 @@ class UpdateTranslations extends ReleaseStep
             }
             $jsLangDirs = $module->getJSLangDirectories();
             foreach ($jsLangDirs as $jsLangDir) {
+                $jsLangDir = $jsLangDir . '/src';
                 $touchCommand = sprintf(
-                    'find %s -type f \( -name "*.js*" \) -exec touch -t %s {} \;',
+                    'find %s -type f \( -name "*.json*" \) -exec touch -t %s {} \;',
                     $jsLangDir,
                     date('YmdHi.s', strtotime('-1 year'))
                 );
@@ -438,5 +498,29 @@ class UpdateTranslations extends ReleaseStep
         $masterJSON = json_decode(file_get_contents($path), true);
         $this->checkJsonDecode($path);
         return $masterJSON;
+    }
+
+    /**
+     * Recursively merges two arrays.
+     *
+     * Behaves similar to array_merge_recursive(), however it only merges
+     * values when both are arrays rather than creating a new array with
+     * both values, as the PHP version does.
+     *
+     * @param array $array1
+     * @param array $array2
+     * @return array
+     */
+    private function arrayMergeRecursive(array $array1, array $array2): array
+    {
+        foreach ($array2 as $key => $value) {
+            if (is_array($value) && array_key_exists($key, $array1) && is_array($array1[$key])) {
+                $array1[$key] = $this->arrayMergeRecursive($array1[$key], $value);
+            } else {
+                $array1[$key] = $value;
+            }
+        }
+
+        return $array1;
     }
 }
