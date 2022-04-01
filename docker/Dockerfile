@@ -1,4 +1,4 @@
-FROM php:7.3-cli-stretch as php
+FROM php:7.4-cli as php
 
 RUN apt-get update -y \
  && apt-get install -y \
@@ -10,7 +10,7 @@ RUN apt-get update -y \
 
 RUN docker-php-source extract \
  && docker-php-ext-install iconv \
- && docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
+ && docker-php-ext-configure gd --with-freetype=/usr/include/ --with-jpeg=/usr/include/ \
  && docker-php-ext-install gd \
  && docker-php-ext-install intl \
  && docker-php-ext-install zip \
@@ -60,10 +60,8 @@ ARG USER_ID=1000
 ARG GROUP_ID=${USER_ID}
 
 RUN composer -vvv global require silverstripe/cow:${COW_VERSION} \
- && composer -vvv global require composer/satis ^1 \
  && chmod 755 /root \
  && ln -s /root/.composer/vendor/bin/cow /usr/bin/. \
- && ln -s /root/.composer/vendor/bin/satis /usr/bin/. \
  && groupadd -f -g ${GROUP_ID} cow \
  && useradd -g ${GROUP_ID} -d /home/cow -m -u ${USER_ID} cow \
  && mkdir -p /home/cow/.composer/cache \
@@ -80,6 +78,6 @@ FROM stable as debug
 
 USER root
 RUN docker-php-source extract \
- && yes '' | pecl install xdebug-2.7.0beta1 && docker-php-ext-enable xdebug \
+ && yes '' | pecl install xdebug-2.9.8 && docker-php-ext-enable xdebug \
  && docker-php-source delete
 USER cow

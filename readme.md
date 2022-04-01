@@ -23,12 +23,7 @@ transparently in your terminal.
 
 When publishing a release, use the `./docker/bin/release` script. This is similar to `run`, but runs an SSH-Agent and performs some extra checks.
 
-At the time of writing this readme (2020-02-03) GitHub Packages require you to [have docker logged in](https://help.github.com/en/github/managing-packages-with-github-packages/configuring-docker-for-use-with-github-packages#authenticating-to-github-packages) with a [GITHUB_TOKEN (scopes: `repo` and `read:packages`)](https://github.com/settings/tokens/new?scopes=repo,read:packages) even for accessing public images. This is a usability issue and they've said it's going to be [fixed in the future](https://github.community/t5/GitHub-Actions/docker-pull-from-public-GitHub-Package-Registry-fail-with-quot/m-p/36148/highlight/true#M2455) (no login will be required for public images).
-
-In short you need to issue a GITHUB_TOKEN and log in as follows (only once):
-```sh
-docker login -u USERNAME -p TOKEN docker.pkg.github.com
-```
+At the time of writing this readme (2020-02-03) you will need a [GITHUB_TOKEN (scopes: `repo` and `read:packages`)](https://github.com/settings/tokens/new?scopes=repo,read:packages).
 
 Then you need to configure `composer` of your Cow distribution by running
 

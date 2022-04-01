@@ -1,4 +1,4 @@
-FROM docker.pkg.github.com/silverstripe/cow/master:latest
+FROM ghcr.io/silverstripe/cow/master:latest
 
 ARG USER_ID=${USER_ID}
 ARG GROUP_ID=${GROUP_ID}
