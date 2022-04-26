@@ -38,26 +38,26 @@ jobs:
       - name: Log into GitHub Packages registry
         run: |
           # The security token is issued automatically by GitHub for GitHub Actions of the same repository
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Push image
         run: |
 
           if [[ "$GITHUB_REF" == "refs/heads/master" ]] ; then
             # If it's master, release a timestamp version
-            IMAGE_ID=docker.pkg.github.com/${{ github.repository }}/master
+            IMAGE_ID=ghcr.io/${{ github.repository }}/master
             VERSION=$(date +%s)
 
           elif [[ "$GITHUB_REF" == "refs/tags/"* ]] ; then
             # If it's a tag, name it "release" and use the tag as the release version
-            IMAGE_ID=docker.pkg.github.com/${{ github.repository }}/release
+            IMAGE_ID=ghcr.io/${{ github.repository }}/release
             VERSION=$COW_VERSION
 
           else
             # If it's a branch, use the branch name and timestamp as the version
             # WARNING: branch names out of [0-9a-z_-] won't work
             # Also, see "on.push.branches" rule at the top of this file (only whitelisted branches would get here)
-            IMAGE_ID=docker.pkg.github.com/${{ github.repository }}/$COW_VERSION
+            IMAGE_ID=ghcr.io/${{ github.repository }}/$COW_VERSION
             VERSION=$(date +%s)
           fi
 
