@@ -30,7 +30,7 @@ jobs:
           echo "Building version: $COW_VERSION"
 
           # The next line preserves $COW_VERSION across the steps
-          echo "::set-env name=COW_VERSION::$COW_VERSION"
+          echo "COW_VERSION=$COW_VERSION" >> $GITHUB_ENV
 
           # Building a new image and tag it as "cow-image"
           docker build -t 'cow-image' --target stable --build-arg COW_VERSION=$COMPOSER_COW_VERSION - < docker/Dockerfile
