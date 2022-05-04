@@ -247,7 +247,7 @@ class UpdateTranslations extends ReleaseStep
             }
 
             // Write back to local
-            file_put_contents($path, json_encode($contentJSON, JSON_PRETTY_PRINT));
+            file_put_contents($path, json_encode($contentJSON, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
         }
         $this->log($output, 'Finished merging ' . count($this->originalJson) . ' json files');
     }
