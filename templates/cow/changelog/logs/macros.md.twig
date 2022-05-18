@@ -20,7 +20,9 @@
     {%~ endif %}
     {%~ for commit in commits.by_type[name] %}
       {%- set commit = commit.getRenderData %}
+      {%~ autoescape false %}
       {{~ _self.format_commit(commit) }}
+      {%~ endautoescape %}
     {%~ endfor %}
   {%~ endif %}
 {% endmacro -%}
@@ -43,7 +45,9 @@
         {{~ ' * ' ~ library.name ~ ' (' ~ library.version.prior ~ ' -> ' ~ library.version.release ~ ')' }}
         {%~ for commit in library.commits.by_type[name] %}
           {%- set commit = commit.getRenderData %}
+          {%~ autoescape false %}
           {{~ '  ' ~ _self.format_commit(commit) }}
+          {%~ endautoescape %}
         {%~ endfor %}
       {%~ endif %}
     {%~ endfor %}

@@ -344,6 +344,9 @@ class CreateChangelog extends ReleaseStep
         $changelogData = $changelog->getChangesRenderData($output);
         $content = $this->twig->render($template, $changelogData);
 
+        // use &apos; because it's a little prettier
+        $content = str_replace('&#039;', "&apos;", $content);
+
         return $content;
     }
 
