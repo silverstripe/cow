@@ -240,8 +240,6 @@ class ChangelogItem
             $message = preg_replace('/\n\n^(From\:)/mi', ' $1', $message);
         }
 
-        // Encode HTML tags
-        $message = str_replace(['<', '>'], ['&lt;', '&gt;'], $message);
         return $message;
     }
 
