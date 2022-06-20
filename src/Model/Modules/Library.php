@@ -1061,27 +1061,8 @@ class Library
     {
         $cowData = $this->getCowData();
 
-        // If generating via markdown committed to source control
-        if (!empty($cowData['changelog-path'])) {
-            return true;
-        }
-
-        // Can also be pushed via githb API
-        if ($this->hasGithubChangelog()) {
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * Should changelog be pushed to github API?
-     *
-     * @return bool
-     */
-    public function hasGithubChangelog()
-    {
-        $cowData = $this->getCowData();
-        return !empty($cowData['changelog-github']);
+        // Has changelog if generating via markdown committed to source control
+        return !empty($cowData['changelog-path']);
     }
 
     /**
