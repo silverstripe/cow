@@ -1003,11 +1003,6 @@ class Library
                 $libraryRelease->setPriorVersion($priorVersion);
             }
 
-            // Restore cached changelog
-            if (!empty($data['Changelog'])) {
-                $libraryRelease->setChangelog($data['Changelog']);
-            }
-
             // Merge with unserialised children
             if (!empty($data['Items'])) {
                 $libraryRelease->addItems($this->unserialisePlan($data['Items']));
@@ -1038,7 +1033,6 @@ class Library
         $content[$name] = [
             'PriorVersion' => $priorVersion ? $priorVersion->getValue() : null,
             'Version' => $plan->getVersion()->getValue(),
-            'Changelog' => $plan->getChangelog(),
             'Items' => [],
             'Branching' => $plan->getBranching(null), // Only store internal value don't failover
             'UpgradeOnly' => $plan->getLibrary()->isUpgradeOnly(), // Stored for reference, never unserialized
