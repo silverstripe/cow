@@ -23,19 +23,10 @@ class Version
      */
     protected $original;
 
-    /**
-     * @var int
-     */
     protected int $major;
 
-    /**
-     * @var int
-     */
     protected int $minor;
 
-    /**
-     * @var int|null
-     */
     protected ?int $patch;
 
     /**
