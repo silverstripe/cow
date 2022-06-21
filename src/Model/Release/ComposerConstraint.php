@@ -159,10 +159,10 @@ class ComposerConstraint
         } elseif ($parsed['type'] === '^') {
             // ^x.y.z
             $to = $parsed['major'] . '.99999.99999';
-        } elseif (isset($parsed['patch']) && strlen($parsed['patch'])) {
+        } elseif (isset($parsed['patch']) && $parsed['patch'] !== null) {
             // ~x.y.z
             $to = $parsed['major'] . '.' . $parsed['minor'] . '.99999';
-        } elseif (isset($parsed['minor']) && strlen($parsed['minor'])) {
+        } elseif (isset($parsed['minor']) && $parsed['minor'] !== null) {
             // ~x.y
             $to = $parsed['major'] . '.99999.99999';
         } else {
@@ -189,16 +189,16 @@ class ComposerConstraint
             $matches
         );
         if ($valid) {
-            $minor = (isset($matches['minor']) && strlen($matches['minor'])) ? $matches['minor'] : '0';
-            $patch = (isset($matches['minor']) && $matches['minor']) ? '0' : null;
+            $minor = (isset($matches['minor']) && strlen($matches['minor'])) ? (int) $matches['minor'] : 0;
+            $patch = (isset($matches['minor']) && (int) $matches['minor']) ? 0 : null;
             return [
                 'type' => '~',
-                'major' => $matches['major'],
+                'major' => (int) $matches['major'],
                 'minor' => $minor,
                 'patch' => $patch,
                 'stability' => '',
                 'minStability' => 'alpha',  // treat x-dev dependencies as matching min-alpha1 stability (lowest)
-                'stabilityVersion' => '1',
+                'stabilityVersion' => 1,
                 'dev' => $matches['dev']
             ];
         }
@@ -225,12 +225,22 @@ class ComposerConstraint
                 break;
         }
         $stabilityVersion = ($minStability && isset($matches['stabilityVersion']))
-            ? $matches['stabilityVersion']
-            : '1';
-        return array_merge($matches, [
+            ? (int) $matches['stabilityVersion']
+            : 1;
+        $parsed = array_merge($matches, [
             'minStability' => $minStability,
             'stabilityVersion' => $stabilityVersion,
         ]);
+        if (isset($parsed['major'])) {
+            $parsed['major'] = strlen($parsed['major']) ? (int) $parsed['major'] : null;
+        }
+        if (isset($parsed['minor'])) {
+            $parsed['minor'] = strlen($parsed['minor']) ? (int) $parsed['minor'] : null;
+        }
+        if (isset($parsed['patch'])) {
+            $parsed['patch'] = strlen($parsed['patch']) ? (int) $parsed['patch'] : null;
+        }
+        return $parsed;
     }
 
     /**
@@ -313,7 +323,7 @@ class ComposerConstraint
         }
 
         // If major version is different for semver constraints then simplify by removing patch constraint
-        $hasPatch = isset($parts['patch']) && strlen($parts['patch']);
+        $hasPatch = isset($parts['patch']) && $parts['patch'] !== null;
         if (($parts['major'] !== $version->getMajor()) || !$hasPatch || $parts['type'] === '^') {
             // e.g. ~3.1.0 -> ~4.1, ~4.0 -> ~4.1
             $value = $parts['type'] . $version->getMajor() . '.' . $version->getMinor();

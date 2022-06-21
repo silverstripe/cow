@@ -8,11 +8,14 @@ use Github\Exception\RuntimeException;
 use InvalidArgumentException;
 use SilverStripe\Cow\Model\Modules\Library;
 use SilverStripe\Cow\Model\Release\LibraryRelease;
+use SilverStripe\Cow\Model\Release\Version;
 use SilverStripe\Cow\Utility\Composer;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Github\Client as GithubClient;
+use Github\HttpClient\Message\ResponseMediator;
 use Http\Adapter\Guzzle7\Client as GuzzleClient;
+use LogicException;
 
 class PublishRelease extends ReleaseStep
 {
@@ -88,8 +91,11 @@ class PublishRelease extends ReleaseStep
         // Step 4: Tag and push this tag
         $this->publishTag($output, $releasePlanNode);
 
+        // Step 5: Create release in github
+        $this->createGitHubRelease($output, $releasePlanNode);
+
         if (!is_null($branch)) {
-            // Step 5: Restore back to dev branch
+            // Step 6: Restore back to dev branch
             $library->checkout($output, $branch);
         }
     }
@@ -208,9 +214,6 @@ class PublishRelease extends ReleaseStep
         // Push tag to github
         $library->pushTag($tag);
 
-        // Push up changelog to github API
-        $this->updateGithubChangelog($output, $releasePlan);
-
         $this->log($output, 'Tagging complete');
     }
 
@@ -221,12 +224,12 @@ class PublishRelease extends ReleaseStep
      * @param OutputInterface $output
      * @param LibraryRelease $release
      */
-    protected function updateGithubChangelog(OutputInterface $output, LibraryRelease $release)
+    protected function createGitHubRelease(OutputInterface $output, LibraryRelease $release)
     {
         $library = $release->getLibrary();
-        if (!$library->hasGithubChangelog()) {
-            return;
-        }
+        $libraryName = $library->getName();
+        $tag = $release->getVersion()->getValue();
+        $this->log($output, "Creating GitHub release for <info>{$libraryName}</info> library as <info>{$tag}</info>");
 
         // Check github slug is available
         $slug = $release->getLibrary()->getGithubSlug();
@@ -240,8 +243,8 @@ class PublishRelease extends ReleaseStep
         $tag = $version->getValue();
         $this->log($output, "Creating github release <info>{$org}/{$repo} v{$tag}</info>");
 
-        /** @var Repo $reposAPI */
         $client = $this->getGithubClient($output);
+        /** @var Repo $reposAPI */
         $reposAPI = $client->api('repo');
         $releasesAPI = $reposAPI->releases();
 
@@ -253,11 +256,10 @@ class PublishRelease extends ReleaseStep
             'prerelease' => !$version->isStable(),
             'draft' => false,
         ];
-        $changelog = $release->getChangelog();
-        if ($changelog) {
-            $releaseData['body'] = $changelog;
+        $notes = $this->getReleaseNotes($output, $client, $release);
+        if ($notes) {
+            $releaseData['body'] = $notes;
         }
-
 
         // Determine if editing or creating a release
         $existing = null;
@@ -286,6 +288,132 @@ class PublishRelease extends ReleaseStep
         }
 
         $this->log($output, "Github API update failed for <info>" . $library->getName() . "</info>", "error");
+    }
+
+    /**
+     * Use the GitHub API to get the release notes for this release
+     */
+    private function getReleaseNotes(OutputInterface $output, GithubClient $client, LibraryRelease $release): string
+    {
+        $this->log($output, 'Getting release notes from GitHub API');
+
+        // Get arguments to send to GitHub API
+        $version = $release->getVersion();
+        $args = [
+            'tag_name' => $version->getValue(),
+            'target_commitish' => "{$version->getMajor()}.{$version->getMinor()}",
+            'previous_tag_name' => $this->getPreviousReleaseTag($output, $release),
+        ];
+
+        // Get release notes from GitHub API
+        $slug = $release->getLibrary()->getGithubSlug();
+        list($org, $repo) = explode('/', $slug);
+        $reponse = $client->getHttpClient()->post(
+            '/repos/'.rawurlencode($org).'/'.rawurlencode($repo).'/releases/generate-notes',
+            [],
+            json_encode($args)
+        );
+
+        $notes = ResponseMediator::getContent($reponse);
+        if (isset($notes['body'])) {
+            return $notes['body'];
+        }
+
+        throw new LogicException('Could not get release notes for ' . $release->getLibrary()->getName());
+    }
+
+    /**
+     * Get the name of the tag to use as the previous version for generating release notes
+     */
+    private function getPreviousReleaseTag(
+        OutputInterface $output,
+        LibraryRelease $release
+    ): string {
+        $version = $release->getVersion();
+        $major = $version->getMajor();
+        $minor = $version->getMinor();
+        $patch = $version->getPatch();
+
+        // Patch release (e.g. 1.2.3)
+        // Previous tag is x.y.z-1 (e.g. 1.2.2)
+        if ($patch > 0) {
+            $previousPatch = $patch - 1;
+            $previousTag = "$major.$minor.$previousPatch";
+            if ($output->isVeryVerbose()) {
+                $this->log($output, "Release is a patch. Previous tag is $previousTag");
+            }
+            return $previousTag;
+        }
+
+        // Minor release (e.g. 1.3.0)
+        // Previous tag is x.y-1.* where * is the latest patch available (e.g. 1.2.3)
+        if ($minor > 0) {
+            $previousMinor = $minor - 1;
+            // Find most recent tag for previous minor
+            $previousTag = $this->discoverMostRecentTag($major, $previousMinor, $release->getLibrary()->getTags());
+            if (!$previousTag) {
+                // If we couldn't find the tag to use as the previous version, just let GitHub infer it
+                $this->log($output, 'Could not find a reliable latest tag for the previous minor');
+            } else if ($output->isVeryVerbose()) {
+                $this->log($output, "Release is a minor. Previous tag is $previousTag");
+            }
+            return $previousTag;
+        }
+
+        // Major release (e.g. 2.0.0)
+        // Previous tag is x-1.*.* where * is the latest minor/patch available (e.g. 1.2.3)
+        $previousMajor = $major - 1;
+        if ($previousMajor > 0) {
+            # Find most recent tag for previous major
+            $previousTag = $this->discoverMostRecentTag($previousMajor, null, $release->getLibrary()->getTags());
+            if (!$previousTag) {
+                // If we couldn't find the tag to use as the previous version, just let GitHub infer it
+                $this->log($output, 'Could not find a reliable latest tag for the previous major');
+            } else if ($output->isVeryVerbose()) {
+                $this->log($output, "Release is a major. Previous tag is $previousTag");
+            }
+            return $previousTag;
+        }
+
+        // For major 1.0.0 releases, there is no suitable previous version to use.
+        $this->log($output, 'This is the first stable major version. No suitable previous tag to choose from');
+        return '';
+    }
+
+    /**
+     * Discover the most recent stable tag for a given major and minor.
+     *
+     * @param int|null $minor If null, get the most recent minor for the given major.
+     * @param Version[] $tags
+     */
+    private function discoverMostRecentTag(int $major, ?int $minor, array $tags): string
+    {
+        $detectMinor = $minor === null;
+        $highestMinor = -1;
+        $highestPatch = -1;
+        foreach ($tags as $tag) {
+            // Ignore non-stable tags or tags for other majors/minors
+            if (!$tag->isStable() || $tag->getMajor() !== $major || (!$detectMinor && $tag->getMinor() !== $minor)) {
+                continue;
+            }
+            // Find the highest version matching the given major and maybe minor
+            $tagMinor = $tag->getMinor();
+            $tagPatch = $tag->getPatch();
+            if ($detectMinor && $tagMinor > $highestMinor) {
+                $highestMinor = $tagMinor;
+                $highestPatch = $tagPatch;
+            } elseif ((!$detectMinor || $tagMinor == $highestMinor) && $tagPatch > $highestPatch) {
+                $highestPatch = $tagPatch;
+            }
+        }
+        // Return the highest matching version
+        if ($highestPatch > -1) {
+            if ($detectMinor) {
+                $minor = $highestMinor;
+            }
+            return "$major.$minor.$highestPatch";
+        }
+        return '';
     }
 
     /**

@@ -33,13 +33,6 @@ class LibraryRelease
     protected $library;
 
     /**
-     * Raw markdown content of cached changelog for this release (to be pushed to github)
-     *
-     * @var string
-     */
-    protected $changelog;
-
-    /**
      * The version being released
      *
      * @var Version
@@ -290,24 +283,6 @@ class LibraryRelease
     public function getPriorVersionForChild(Library $childLibrary)
     {
         return $this->getChildPriorVersions()[$childLibrary->getName()] ?? null;
-    }
-
-    /**
-     * @return string
-     */
-    public function getChangelog()
-    {
-        return $this->changelog;
-    }
-
-    /**
-     * @param string $changelog
-     * @return $this
-     */
-    public function setChangelog($changelog)
-    {
-        $this->changelog = $changelog;
-        return $this;
     }
 
     /**

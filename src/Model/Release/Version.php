@@ -23,20 +23,11 @@ class Version
      */
     protected $original;
 
-    /**
-     * @var int
-     */
-    protected $major;
+    protected int $major;
 
-    /**
-     * @var int
-     */
-    protected $minor;
+    protected int $minor;
 
-    /**
-     * @var int|null
-     */
-    protected $patch;
+    protected ?int $patch;
 
     /**
      * Null if stable, or a stability string otherwise (rc, beta, alpha)
