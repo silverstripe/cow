@@ -1,6 +1,6 @@
 # Cow
 
-[![Build Status](https://travis-ci.org/silverstripe/cow.svg?branch=master)](https://travis-ci.org/silverstripe/cow)
+[![CI](https://github.com/silverstripe/cow/actions/workflows/ci.yml/badge.svg)](https://github.com/silverstripe/cow/actions/workflows/ci.yml)
 [![Codecov](https://img.shields.io/codecov/c/github/silverstripe/cow.svg)](https://codecov.io/gh/silverstripe/cow)
 
 The ineptly named tool which may one day supercede the older [build tools](https://github.com/silverstripe/silverstripe-buildtools).
