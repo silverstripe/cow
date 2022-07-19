@@ -10,7 +10,6 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class Translations
 {
-
     /**
      * Generate javascript for all modules
      *

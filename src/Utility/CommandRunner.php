@@ -10,7 +10,6 @@ use Symfony\Component\Process\Process;
  */
 interface CommandRunner
 {
-
     /**
      * Run the command
      *
