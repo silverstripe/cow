@@ -4,7 +4,6 @@ namespace SilverStripe\Cow\Utility;
 
 class Format
 {
-
     /**
      * Format a string with named args
      *

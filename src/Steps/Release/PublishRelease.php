@@ -309,7 +309,7 @@ class PublishRelease extends ReleaseStep
         $slug = $release->getLibrary()->getGithubSlug();
         list($org, $repo) = explode('/', $slug);
         $reponse = $client->getHttpClient()->post(
-            '/repos/'.rawurlencode($org).'/'.rawurlencode($repo).'/releases/generate-notes',
+            '/repos/' . rawurlencode($org) . '/' . rawurlencode($repo) . '/releases/generate-notes',
             [],
             json_encode($args)
         );
@@ -354,7 +354,7 @@ class PublishRelease extends ReleaseStep
             if (!$previousTag) {
                 // If we couldn't find the tag to use as the previous version, just let GitHub infer it
                 $this->log($output, 'Could not find a reliable latest tag for the previous minor');
-            } else if ($output->isVeryVerbose()) {
+            } elseif ($output->isVeryVerbose()) {
                 $this->log($output, "Release is a minor. Previous tag is $previousTag");
             }
             return $previousTag;
@@ -369,7 +369,7 @@ class PublishRelease extends ReleaseStep
             if (!$previousTag) {
                 // If we couldn't find the tag to use as the previous version, just let GitHub infer it
                 $this->log($output, 'Could not find a reliable latest tag for the previous major');
-            } else if ($output->isVeryVerbose()) {
+            } elseif ($output->isVeryVerbose()) {
                 $this->log($output, "Release is a major. Previous tag is $previousTag");
             }
             return $previousTag;

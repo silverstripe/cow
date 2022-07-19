@@ -10,7 +10,6 @@ use SilverStripe\Cow\Steps\Release\PublishRelease;
 
 class PublishReleaseTest extends \PHPUnit_Framework_TestCase
 {
-
     public function discoverMostRecentTagProvider()
     {
         $tags = [

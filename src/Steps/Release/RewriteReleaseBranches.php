@@ -23,7 +23,6 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class RewriteReleaseBranches extends ReleaseStep
 {
-
     public function getStepName()
     {
         return 'branch';
