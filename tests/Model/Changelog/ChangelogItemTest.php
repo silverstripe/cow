@@ -3,18 +3,18 @@
 namespace SilverStripe\Cow\Tests\Model\Changelog;
 
 use Gitonomy\Git\Commit;
-use PHPUnit_Framework_TestCase;
+use PHPUnit\Framework\TestCase;
 use SilverStripe\Cow\Model\Changelog\ChangelogItem;
 use SilverStripe\Cow\Model\Changelog\ChangelogLibrary;
 
-class ChangelogItemTest extends PHPUnit_Framework_TestCase
+class ChangelogItemTest extends TestCase
 {
     /**
      * @var ChangelogLibrary
      */
     protected $library;
 
-    protected function setUp()
+    protected function setUp(): void
     {
         parent::setUp();
 

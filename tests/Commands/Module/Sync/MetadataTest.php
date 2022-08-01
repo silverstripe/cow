@@ -2,13 +2,13 @@
 
 namespace SilverStripe\Cow\Tests\Commands\Module\Sync;
 
-use PHPUnit_Framework_TestCase;
+use PHPUnit\Framework\TestCase;
 use SilverStripe\Cow\Commands\Module\Sync\Metadata;
 use SilverStripe\Cow\Utility\SupportedModuleLoader;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Tester\CommandTester;
 
-class MetadataTest extends PHPUnit_Framework_TestCase
+class MetadataTest extends TestCase
 {
     /**
      * @var SupportedModuleLoader
@@ -20,7 +20,7 @@ class MetadataTest extends PHPUnit_Framework_TestCase
      */
     protected $metadata;
 
-    protected function setUp()
+    protected function setUp(): void
     {
         parent::setUp();
 
@@ -56,7 +56,7 @@ class MetadataTest extends PHPUnit_Framework_TestCase
         $this->metadata->expects($this->once())->method('syncRepositories');
 
         $output = $this->executeCommand([], ['yes']);
-        $this->assertContains('Done', $output);
+        $this->assertStringContainsString('Done', $output);
     }
 
     public function testDoesNotSyncRepositoriesWithSkipUpdateOption()
@@ -64,14 +64,14 @@ class MetadataTest extends PHPUnit_Framework_TestCase
         $this->metadata->expects($this->never())->method('syncRepositories');
 
         $output = $this->executeCommand(['--skip-update' => true], ['yes']);
-        $this->assertContains('Done', $output);
+        $this->assertStringContainsString('Done', $output);
     }
 
     public function testSkippingFiles()
     {
         $output = $this->executeCommand([], ['no']);
-        $this->assertContains('Skipping LICENSE.md', $output);
-        $this->assertContains('Done', $output);
+        $this->assertStringContainsString('Skipping LICENSE.md', $output);
+        $this->assertStringContainsString('Done', $output);
     }
 
     public function testSkipThirdPartyRepositories()
@@ -79,7 +79,7 @@ class MetadataTest extends PHPUnit_Framework_TestCase
         $this->metadata->expects($this->once())->method('writeDataToFile');
 
         $output = $this->executeCommand([], ['yes']);
-        $this->assertContains('Done', $output);
+        $this->assertStringContainsString('Done', $output);
     }
 
     public function testApplyChanges()
@@ -91,7 +91,7 @@ class MetadataTest extends PHPUnit_Framework_TestCase
         $this->metadata->expects($this->once())->method('pushChanges');
 
         $output = $this->executeCommand([], ['yes']);
-        $this->assertContains('Done', $output);
+        $this->assertStringContainsString('Done', $output);
     }
 
     public function testCommitAndPushIsSkippedWithoutChanges()
@@ -103,7 +103,7 @@ class MetadataTest extends PHPUnit_Framework_TestCase
         $this->metadata->expects($this->never())->method('pushChanges');
 
         $output = $this->executeCommand([], ['yes']);
-        $this->assertContains('Done', $output);
+        $this->assertStringContainsString('Done', $output);
     }
 
     /**

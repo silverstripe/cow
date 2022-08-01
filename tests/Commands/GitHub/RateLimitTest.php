@@ -3,13 +3,13 @@
 namespace SilverStripe\Cow\Tests\Commands\GitHub;
 
 use Github\Client;
-use PHPUnit_Framework_TestCase;
+use PHPUnit\Framework\TestCase;
 use SilverStripe\Cow\Commands\GitHub\RateLimit;
 use SilverStripe\Cow\Utility\GitHubApi;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Tester\CommandTester;
 
-class RateLimitTest extends PHPUnit_Framework_TestCase
+class RateLimitTest extends TestCase
 {
     public function testExecute()
     {
@@ -49,8 +49,8 @@ class RateLimitTest extends PHPUnit_Framework_TestCase
         ]);
 
         $output = $commandTester->getDisplay();
-        $this->assertContains('5000', $output, 'Contains limit');
-        $this->assertContains('4000', $output, 'Contains remaining');
-        $this->assertContains('5 mins', $output, 'Contains reset time');
+        $this->assertStringContainsString('5000', $output, 'Contains limit');
+        $this->assertStringContainsString('4000', $output, 'Contains remaining');
+        $this->assertStringContainsString('5 mins', $output, 'Contains reset time');
     }
 }

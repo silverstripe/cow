@@ -3,13 +3,13 @@
 namespace SilverStripe\Cow\Tests\Model\Release;
 
 use PHPUnit_Framework_MockObject_MockObject;
-use PHPUnit_Framework_TestCase;
+use PHPUnit\Framework\TestCase;
 use SilverStripe\Cow\Model\Modules\Library;
 use SilverStripe\Cow\Model\Modules\Project;
 use SilverStripe\Cow\Model\Release\LibraryRelease;
 use SilverStripe\Cow\Model\Release\Version;
 
-class LibraryReleaseTest extends PHPUnit_Framework_TestCase
+class LibraryReleaseTest extends TestCase
 {
     public function testConstructionSetsPriorVersion()
     {
