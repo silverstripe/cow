@@ -3,10 +3,11 @@
 namespace SilverStripe\Cow\Tests\Model;
 
 use DateTime;
+use InvalidArgumentException;
 use Gitonomy\Git\Commit;
 use Gitonomy\Git\Log;
 use Gitonomy\Git\Repository;
-use PHPUnit_Framework_TestCase;
+use PHPUnit\Framework\TestCase;
 use SilverStripe\Cow\Model\Changelog\Changelog;
 use SilverStripe\Cow\Model\Changelog\ChangelogLibrary;
 use SilverStripe\Cow\Model\Modules\Library;
@@ -15,7 +16,7 @@ use SilverStripe\Cow\Model\Release\Version;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ChangelogTest extends PHPUnit_Framework_TestCase
+class ChangelogTest extends TestCase
 {
     /**
      * @var OutputInterface
@@ -27,7 +28,7 @@ class ChangelogTest extends PHPUnit_Framework_TestCase
      */
     protected $changelog;
 
-    protected function setUp()
+    protected function setUp(): void
     {
         parent::setUp();
 
@@ -101,12 +102,10 @@ class ChangelogTest extends PHPUnit_Framework_TestCase
         $this->changelog = new Changelog($changelogLibrary);
     }
 
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage Unknown changelog format foobar
-     */
     public function testGetMarkdownThrowsExceptionOnInvalidType()
     {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Unknown changelog format foobar');
         $this->changelog->getMarkdown($this->output, 'foobar');
     }
 
@@ -114,19 +113,19 @@ class ChangelogTest extends PHPUnit_Framework_TestCase
     {
         $result = $this->changelog->getMarkdown($this->output, Changelog::FORMAT_GROUPED);
 
-        $this->assertContains('## Change Log', $result);
-        $this->assertContains('### Security', $result);
-        $this->assertContains('### Bugfixes', $result);
-        $this->assertContains('### Features and Enhancements', $result);
-        $this->assertContains('### API Changes', $result);
+        $this->assertStringContainsString('## Change Log', $result);
+        $this->assertStringContainsString('### Security', $result);
+        $this->assertStringContainsString('### Bugfixes', $result);
+        $this->assertStringContainsString('### Features and Enhancements', $result);
+        $this->assertStringContainsString('### API Changes', $result);
     }
 
     public function testGetMarkdownFlatDoesNotContainHeadings()
     {
         $result = $this->changelog->getMarkdown($this->output, Changelog::FORMAT_FLAT);
 
-        $this->assertNotContains('## Change Log', $result);
-        $this->assertNotContains('### Bugfixes', $result);
+        $this->assertStringNotContainsString('## Change Log', $result);
+        $this->assertStringNotContainsString('### Bugfixes', $result);
     }
 
     /**
@@ -137,10 +136,10 @@ class ChangelogTest extends PHPUnit_Framework_TestCase
     {
         $result = $this->changelog->getMarkdown($this->output, $type);
 
-        $this->assertContains('2014-12-25', $result, 'Alex\'s commit date');
-        $this->assertContains('1990-05-02', $result, 'Ryan\'s commit date');
-        $this->assertContains('2015-01-03', $result, 'Leslie\'s commit date');
-        $this->assertContains('2015-04-20', $result, 'Charlie\'s commit date');
+        $this->assertStringContainsString('2014-12-25', $result, 'Alex\'s commit date');
+        $this->assertStringContainsString('1990-05-02', $result, 'Ryan\'s commit date');
+        $this->assertStringContainsString('2015-01-03', $result, 'Leslie\'s commit date');
+        $this->assertStringContainsString('2015-04-20', $result, 'Charlie\'s commit date');
     }
 
     /**
@@ -154,10 +153,10 @@ class ChangelogTest extends PHPUnit_Framework_TestCase
     {
         $result = $this->changelog->getMarkdown($this->output, $type);
 
-        $this->assertContains('shortfoo', $result, 'Alex\'s short commit');
-        $this->assertContains('shortbar', $result, 'Ryan\'s short commit');
-        $this->assertContains('shortbaz', $result, 'Leslie\'s short commit');
-        $this->assertContains('shortdamn', $result, 'Charlie\'s short commit');
+        $this->assertStringContainsString('shortfoo', $result, 'Alex\'s short commit');
+        $this->assertStringContainsString('shortbar', $result, 'Ryan\'s short commit');
+        $this->assertStringContainsString('shortbaz', $result, 'Leslie\'s short commit');
+        $this->assertStringContainsString('shortdamn', $result, 'Charlie\'s short commit');
     }
 
     /**
@@ -168,10 +167,10 @@ class ChangelogTest extends PHPUnit_Framework_TestCase
     {
         $result = $this->changelog->getMarkdown($this->output, $type);
 
-        $this->assertContains('Alex Atkins', $result);
-        $this->assertContains('Ryan Reid', $result);
-        $this->assertContains('Leslie Lolcopter', $result);
-        $this->assertContains('Charlie Charizard', $result);
+        $this->assertStringContainsString('Alex Atkins', $result);
+        $this->assertStringContainsString('Ryan Reid', $result);
+        $this->assertStringContainsString('Leslie Lolcopter', $result);
+        $this->assertStringContainsString('Charlie Charizard', $result);
     }
 
     /**
@@ -182,14 +181,18 @@ class ChangelogTest extends PHPUnit_Framework_TestCase
     {
         $result = $this->changelog->getMarkdown($this->output, $type);
 
-        $this->assertContains('Changed foo for bar', $result);
-        $this->assertNotContains('FIX Changed foo for bar', $result, 'Prefixes are stripped');
-        $this->assertContains('Remove baz', $result);
-        $this->assertNotContains('API Remove baz', $result, 'Prefixes are stripped');
-        $this->assertContains('Added foobar', $result);
-        $this->assertNotContains('NEW Added foobar', $result, 'Prefixes are stripped');
-        $this->assertContains('Someone forgot the coffee!', $result);
-        $this->assertNotContains('[SS-2015-123] Someone forgot the coffee!', $result, 'Prefixes are stripped');
+        $this->assertStringContainsString('Changed foo for bar', $result);
+        $this->assertStringNotContainsString('FIX Changed foo for bar', $result, 'Prefixes are stripped');
+        $this->assertStringContainsString('Remove baz', $result);
+        $this->assertStringNotContainsString('API Remove baz', $result, 'Prefixes are stripped');
+        $this->assertStringContainsString('Added foobar', $result);
+        $this->assertStringNotContainsString('NEW Added foobar', $result, 'Prefixes are stripped');
+        $this->assertStringContainsString('Someone forgot the coffee!', $result);
+        $this->assertStringNotContainsString(
+            '[SS-2015-123] Someone forgot the coffee!',
+            $result,
+            'Prefixes are stripped'
+        );
     }
 
     /**
@@ -200,8 +203,16 @@ class ChangelogTest extends PHPUnit_Framework_TestCase
     {
         $result = $this->changelog->getMarkdown($this->output, $type);
 
-        $this->assertNotContains('MNT Some maintenance commit', $result, 'Maintenance are ignored by default');
-        $this->assertContains('Some uncategorised commit', $result, 'Uncategorised are included by default');
+        $this->assertStringNotContainsString(
+            'MNT Some maintenance commit',
+            $result,
+            'Maintenance are ignored by default'
+        );
+        $this->assertStringContainsString(
+            'Some uncategorised commit',
+            $result,
+            'Uncategorised are included by default'
+        );
     }
 
     /**
@@ -213,7 +224,7 @@ class ChangelogTest extends PHPUnit_Framework_TestCase
         $this->changelog->setIncludeOtherChanges(true);
         $result = $this->changelog->getMarkdown($this->output, $type);
 
-        $this->assertContains('http://example.com/' . sha1('foo'), $result);
+        $this->assertStringContainsString('http://example.com/' . sha1('foo'), $result);
     }
 
     /**
@@ -225,11 +236,11 @@ class ChangelogTest extends PHPUnit_Framework_TestCase
         $this->changelog->setIncludeOtherChanges(true);
         $result = $this->changelog->getMarkdown($this->output, $type);
 
-        $this->assertContains('Some uncategorised commit', $result);
-        $this->assertContains('Val Vulcan', $result);
-        $this->assertContains('2015-04-20', $result);
-        $this->assertContains('http://example.com/' . sha1('damn'), $result);
-        $this->assertContains('shortboo', $result, 'Val\'s short commit');
+        $this->assertStringContainsString('Some uncategorised commit', $result);
+        $this->assertStringContainsString('Val Vulcan', $result);
+        $this->assertStringContainsString('2015-04-20', $result);
+        $this->assertStringContainsString('http://example.com/' . sha1('damn'), $result);
+        $this->assertStringContainsString('shortboo', $result, 'Val\'s short commit');
     }
 
     /**
@@ -243,8 +254,8 @@ class ChangelogTest extends PHPUnit_Framework_TestCase
     {
         $result = $this->changelog->getMarkdown($this->output, $type);
 
-        $this->assertContains(sha1('damn'), $result, 'Latest commit is included');
-        $this->assertNotContains(sha1('anotherdamn'), $result, 'Duplicated commit is ignored');
+        $this->assertStringContainsString(sha1('damn'), $result, 'Latest commit is included');
+        $this->assertStringNotContainsString(sha1('anotherdamn'), $result, 'Duplicated commit is ignored');
     }
 
     /**

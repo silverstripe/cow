@@ -1,7 +1,6 @@
 # Cow
 
 [![CI](https://github.com/silverstripe/cow/actions/workflows/ci.yml/badge.svg)](https://github.com/silverstripe/cow/actions/workflows/ci.yml)
-[![Codecov](https://img.shields.io/codecov/c/github/silverstripe/cow.svg)](https://codecov.io/gh/silverstripe/cow)
 
 The ineptly named tool which may one day supercede the older [build tools](https://github.com/silverstripe/silverstripe-buildtools).
 
@@ -33,7 +32,6 @@ Then you need to configure `composer` of your Cow distribution by running
 
 For more details on these and other available scripts, see [docker/README.md](./docker/README.md).
 
-
 ### Adding Cow to your $PATH (optional)
 
 If you want to run Cow globally, you can create a symlink to `docker/bin/release` in a folder that is included in your `$PATH`.
@@ -52,17 +50,14 @@ cd ./my-project;
 cow moo
 ```
 
-
 ### Native
 
 To run Cow without Docker, reference the `Dockerfile` for system requirements.
-
 
 ## Extra setup
 
 * For translation steps you may need the Transifex API Key and ~/.transifexrc (run `./docker/bin/tx init` to generate it).
 * When publishing to GitHub make sure you have `ssh-agent` running and your SSH keys loaded (run `ssh-add`)
-
 
 ## Commands
 

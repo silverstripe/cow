@@ -2,14 +2,14 @@
 
 namespace SilverStripe\Cow\Tests\Utility;
 
-use PHPUnit_Framework_TestCase;
+use PHPUnit\Framework\TestCase;
 use SilverStripe\Cow\Utility\SchemaValidator;
 
-class SchemaValidatorTest extends PHPUnit_Framework_TestCase
+class SchemaValidatorTest extends TestCase
 {
     protected $cowSchema;
 
-    protected function setUp()
+    protected function setUp(): void
     {
         parent::setUp();
 

@@ -2,19 +2,19 @@
 
 namespace SilverStripe\Cow\Tests\Utility\Twig;
 
-use PHPUnit_Framework_TestCase;
+use PHPUnit\Framework\TestCase;
 use SilverStripe\Cow\Utility\Twig\Environment;
 use SilverStripe\Cow\Application;
 
 /**
  * Rudimentary Twig functional tests
  */
-class EnvironmentTest extends PHPUnit_Framework_TestCase
+class EnvironmentTest extends TestCase
 {
     private $app;
     private $twig;
 
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
 

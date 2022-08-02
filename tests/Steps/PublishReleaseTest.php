@@ -2,13 +2,14 @@
 
 namespace SilverStripe\Cow\Tests\Steps;
 
+use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 use SilverStripe\Cow\Commands\Command;
 use SilverStripe\Cow\Model\Modules\Project;
 use SilverStripe\Cow\Model\Release\Version;
 use SilverStripe\Cow\Steps\Release\PublishRelease;
 
-class PublishReleaseTest extends \PHPUnit_Framework_TestCase
+class PublishReleaseTest extends TestCase
 {
     public function discoverMostRecentTagProvider()
     {

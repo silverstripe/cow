@@ -2,10 +2,10 @@
 
 namespace SilverStripe\Cow\Tests\Utility\Filter;
 
-use PHPUnit_Framework_TestCase;
+use PHPUnit\Framework\TestCase;
 use SilverStripe\Cow\Utility\Filter\SupportedModuleFilter;
 
-class SupportedModuleFilterTest extends PHPUnit_Framework_TestCase
+class SupportedModuleFilterTest extends TestCase
 {
     public function testFilterIncludesSupportedModules()
     {

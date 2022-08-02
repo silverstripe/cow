@@ -2,6 +2,7 @@
 
 namespace SilverStripe\Cow\Tests\Steps;
 
+use PHPUnit\Framework\TestCase;
 use SilverStripe\Cow\Application;
 use SilverStripe\Cow\Commands\Release\Changelog;
 use SilverStripe\Cow\Model\Modules\Project;
@@ -9,14 +10,14 @@ use SilverStripe\Cow\Steps\Release\CreateChangelog;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\Output;
 
-class CreateChangelogTest extends \PHPUnit_Framework_TestCase
+class CreateChangelogTest extends TestCase
 {
     /**
      * @var Output
      */
     protected $output;
 
-    protected function setUp()
+    protected function setUp(): void
     {
         parent::setUp();
 

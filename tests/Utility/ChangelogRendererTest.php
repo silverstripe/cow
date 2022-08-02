@@ -2,17 +2,18 @@
 
 namespace SilverStripe\Cow\Tests\Utility;
 
+use PHPUnit\Framework\TestCase;
 use SilverStripe\Cow\Model\Release\Version;
 use SilverStripe\Cow\Utility\ChangelogRenderer;
 
-class ChangelogRendererTest extends \PHPUnit_Framework_TestCase
+class ChangelogRendererTest extends TestCase
 {
     /**
      * @var ChangelogRenderer
      */
     private $renderer;
 
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
 
@@ -26,10 +27,10 @@ class ChangelogRendererTest extends \PHPUnit_Framework_TestCase
 
         $output = $this->renderer->renderChangelog($version, $logs);
 
-        $this->assertContains('# 1.0.0', $output);
-        $this->assertContains(ChangelogRenderer::TOP_DELIMITER, $output);
-        $this->assertContains($logs, $output);
-        $this->assertContains(ChangelogRenderer::BOTTOM_DELIMITER, $output);
+        $this->assertStringContainsString('# 1.0.0', $output);
+        $this->assertStringContainsString(ChangelogRenderer::TOP_DELIMITER, $output);
+        $this->assertStringContainsString($logs, $output);
+        $this->assertStringContainsString(ChangelogRenderer::BOTTOM_DELIMITER, $output);
     }
 
     public function testRenderChangelogWithTemplate()
@@ -40,12 +41,12 @@ class ChangelogRendererTest extends \PHPUnit_Framework_TestCase
 
         $output = $this->renderer->renderChangelogWithTemplate($template, $version, $logs);
 
-        $this->assertContains('# 1.0.0', $output);
-        $this->assertContains('BeforeLogs', $output);
-        $this->assertContains(ChangelogRenderer::TOP_DELIMITER, $output);
-        $this->assertContains($logs, $output);
-        $this->assertContains(ChangelogRenderer::BOTTOM_DELIMITER, $output);
-        $this->assertContains('AfterLogs', $output);
+        $this->assertStringContainsString('# 1.0.0', $output);
+        $this->assertStringContainsString('BeforeLogs', $output);
+        $this->assertStringContainsString(ChangelogRenderer::TOP_DELIMITER, $output);
+        $this->assertStringContainsString($logs, $output);
+        $this->assertStringContainsString(ChangelogRenderer::BOTTOM_DELIMITER, $output);
+        $this->assertStringContainsString('AfterLogs', $output);
     }
 
     public function testUpdateChangelog()
@@ -60,13 +61,13 @@ class ChangelogRendererTest extends \PHPUnit_Framework_TestCase
 
         $output = $this->renderer->updateChangelog($existingContent, $newLogs);
 
-        $this->assertContains('# 1.0.0', $output);
-        $this->assertContains('BeforeLogs', $output);
-        $this->assertContains(ChangelogRenderer::TOP_DELIMITER, $output);
-        $this->assertNotContains($logs, $output);
-        $this->assertContains($newLogs, $output);
-        $this->assertContains(ChangelogRenderer::BOTTOM_DELIMITER, $output);
-        $this->assertContains('AfterLogs', $output);
+        $this->assertStringContainsString('# 1.0.0', $output);
+        $this->assertStringContainsString('BeforeLogs', $output);
+        $this->assertStringContainsString(ChangelogRenderer::TOP_DELIMITER, $output);
+        $this->assertStringNotContainsString($logs, $output);
+        $this->assertStringContainsString($newLogs, $output);
+        $this->assertStringContainsString(ChangelogRenderer::BOTTOM_DELIMITER, $output);
+        $this->assertStringContainsString('AfterLogs', $output);
     }
 
     /**
@@ -79,11 +80,11 @@ class ChangelogRendererTest extends \PHPUnit_Framework_TestCase
 
         $output = $this->renderer->updateChangelog($existingContent, $newLogs);
 
-        $this->assertContains('# 1.0.0', $output);
-        $this->assertContains('BeforeLogs', $output);
-        $this->assertContains('(logs here)', $output);
-        $this->assertContains(ChangelogRenderer::TOP_DELIMITER, $output);
-        $this->assertContains($newLogs, $output);
-        $this->assertContains(ChangelogRenderer::BOTTOM_DELIMITER, $output);
+        $this->assertStringContainsString('# 1.0.0', $output);
+        $this->assertStringContainsString('BeforeLogs', $output);
+        $this->assertStringContainsString('(logs here)', $output);
+        $this->assertStringContainsString(ChangelogRenderer::TOP_DELIMITER, $output);
+        $this->assertStringContainsString($newLogs, $output);
+        $this->assertStringContainsString(ChangelogRenderer::BOTTOM_DELIMITER, $output);
     }
 }

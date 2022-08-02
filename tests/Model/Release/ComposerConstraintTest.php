@@ -2,11 +2,11 @@
 
 namespace SilverStripe\Cow\Tests\Model\Release;
 
-use PHPUnit_Framework_TestCase;
+use PHPUnit\Framework\TestCase;
 use SilverStripe\Cow\Model\Release\ComposerConstraint;
 use SilverStripe\Cow\Model\Release\Version;
 
-class ComposerConstraintTest extends PHPUnit_Framework_TestCase
+class ComposerConstraintTest extends TestCase
 {
     public function testParseSemver()
     {
