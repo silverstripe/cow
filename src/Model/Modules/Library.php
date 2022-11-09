@@ -299,6 +299,20 @@ class Library
     }
 
     /**
+     * Merge commits from another branch into the current branch
+     */
+    public function merge(OutputInterface $output = null, string $branch)
+    {
+        // Validate branch
+        $currentBranch = $this->getBranch();
+        if (!$currentBranch) {
+            throw new Exception('Module ' . $this->getName() . ' cannot merge without a current branch');
+        }
+
+        $this->getRepository($output)->run('merge', ['--no-ff', $branch]);
+    }
+
+    /**
      * Push this branch to the given remote
      *
      * @param string $remote
@@ -498,13 +512,26 @@ class Library
      * @param array $data
      * @throws Exception
      */
-    public function setComposerData($data)
+    public function setComposerData($data, $commitChanges = false, $commitMessage = '')
     {
         $path = $this->getComposerPath();
         if (!file_exists($path)) {
             throw new Exception("No composer.json found in module " . $this->getName());
         }
         Config::saveToFile($path, $data);
+        if ($commitChanges) {
+            if (!$commitMessage) {
+                throw new InvalidArgumentException('A commit message must be passed in to commit changes');
+            }
+            // Commit to git
+            $path = $this->getComposerPath();
+            $repo = $this->getRepository();
+            $repo->run("add", [$path]);
+            $status = $repo->run("status");
+            if (stripos($status, 'Changes to be committed:') !== false) {
+                $repo->run("commit", ["-m", $commitMessage]);
+            }
+        }
     }
 
     /**
@@ -1141,5 +1168,13 @@ class Library
             return null;
         }
         return (bool) $data['changelog-include-other-changes'];
+    }
+
+    /**
+     * Check if there is a difference between the current branch and some other branch
+     */
+    public function hasDiff(OutputInterface $output, string $branch)
+    {
+        return !empty($this->getRepository($output)->getDiff($branch)->getRawDiff());
     }
 }

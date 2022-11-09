@@ -146,7 +146,9 @@ class PublishRelease extends ReleaseStep
 
         // Save modifications to the composer.json for this module
         if ($composerData !== $originalData) {
-            $this->updateComposerData($output, $parentLibrary, $composerData);
+            $parentName = $parentLibrary->getName();
+            $this->log($output, "Rewriting composer.json for <info>$parentName</info>");
+            $parentLibrary->setComposerData($composerData, true, 'MNT Update release dependencies');
         }
     }
 
@@ -168,29 +170,6 @@ class PublishRelease extends ReleaseStep
             "Fixing tagged dependency <info>{$childName}</info> to <info>{$childRequirement}</info>"
         );
         return $childRequirement;
-    }
-
-    /**
-     * @param OutputInterface $output
-     * @param Library $parentLibrary
-     * @param array $composerData
-     */
-    protected function updateComposerData(OutputInterface $output, Library $parentLibrary, array $composerData)
-    {
-        $parentName = $parentLibrary->getName();
-        $this->log($output, "Rewriting composer.json for <info>$parentName</info>");
-
-        // Write to filesystem
-        $parentLibrary->setComposerData($composerData);
-
-        // Commit to git
-        $path = $parentLibrary->getComposerPath();
-        $repo = $parentLibrary->getRepository();
-        $repo->run("add", [$path]);
-        $status = $repo->run("status");
-        if (stripos($status, 'Changes to be committed:')) {
-            $repo->run("commit", ["-m", "MNT Update development dependencies"]);
-        }
     }
 
     /**

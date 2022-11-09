@@ -165,16 +165,7 @@ class RewriteReleaseBranches extends ReleaseStep
         unset($composerData['extra']['branch-alias']);
 
         // Write changes
-        $path = $library->getComposerPath();
-        $library->setComposerData($composerData);
-
-        // Commit to git
-        $repo = $library->getRepository();
-        $repo->run("add", array($path));
-        $status = $repo->run("status");
-        if (stripos($status, 'Changes to be committed:')) {
-            $repo->run("commit", array("-m", "MNT Remove obsolete branch-alias"));
-        }
+        $library->setComposerData($composerData, true, 'MNT Remove obsolete branch-alias');
     }
 
     /**
@@ -231,16 +222,7 @@ class RewriteReleaseBranches extends ReleaseStep
         // Save modifications to the composer.json for this module
         if ($composerData !== $originalData) {
             $this->log($output, "Rewriting composer.json for <info>$parentName</info>");
-            $parentLibrary->setComposerData($composerData);
-
-            // Commit to git
-            $path = $parentLibrary->getComposerPath();
-            $repo = $parentLibrary->getRepository();
-            $repo->run("add", array($path));
-            $status = $repo->run("status");
-            if (stripos($status, 'Changes to be committed:')) {
-                $repo->run("commit", array("-m", "MNT Update development dependencies"));
-            }
+            $parentLibrary->setComposerData($composerData, true, 'MNT Update release dependencies');
         }
     }
 

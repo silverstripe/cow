@@ -85,6 +85,8 @@ class Application extends Console\Application
         $commands[] = new Commands\Release\Translate();
         $commands[] = new Commands\Release\Test();
         $commands[] = new Commands\Release\Changelog($this);
+        $commands[] = new Commands\Release\MergeUp();
+        $commands[] = new Commands\Release\DeleteReleaseBranch();
 
         // Publish sub-commands
         $commands[] = new Commands\Release\Tag();
