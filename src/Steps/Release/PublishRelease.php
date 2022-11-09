@@ -74,46 +74,42 @@ class PublishRelease extends ReleaseStep
         $library = $releasePlanNode->getLibrary();
         $branch = $library->getBranch();
         $name = $library->getName();
+
+        // Confirm we're on a release branch and exit if not
+        if (!$releasePlanNode->isOnReleaseBranch()) {
+            $this->log(
+                $output,
+                "Library $name is on a non-release branch '$branch'. "
+                    . "Please checkout the release branch and then run the command again.",
+                'error'
+            );
+            die();
+        }
+
         $versionName = $releasePlanNode->getVersion()->getValue();
         $this->log($output, "Releasing library <info>{$name}</info> at version <info>{$versionName}</info>");
 
-        if (!is_null($branch)) { // skip if it's already detached
-            // Step 1: Push development branch to origin before tagging
-            $library->pushTo('origin');
-
-            // Step 2: Detach head from current branch before modifying
-            $this->detachBranch($output, $library);
-        }
-
-        // Step 3: Rewrite composer.json on this head to all tagged versions only
+        // Step 1: Rewrite composer.json to all tagged versions only
         $this->stabiliseRequirements($output, $releasePlanNode);
+
+        // Step 2: Push development branch to origin
+        $this->log($output, "Pushing branch <info>{$branch}</info>");
+        $library->pushTo('origin');
+
+        // Step 3. Make sure the patch release branch is pushed up to origin
+        $devBranch = str_replace(LibraryRelease::RELEASE_BRANCH_SUFFIX, '', $branch);
+        if ($devBranch !== $branch) {
+            $library->checkout($output, $devBranch);
+            $this->log($output, "Pushing branch <info>{$devBranch}</info>");
+            $library->pushTo('origin');
+            $library->checkout($output, $branch);
+        }
 
         // Step 4: Tag and push this tag
         $this->publishTag($output, $releasePlanNode);
 
         // Step 5: Create release in github
         $this->createGitHubRelease($output, $releasePlanNode);
-
-        if (!is_null($branch)) {
-            // Step 6: Restore back to dev branch
-            $library->checkout($output, $branch);
-        }
-    }
-
-    /**
-     * Change the current head to a detached state to prevent un-pushable
-     * modifications affecting the development branch.
-     *
-     * @param OutputInterface $output
-     * @param $library
-     */
-    protected function detachBranch(OutputInterface $output, Library $library)
-    {
-        $repository = $library->getRepository($output);
-        $repository->run('checkout', ['HEAD~0']);
-        if ($library->getBranch()) {
-            throw new \LogicException("Error checking out detached HEAD~0 of " . $library->getName());
-        }
     }
 
     /**
@@ -301,7 +297,7 @@ class PublishRelease extends ReleaseStep
         $version = $release->getVersion();
         $args = [
             'tag_name' => $version->getValue(),
-            'target_commitish' => "{$version->getMajor()}.{$version->getMinor()}",
+            'target_commitish' => $release->getLibrary()->getBranch(),
             'previous_tag_name' => $this->getPreviousReleaseTag($output, $release),
         ];
 

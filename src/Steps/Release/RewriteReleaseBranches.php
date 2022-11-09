@@ -14,9 +14,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * This step performs the below tasks on the checked out project:
  * - Recursively checks out the correct release branch matching the selected version. E.g. the dev
- *   branch may be 3.2, but if doing a 3.3 release we need to check out this branch instead. This
- *   could either be a new branch and needs to be branched from 3 / 3.2, or it could be another
- *   branch that needs pulling from origin.
+ *   branch may be 3.2, but if doing a 3.3 release we need to check out the 3.3-release branch
+ *   instead. This could either be a new branch and needs to be branched from 3 / 3.3, or it could
+ *   be an existing branch that needs pulling from origin.
+ * - As part of the above, the new patch release branch (e.g. 3.3 for the above example) is created
+ *   if it didn't exist yet.
  * - On any new branches remove any branch-alias.
  * - Modify all development dependencies so that if the selected version of any dependency
  *   doesn't match the parent constraint, we rewrite the constraint to support it.
@@ -81,13 +83,14 @@ class RewriteReleaseBranches extends ReleaseStep
         $libraryName = $library->getName();
 
         // Calculate candidate branch names
-        $version = $libraryRelease->getVersion();
+        $targetVersion = $libraryRelease->getVersion();
 
         // Calculate branch to switch to
-        $target = $this->getTargetBranch($version, $branching, $currentBranch);
+        $targetBranch = $this->getTargetBranch($targetVersion, $branching, $currentBranch);
+        $releaseBranch = $targetBranch . LibraryRelease::RELEASE_BRANCH_SUFFIX;
 
         // Either branch, or simply log current branch
-        if (empty($target) || $target === $currentBranch) {
+        if (empty($targetBranch) || $currentBranch === $releaseBranch) {
             $this->log(
                 $output,
                 "Module <info>{$libraryName}</info> already on correct branch (<info>{$currentBranch}</info>)"
@@ -96,24 +99,31 @@ class RewriteReleaseBranches extends ReleaseStep
             // Check versions to checkout
             $this->log(
                 $output,
-                "Branching module <info>{$libraryName}</info> as <info>{$target}</info> "
-                . "(from <comment>{$currentBranch}</comment>)"
+                "Branching module <info>{$libraryName}</info> as <info>{$releaseBranch}</info> "
+                . "(previously on <comment>{$currentBranch}</comment>)"
             );
 
             // If branching minor version, checkout major as well along the way.
             // If switching master -> 1.0 it can be better to branch from an existing 1
             // instead of master
-            $majorBranch = $version->getMajor();
-            $minorBranch = $majorBranch . "." . $version->getMinor();
-            if ($target === $minorBranch) {
+            $majorBranch = $targetVersion->getMajor();
+            $minorBranch = $majorBranch . "." . $targetVersion->getMinor();
+            if ($targetBranch === $minorBranch) {
                 $library->checkout($output, $majorBranch, 'origin', true);
+                $currentBranch = $majorBranch;
             }
 
-            // Checkout branch
-            $library->checkout($output, $target, 'origin', true);
+            // Make sure we have all the latest changes before creating new branches
+            if ($library->hasDiff($output, "origin/$currentBranch")) {
+                $library->getRepository($output)->run('pull');
+            }
+
+            // Checkout target branch, then release branch
+            $library->checkout($output, $targetBranch, 'origin', true);
+            $library->checkout($output, $releaseBranch, 'origin', true);
 
             // If branching to minor version, remove alias
-            if ($target === $minorBranch) {
+            if ($targetBranch === $minorBranch) {
                 $this->removeComposerAlias($output, $library);
             }
         }
@@ -237,20 +247,15 @@ class RewriteReleaseBranches extends ReleaseStep
     /**
      * Get branch to branch to, or null if no branching should occur
      *
-     * @param Version $version
+     * @param Version $targetVersion
      * @param string $branching Branching strategy
      * @param string $currentBranch
-     * @return string Branch target name
+     * @return string Target branch name
      */
-    protected function getTargetBranch($version, $branching, $currentBranch)
+    protected function getTargetBranch($targetVersion, $branching, $currentBranch)
     {
-        $majorBranch = $version->getMajor();
-        $minorBranch = $majorBranch . "." . $version->getMinor();
-
-        // If already on minor branch stay on this in all situations
-        if ($currentBranch === $minorBranch) {
-            return null;
-        }
+        $majorBranch = $targetVersion->getMajor();
+        $minorBranch = $majorBranch . "." . $targetVersion->getMinor();
 
         // Don't branch on pre-1.0 in any situation
         if ($majorBranch < 1) {
@@ -267,7 +272,7 @@ class RewriteReleaseBranches extends ReleaseStep
                 return $majorBranch;
             case Branch::AUTO:
                 // Auto disables branching for unstable tags
-                if (!$version->isStable()) {
+                if (!$targetVersion->isStable()) {
                     return null;
                 }
                 return $minorBranch;
