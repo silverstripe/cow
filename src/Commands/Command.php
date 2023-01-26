@@ -52,7 +52,7 @@ abstract class Command extends Console\Command\Command
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->input = $input;
         $this->output = $output;
@@ -61,7 +61,10 @@ abstract class Command extends Console\Command\Command
         // Configure extra output formats
         $this->output->getFormatter()->setStyle('bold', new OutputFormatterStyle('blue'));
 
-        return $this->fire();
+        $ret = $this->fire();
+        // returning a default value here to satisfy
+        // symfony/console/Command/Command.php::run()
+        return is_int($ret) ? $ret : Console\Command\Command::SUCCESS;
     }
 
     /**

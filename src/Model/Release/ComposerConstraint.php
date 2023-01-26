@@ -128,6 +128,16 @@ class ComposerConstraint
             return;
         }
 
+        // HACK for graphql where there's dual support for 3.x-dev || 4.x-dev
+        // This may come also come in as something like 3.8.x-dev || 4.1.x-dev
+        // This temporarily converts it to something that's "semver compatible"
+        // This is only for CMS 4. CMS 5 will ignore this
+        if ($name == 'silverstripe/graphql') {
+            if (preg_match('#3[\.0-9]*\.x-dev \|\| (4[\.0-9]*\.x-dev)#', $constraint, $matches)) {
+                $constraint = $matches[1];
+            }
+        }
+
         // Parse type
         $parsed = static::parse($constraint);
         if (!$parsed) {

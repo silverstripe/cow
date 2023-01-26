@@ -5,13 +5,13 @@ namespace SilverStripe\Cow\Steps;
 use Exception;
 use SilverStripe\Cow\Commands\Command;
 use SilverStripe\Cow\Utility\CommandRunner;
+use SilverStripe\Cow\Utility\Logger;
 use SilverStripe\Cow\Utility\StepCommandRunner;
 use Symfony\Component\Console\Helper\ProcessHelper;
 use Symfony\Component\Console\Helper\QuestionHelper;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Process;
-use Symfony\Component\Process\ProcessBuilder;
 
 abstract class Step
 {
@@ -46,14 +46,7 @@ abstract class Step
      */
     public function log(OutputInterface $output, $message, $format = '')
     {
-        $name = $this->getStepName();
-        $text = "<bold>[{$name}]</bold> ";
-        if ($format) {
-            $text .= "<{$format}>{$message}</{$format}>";
-        } else {
-            $text .= $message;
-        }
-        $output->writeln($text);
+        Logger::log($output, $message, $this->getStepName(), $format);
     }
 
     /**
@@ -109,15 +102,14 @@ abstract class Step
 
         // Prepare unbound command
         if (is_array($command)) {
-            $process = ProcessBuilder::create($command)->getProcess();
+            $process = new Process($command);
         } elseif ($command instanceof Process) {
             $process = $command;
         } else {
-            $process = new Process($command);
+            $process = new Process([$command]);
         }
 
         // Set all default env vars
-        $process->inheritEnvironmentVariables();
         $process->setEnv($this->envs);
 
         // Run it

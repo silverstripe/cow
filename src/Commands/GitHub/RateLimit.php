@@ -40,7 +40,7 @@ class RateLimit extends Command
         /** @var \Github\Api\RateLimit $rateLimitApi */
         $rateLimitApi = $this->github->getClient()->rateLimit();
 
-        $result = $rateLimitApi->getRateLimits();
+        $result = $rateLimitApi->getResources();
 
         if (empty($result['resources']['core'])) {
             $this->output->writeln('<error>Failed to get rate limiting data!</error>');

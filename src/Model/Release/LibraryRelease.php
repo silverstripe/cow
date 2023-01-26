@@ -11,8 +11,6 @@ use SilverStripe\Cow\Model\Modules\Library;
  */
 class LibraryRelease
 {
-    public const RELEASE_BRANCH_SUFFIX = '-release';
-
     /**
      * List of child release dependencies
      *
@@ -347,11 +345,13 @@ class LibraryRelease
     }
 
     /**
-     * True if the current branch ends in the release branch suffix
+     * Check if the current minor branch matches what it expected to be given the new tag in the plan
      */
-    public function isOnReleaseBranch(): bool
+    public function isOnCorrectMinorReleaseBranch(): bool
     {
-        $branch = $this->getLibrary()->getBranch();
-        return preg_match('/' . preg_quote(self::RELEASE_BRANCH_SUFFIX) . '$/', $branch);
+        if (!preg_match('#^([0-9]{1,2}\.[0-9]{1,2})\.[0-9]{1,2}#', $this->version, $matches)) {
+            return false;
+        }
+        return $matches[1] == $this->getLibrary()->getBranch();
     }
 }

@@ -13,7 +13,7 @@ class RateLimitTest extends TestCase
 {
     public function testExecute()
     {
-        $mockGitHub = $this->getMockBuilder(GitHubApi::class)
+        $mockGitHubApi = $this->getMockBuilder(GitHubApi::class)
             ->setMethods(['getClient'])
             ->getMock();
 
@@ -21,12 +21,14 @@ class RateLimitTest extends TestCase
             ->setMethods(['rateLimit'])
             ->getMock();
 
-        $rateLimitMock = $this->getMockBuilder(\Github\Api\RateLimit::class)
+        $mockGitHubApi->expects($this->once())->method('getClient')->willReturn($mockClient);
+
+        $mockRateLimit = $this->getMockBuilder(\Github\Api\RateLimit::class)
             ->disableOriginalConstructor()
-            ->setMethods(['getRateLimits'])
+            ->setMethods(['getResources'])
             ->getMock();
 
-        $rateLimitMock->expects($this->once())->method('getRateLimits')->willReturn([
+        $mockRateLimit->expects($this->once())->method('getResources')->willReturn([
             'resources' => [
                 'core' => [
                     'limit' => 5000,
@@ -36,11 +38,10 @@ class RateLimitTest extends TestCase
             ],
         ]);
 
-        $mockClient->expects($this->once())->method('rateLimit')->willReturn($rateLimitMock);
-        $mockGitHub->expects($this->once())->method('getClient')->willReturn($mockClient);
+        $mockClient->expects($this->once())->method('rateLimit')->willReturn($mockRateLimit);
 
         $application = new Application();
-        $application->add(new RateLimit($mockGitHub));
+        $application->add(new RateLimit($mockGitHubApi));
 
         $command = $application->find('github:ratelimit');
         $commandTester = new CommandTester($command);

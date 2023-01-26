@@ -304,7 +304,7 @@ class Version
             throw new InvalidArgumentException("Invalid stability $left");
         }
         if (!in_array($right, $precedence)) {
-            throw new InvalidArgumentException("Invalid stability $left");
+            throw new InvalidArgumentException("Invalid stability $right");
         }
         if ($left === $right) {
             return 0;
