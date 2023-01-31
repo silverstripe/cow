@@ -47,15 +47,24 @@ class Changelog
      * @param ChangelogLibrary $changelogLibrary
      * @return array
      */
-    protected function getLibraryLog(OutputInterface $output, ChangelogLibrary $changelogLibrary)
-    {
+    protected function getLibraryLog(
+        OutputInterface $output,
+        ChangelogLibrary $changelogLibrary,
+        bool $changelogAuditMode = false
+    ) {
         $items = array();
 
         // Get raw log
         $fromVersion = $changelogLibrary->getPriorVersion()->getValue();
-        $toVersion = $changelogLibrary->getRelease()->getIsNewRelease()
-            ? 'HEAD' // Since it won't have been tagged yet, we use the current branch head
-            : $changelogLibrary->getRelease()->getVersion()->getValue();
+        if ($changelogLibrary->getRelease()->getIsNewRelease()) {
+            // Since it won't have been tagged yet, we use the current branch head
+            $toVersion = 'HEAD';
+        } elseif ($changelogAuditMode) {
+            // we may have manually cherry-picked security commits after tagging
+            $toVersion = 'HEAD';
+        } else {
+            $toVersion = $changelogLibrary->getRelease()->getVersion()->getValue();
+        }
         $range = $fromVersion . ".." . $toVersion;
         try {
             $log = $changelogLibrary
@@ -71,6 +80,32 @@ class Changelog
                 $key = $change->getDistinctDetails();
                 if (!$change->isIgnored() && !isset($items[$key])) {
                     $items[$key] = $change;
+                }
+            }
+
+            // Read commits from -rc1 of the prior release to the prior stable
+            // This is done so that any commits that happend post-rc LAST release are still audited
+            // in the CURRENT release audit
+            if ($changelogAuditMode) {
+                $dir = $changelogLibrary->getRelease()->getLibrary()->getDirectory();
+                $fromVersionRc1 = preg_replace('#-(alpha|beta|rc)[0-9]+$#', '', $fromVersion) . '-rc1';
+                $cmd = "cd $dir && git tag | grep $fromVersionRc1 && cd -";
+                $hasRc1FromPreviousRelease = (bool) shell_exec($cmd);
+                if ($hasRc1FromPreviousRelease) {
+                    $range2 = $fromVersionRc1 . ".." . $fromVersion;
+                    $log2 = $changelogLibrary->getRelease()->getLibrary()->getRepository()->getLog($range2);
+                    foreach ($log2->getCommits() as $commit) {
+                        $change = new ChangelogItem($changelogLibrary, $commit, $this->getIncludeOtherChanges());
+                        $key = $change->getDistinctDetails();
+                        // Discard any security commits, as they would have been audited last release
+                        if (preg_match('#[0-9]{4}-[0-9]{2}-[0-9]{2}-\[?CVE#i', $key)) {
+                            continue;
+                        }
+                        // Detect duplicates and skip ignored items
+                        if (!$change->isIgnored() && !isset($items[$key])) {
+                            $items[$key] = $change;
+                        }
+                    }
                 }
             }
         } catch (ReferenceNotFoundException $ex) {
@@ -124,7 +159,7 @@ class Changelog
     /**
      * Returns the data for rendering the changelogs.
      */
-    public function getChangesRenderData(OutputInterface $output): array
+    public function getChangesRenderData(OutputInterface $output, bool $changelogAuditMode): array
     {
         $libraries = $this->getRootLibrary()->getAllItems(true);
 
@@ -133,7 +168,7 @@ class Changelog
         $commitToLibraryMap = [];
 
         foreach ($libraries as $library) {
-            $libLogs = $this->sortByDate($this->getLibraryLog($output, $library));
+            $libLogs = $this->sortByDate($this->getLibraryLog($output, $library, $changelogAuditMode));
             $composerData = $library->getRelease()->getLibrary()->getComposerData();
             $name = strtolower(trim($composerData['name']));
 

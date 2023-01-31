@@ -2,6 +2,7 @@
 
 namespace SilverStripe\Cow\Commands\Module\Sync;
 
+use SilverStripe\Cow\Application;
 use SilverStripe\Cow\Commands\Module\AbstractSyncCommand;
 use Symfony\Component\Console\Helper\QuestionHelper;
 use Symfony\Component\Console\Input\InputOption;
@@ -145,6 +146,10 @@ class Metadata extends AbstractSyncCommand
      */
     protected function pushChanges($basePath)
     {
+        if (Application::isDevMode()) {
+            echo "Not pushing changes because DEV_MODE is enabled\n";
+            return;
+        }
         $process = new Process(['/usr/bin/env', 'git', 'push']);
         $process->setWorkingDirectory($basePath);
         $this->getHelper('process')->run($this->output, $process);

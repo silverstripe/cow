@@ -12,6 +12,7 @@ use SilverStripe\Cow\Utility\Translations;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Yaml\Yaml;
+use SilverStripe\Cow\Application;
 
 /**
  * Synchronise all translations with transifex, merging these with strings detected in code files
@@ -373,7 +374,10 @@ class UpdateTranslations extends ReleaseStep
     protected function transifexPushSource(OutputInterface $output, $modules)
     {
         $this->log($output, "Pushing updated sources to transifex");
-
+        if (Application::isDevMode()) {
+            echo "Not pushing to transifex because DEV_MODE is enabled\n";
+            return;
+        }
         foreach ($modules as $module) {
             $pushCommand = sprintf('(cd %s && tx push -s)', $module->getDirectory());
             $moduleName = $module->getName();
@@ -411,9 +415,13 @@ class UpdateTranslations extends ReleaseStep
             }
 
             // Do push if selected
-            if ($this->doGitPush) {
-                $this->log($output, "Pushing upstream for module " . $module->getName());
-                $repo->run("push", array("origin"));
+            if (Application::isDevMode()) {
+                echo "Not pushing changes because DEV_MODE is enabled\n";
+            } else {
+                if ($this->doGitPush) {
+                    $this->log($output, "Pushing upstream for module " . $module->getName());
+                    $repo->run("push", array("origin"));
+                }
             }
         }
     }

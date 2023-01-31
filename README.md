@@ -6,6 +6,13 @@ The ineptly named tool which may one day supercede the older [build tools](https
 
 ![moo](https://media.giphy.com/media/8AsXV477ls6LS/giphy.gif)
 
+## DEV_MODE
+Enable DEV_MODE by adding DEV_MODE=1 to a .env file. This will prevent pushing to github and transifex.
+
+Do not perform a release on a directory if you previously used DEV_MODE on that directory because the steps will be out of order. Instead, delete the directory that had DEV_MODE run on it and start the entire release again with DEV_MODE disabled.
+
+The .env file needs to be in the /cow directory, not the releases directory. E.g. if your cow directory is in ~/Releases/cow, then create the .env file as ~/Releases/cow/.env
+
 ## Install
 
 Requires Docker.

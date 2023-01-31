@@ -4,3 +4,5 @@ composer.lock
 /temp
 .idea/
 /docker/cache/composer
+.phpunit.result.cache
+.env

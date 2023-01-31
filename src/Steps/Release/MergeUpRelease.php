@@ -6,6 +6,8 @@ use Gitonomy\Git\Exception\ProcessException;
 use SilverStripe\Cow\Model\Release\LibraryRelease;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use SilverStripe\Cow\Application;
+use SilverStripe\Cow\Utility\ConstraintStabiliser;
 
 /**
  * Merge up released commits to the major branch and optionally remove x.y-release branch.
@@ -51,12 +53,12 @@ class MergeUpRelease extends ReleaseStep
         }
         $currentLibrary = $releasePlanNode->getLibrary()->getName();
 
-        // Skip if it's not a proper release branch.
-        if (!$releasePlanNode->isOnReleaseBranch()) {
+        // Skip if it's not a proper minor branch.
+        if (!$releasePlanNode->isOnCorrectMinorReleaseBranch()) {
             $this->log(
                 $output,
-                "Library $currentLibrary is on a non-release branch '$currentBranch'"
-                    . "Please checkout the release branch and then run the command again.",
+                "Library $currentLibrary is branch '$currentBranch' which does not match the plan. "
+                    . "Please checkout the minor branch which matches the plan and then run the command again.",
                 'error'
             );
             die();
@@ -78,16 +80,14 @@ class MergeUpRelease extends ReleaseStep
     protected function mergeLibrary(OutputInterface $output, LibraryRelease $releasePlanNode, bool $pushToRemote)
     {
         $library = $releasePlanNode->getLibrary();
-        $releaseBranch = $library->getBranch();
-        $minorBranch = str_replace(LibraryRelease::RELEASE_BRANCH_SUFFIX, '', $releaseBranch);
+        $minorBranch = $library->getBranch();
         $majorBranch = $releasePlanNode->getVersion()->getMajor();
 
-        // Merge up to minor branch, then to major branch
-        $this->mergeUp($output, $releasePlanNode, $releaseBranch, $releaseBranch, $minorBranch, $pushToRemote, false);
-        $this->mergeUp($output, $releasePlanNode, $releaseBranch, $minorBranch, $majorBranch, $pushToRemote, true);
+        // Merge up to major branch
+        $this->mergeUp($output, $releasePlanNode, $minorBranch, $majorBranch, $pushToRemote, true);
 
-        // Always check out the release branch at the end
-        $library->checkout($output, $releaseBranch);
+        // Always check out the minor branch at the end
+        $library->checkout($output, $minorBranch);
     }
 
     /**
@@ -96,7 +96,6 @@ class MergeUpRelease extends ReleaseStep
     protected function mergeUp(
         OutputInterface $output,
         LibraryRelease $releasePlanNode,
-        string $releaseBranchName,
         string $mergeFrom,
         string $mergeInto,
         bool $pushToRemote,
@@ -132,7 +131,7 @@ class MergeUpRelease extends ReleaseStep
                             . 'resolve the conflict, and then run the following commands:' . PHP_EOL
                             . "\tgit add ." . PHP_EOL
                             . "\tgit merge --continue" . PHP_EOL
-                            . "\tgit checkout $releaseBranchName" . PHP_EOL
+                            . "\tgit checkout $mergeFrom" . PHP_EOL
                             . 'Afterward, run the release:mergeup command again.',
                         'error'
                     );
@@ -145,57 +144,15 @@ class MergeUpRelease extends ReleaseStep
         }
 
         // Step 3. Convert constraints to the appropriate dev format
-        $this->destabiliseConstraints($output, $releasePlanNode, $isMajorBranch);
+        ConstraintStabiliser::destabiliseConstraints($output, $releasePlanNode, $isMajorBranch);
 
         // Step 4. Push branch
         if ($pushToRemote) {
-            $library->pushTo('origin');
-        }
-    }
-
-    /**
-     * Set constraints for released dependencies to "1.2.x-dev" or "1.x-dev" format.
-     */
-    protected function destabiliseConstraints(
-        OutputInterface $output,
-        LibraryRelease $releasePlanNode,
-        bool $isMajorBranch
-    ) {
-        $parentLibrary = $releasePlanNode->getLibrary();
-        $originalData = $composerData = $parentLibrary->getComposerData();
-
-        // Rewrite all dependencies.
-        // Note: only rewrite dependencies for anything that was included in the release.
-        // This mirrors functionality in PublishRelease::stabiliseRequirements()
-        $items = $this->getReleasePlan()->getAllItems();
-        foreach ($items as $item) {
-            $childName = $item->getLibrary()->getName();
-
-            // Ensure this library is allowed to release this dependency (even if shared)
-            if (!isset($composerData['require'][$childName]) || !$parentLibrary->isChildLibrary($childName)) {
-                continue;
+            if (Application::isDevMode()) {
+                echo "Not pushing changes because DEV_MODE is enabled\n";
+            } else {
+                $library->pushTo('origin');
             }
-
-            $version = $item->getVersion();
-            $target = $version->getMajor();
-            if (!$isMajorBranch) {
-                $target .= '.' . $version->getMinor();
-            }
-            $constraint =  $target . '.x-dev';
-            $this->log(
-                $output,
-                "Reverting dependency for <info>{$childName}</info> to <info>{$constraint}</info>"
-            );
-
-            // Update dependency
-            $composerData['require'][$childName] = $constraint;
-        }
-
-        // Save modifications to the composer.json for this module
-        if ($composerData !== $originalData) {
-            $parentName = $parentLibrary->getName();
-            $this->log($output, "Rewriting composer.json for <info>$parentName</info>");
-            $parentLibrary->setComposerData($composerData, true, 'MNT Update development dependencies');
         }
     }
 }

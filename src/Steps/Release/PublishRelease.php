@@ -6,7 +6,6 @@ use Exception;
 use Github\Api\Repo;
 use Github\Exception\RuntimeException;
 use InvalidArgumentException;
-use SilverStripe\Cow\Model\Modules\Library;
 use SilverStripe\Cow\Model\Release\LibraryRelease;
 use SilverStripe\Cow\Model\Release\Version;
 use SilverStripe\Cow\Utility\Composer;
@@ -16,6 +15,9 @@ use Github\Client as GithubClient;
 use Github\HttpClient\Message\ResponseMediator;
 use Http\Adapter\Guzzle7\Client as GuzzleClient;
 use LogicException;
+use SilverStripe\Cow\Application;
+use SilverStripe\Cow\Utility\ConstraintStabiliser;
+use Github\AuthMethod;
 
 class PublishRelease extends ReleaseStep
 {
@@ -75,12 +77,12 @@ class PublishRelease extends ReleaseStep
         $branch = $library->getBranch();
         $name = $library->getName();
 
-        // Confirm we're on a release branch and exit if not
-        if (!$releasePlanNode->isOnReleaseBranch()) {
+        // Confirm we're on a minor branch and exit if not
+        if (!$releasePlanNode->isOnCorrectMinorReleaseBranch()) {
             $this->log(
                 $output,
-                "Library $name is on a non-release branch '$branch'. "
-                    . "Please checkout the release branch and then run the command again.",
+                "Library $name is on branch '$branch' which does not match the plan. "
+                    . "Please checkout the minor branch which matches the plan and then run the command again.",
                 'error'
             );
             die();
@@ -90,86 +92,20 @@ class PublishRelease extends ReleaseStep
         $this->log($output, "Releasing library <info>{$name}</info> at version <info>{$versionName}</info>");
 
         // Step 1: Rewrite composer.json to all tagged versions only
-        $this->stabiliseRequirements($output, $releasePlanNode);
+        ConstraintStabiliser::stabiliseConstraints($output, $releasePlanNode);
 
-        // Step 2: Push development branch to origin
-        $this->log($output, "Pushing branch <info>{$branch}</info>");
-        $library->pushTo('origin');
-
-        // Step 3. Make sure the patch release branch is pushed up to origin
-        $devBranch = str_replace(LibraryRelease::RELEASE_BRANCH_SUFFIX, '', $branch);
-        if ($devBranch !== $branch) {
-            $library->checkout($output, $devBranch);
-            $this->log($output, "Pushing branch <info>{$devBranch}</info>");
-            $library->pushTo('origin');
-            $library->checkout($output, $branch);
-        }
-
-        // Step 4: Tag and push this tag
+        // Step 2: Tag and push this tag
         $this->publishTag($output, $releasePlanNode);
 
-        // Step 5: Create release in github
+        // Step 3: Create release in github
         $this->createGitHubRelease($output, $releasePlanNode);
-    }
 
-    /**
-     * Rewrite all composer dependencies for this tag
-     *
-     * @param OutputInterface $output
-     * @param LibraryRelease $releasePlanNode Current node in release plan being released
-     */
-    protected function stabiliseRequirements(OutputInterface $output, LibraryRelease $releasePlanNode)
-    {
-        $parentLibrary = $releasePlanNode->getLibrary();
-        $originalData = $composerData = $parentLibrary->getComposerData();
-        $constraintType = $parentLibrary->getDependencyConstraint();
+        // Step 4: Rewrite composer.json to destabilise requirements
+        ConstraintStabiliser::destabiliseConstraints($output, $releasePlanNode, false);
 
-        // Rewrite all dependencies.
-        // Note: rewrite dependencies even if non-exclusive children, so do a global search
-        // through the entire tree of the plan to get the new tag
-        $items = $this->getReleasePlan()->getAllItems();
-        foreach ($items as $item) {
-            $childName = $item->getLibrary()->getName();
-
-            // Ensure this library is allowed to release this dependency (even if shared)
-            if (!isset($composerData['require'][$childName]) || !$parentLibrary->isChildLibrary($childName)) {
-                continue;
-            }
-
-            // Update dependency
-            $composerData['require'][$childName] = $this->stabiliseDependencyRequirement(
-                $output,
-                $item,
-                $constraintType
-            );
-        }
-
-        // Save modifications to the composer.json for this module
-        if ($composerData !== $originalData) {
-            $parentName = $parentLibrary->getName();
-            $this->log($output, "Rewriting composer.json for <info>$parentName</info>");
-            $parentLibrary->setComposerData($composerData, true, 'MNT Update release dependencies');
-        }
-    }
-
-    /**
-     * @param OutputInterface $output
-     * @param LibraryRelease $item
-     * @param string $constraintType
-     * @return string
-     */
-    protected function stabiliseDependencyRequirement(OutputInterface $output, LibraryRelease $item, $constraintType)
-    {
-        // Get constraint for this version
-        $childRequirement = $item->getVersion()->getConstraint($constraintType);
-
-        // Notify of change
-        $childName = $item->getLibrary()->getName();
-        $this->log(
-            $output,
-            "Fixing tagged dependency <info>{$childName}</info> to <info>{$childRequirement}</info>"
-        );
-        return $childRequirement;
+        // Step 5: Push development branch to origin
+        $this->log($output, "Pushing branch <info>{$branch}</info>");
+        $library->pushTo('origin');
     }
 
     /**
@@ -212,6 +148,11 @@ class PublishRelease extends ReleaseStep
             throw new InvalidArgumentException("Could not find github slug for " . $library->getName());
         }
         list($org, $repo) = explode('/', $slug);
+
+        if (Application::isDevMode()) {
+            echo "Not creating github release because DEV_MODE is enabled\n";
+            return;
+        }
 
         // Log release
         $version = $release->getVersion();
@@ -409,7 +350,7 @@ class PublishRelease extends ReleaseStep
             'http_errors' => false // http errors are not runtime errors
         ]);
         $client = GithubClient::createWithHttpClient($httpClient);
-        $client->authenticate($token, null, GithubClient::AUTH_HTTP_TOKEN);
+        $client->authenticate($token, null, AuthMethod::ACCESS_TOKEN);
 
         // Cache
         $this->githubClient = $client;

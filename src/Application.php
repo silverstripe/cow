@@ -8,9 +8,22 @@ use SilverStripe\Cow\Utility\Config;
 use SilverStripe\Cow\Utility\GitHubApi;
 use SilverStripe\Cow\Utility\Twig;
 use Symfony\Component\Console;
+use Symfony\Component\Dotenv\Dotenv;
 
 class Application extends Console\Application
 {
+    private static $hasLoadedDotEnv = false;
+
+    public static function isDevMode()
+    {
+        if (!self::$hasLoadedDotEnv) {
+            (new Dotenv())->load(__DIR__ . '/../.env');
+            self::$hasLoadedDotEnv = true;
+        }
+        // $_ENV is populated with the contents of .env by symfony/dotenv
+        return isset($_ENV['DEV_MODE']) && $_ENV['DEV_MODE'];
+    }
+
     public function createTwigEnvironment(): Twig\Environment
     {
         return new Twig\Environment(new Twig\Loader($this));
@@ -67,8 +80,14 @@ class Application extends Console\Application
     /**
      * {@inheritdoc}
      */
-    protected function getDefaultCommands()
+    protected function getDefaultCommands(): array
     {
+        if (Application::isDevMode()) {
+            echo "\nDEV_MODE is enabled, no changes will be pushed\n\n";
+        } else {
+            echo "\nDEV_MODE is NOT enabled, changes will be pushed!\n\n";
+        }
+
         $commands = parent::getDefaultCommands();
 
         // Create dependencies
@@ -86,7 +105,6 @@ class Application extends Console\Application
         $commands[] = new Commands\Release\Test();
         $commands[] = new Commands\Release\Changelog($this);
         $commands[] = new Commands\Release\MergeUp();
-        $commands[] = new Commands\Release\DeleteReleaseBranch();
 
         // Publish sub-commands
         $commands[] = new Commands\Release\Tag();

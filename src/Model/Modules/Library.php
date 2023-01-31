@@ -18,6 +18,7 @@ use SilverStripe\Cow\Utility\Format;
 use SilverStripe\Cow\Utility\SchemaValidator;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
+use SilverStripe\Cow\Application;
 
 /**
  * Represents a library which may not be a module
@@ -335,7 +336,11 @@ class Library
         }
 
         // Push
-        $repo->run('push', $args);
+        if (Application::isDevMode()) {
+            echo "Not pushing changes because DEV_MODE is enabled\n";
+        } else {
+            $repo->run('push', $args);
+        }
     }
 
     /**
@@ -394,6 +399,10 @@ class Library
      */
     public function pushTag($tag, $remote = 'origin')
     {
+        if (Application::isDevMode()) {
+            echo "Not pushing tag because DEV_MODE is enabled\n";
+            return;
+        }
         $repo = $this->getRepository();
         $args = array($remote, "refs/tags/{$tag}");
         $repo->run('push', $args);

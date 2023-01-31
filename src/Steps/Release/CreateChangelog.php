@@ -320,7 +320,8 @@ class CreateChangelog extends ReleaseStep
         $library = $release->getLibrary();
         $version = $release->getVersion();
 
-        if ($this->getCommand()->getChangelogAuditMode()) {
+        $changelogAuditMode = $this->getCommand()->getChangelogAuditMode();
+        if ($changelogAuditMode) {
             $template = 'changelog/logs/audit_mode.md.twig';
         } elseif ($library->getChangelogPath($version)) {
             // the library has changelog-path defined in `.cow.json`
@@ -332,7 +333,7 @@ class CreateChangelog extends ReleaseStep
             $template = 'changelog/logs/plain.md.twig';
         }
 
-        $changelogData = $changelog->getChangesRenderData($output);
+        $changelogData = $changelog->getChangesRenderData($output, $changelogAuditMode);
         $content = $this->twig->render($template, $changelogData);
 
         // use &apos; because it's a little prettier

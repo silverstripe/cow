@@ -8,6 +8,7 @@ use SilverStripe\Cow\Commands\Release\Branch;
 use SilverStripe\Cow\Model\Modules\Library;
 use SilverStripe\Cow\Model\Release\LibraryRelease;
 use SilverStripe\Cow\Model\Release\Version;
+use SilverStripe\Cow\Utility\ConstraintStabiliser;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -65,6 +66,11 @@ class RewriteReleaseBranches extends ReleaseStep
         } else {
             $this->checkoutLibrary($output, $libraryRelease->getLibrary(), $libraryRelease->getVersion());
         }
+
+        // Ensure any newly created branches have the correct 4.12.x-dev contraints
+        // need to do this because new branches would have been branched from
+        // recipes with 4.x-dev contraints
+        ConstraintStabiliser::destabiliseConstraints($output, $libraryRelease, false);
     }
 
     /**
@@ -87,10 +93,9 @@ class RewriteReleaseBranches extends ReleaseStep
 
         // Calculate branch to switch to
         $targetBranch = $this->getTargetBranch($targetVersion, $branching, $currentBranch);
-        $releaseBranch = $targetBranch . LibraryRelease::RELEASE_BRANCH_SUFFIX;
 
         // Either branch, or simply log current branch
-        if (empty($targetBranch) || $currentBranch === $releaseBranch) {
+        if (empty($targetBranch) || $currentBranch === $targetBranch) {
             $this->log(
                 $output,
                 "Module <info>{$libraryName}</info> already on correct branch (<info>{$currentBranch}</info>)"
@@ -99,7 +104,7 @@ class RewriteReleaseBranches extends ReleaseStep
             // Check versions to checkout
             $this->log(
                 $output,
-                "Branching module <info>{$libraryName}</info> as <info>{$releaseBranch}</info> "
+                "Branching module <info>{$libraryName}</info> as <info>{$targetBranch}</info> "
                 . "(previously on <comment>{$currentBranch}</comment>)"
             );
 
@@ -118,9 +123,8 @@ class RewriteReleaseBranches extends ReleaseStep
                 $library->getRepository($output)->run('pull');
             }
 
-            // Checkout target branch, then release branch
+            // Checkout target branch
             $library->checkout($output, $targetBranch, 'origin', true);
-            $library->checkout($output, $releaseBranch, 'origin', true);
 
             // If branching to minor version, remove alias
             if ($targetBranch === $minorBranch) {
@@ -253,8 +257,8 @@ class RewriteReleaseBranches extends ReleaseStep
             case Branch::MAJOR:
                 return $majorBranch;
             case Branch::AUTO:
-                // Auto disables branching for unstable tags
-                if (!$targetVersion->isStable()) {
+                // Auto disables branching for alpha tags
+                if (!$targetVersion->getStability() === 'alpha') {
                     return null;
                 }
                 return $minorBranch;
