@@ -97,15 +97,16 @@ class PublishRelease extends ReleaseStep
         // Step 2: Tag and push this tag
         $this->publishTag($output, $releasePlanNode);
 
-        // Step 3: Create release in github
-        $this->createGitHubRelease($output, $releasePlanNode);
-
-        // Step 4: Rewrite composer.json to destabilise requirements
+        // Step 3: Rewrite composer.json to destabilise requirements
         ConstraintStabiliser::destabiliseConstraints($output, $releasePlanNode, false);
 
-        // Step 5: Push development branch to origin
+        // Step 4: Push development branch to origin
         $this->log($output, "Pushing branch <info>{$branch}</info>");
         $library->pushTo('origin');
+
+        // Step 5: Create release in github
+        // These needs to be last to ensure the branch has been pushed to github
+        $this->createGitHubRelease($output, $releasePlanNode);
     }
 
     /**

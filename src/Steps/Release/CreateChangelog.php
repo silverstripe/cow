@@ -244,9 +244,6 @@ class CreateChangelog extends ReleaseStep
 
             // Check if this release has a historic tag.
             $childReleaseName = $childNewReleaseLibrary->getName();
-            if (empty($pastComposer['require'][$childReleaseName])) {
-                continue;
-            }
 
             // Use an explicitly specified previous version
             $childHistoricVersion = $childNewRelease->getPriorVersion(false);
