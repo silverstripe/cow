@@ -26,16 +26,16 @@ class ConstraintStabiliser
         $parentLibrary = $releasePlanNode->getLibrary();
         $originalData = $composerData = $parentLibrary->getComposerData();
         $constraintType = $parentLibrary->getDependencyConstraint();
+        $parentName = $parentLibrary->getName();
 
         // Rewrite all dependencies.
         // Note: rewrite dependencies even if non-exclusive children, so do a global search
         // through the entire tree of the plan to get the new tag
-        $items = $releasePlanNode->getAllItems();
-        foreach ($items as $item) {
+        foreach ($releasePlanNode->getRootLibraryRelease()->getAllItems() as $item) {
             $childName = $item->getLibrary()->getName();
 
             // Ensure this library is allowed to release this dependency (even if shared)
-            if (!isset($composerData['require'][$childName]) || !$parentLibrary->isChildLibrary($childName)) {
+            if (!isset($composerData['require'][$childName])) {
                 continue;
             }
 
@@ -95,12 +95,11 @@ class ConstraintStabiliser
         // Rewrite all dependencies.
         // Note: only rewrite dependencies for anything that was included in the release.
         // This mirrors functionality in PublishRelease::stabiliseConstraints()
-        $items = $releasePlanNode->getAllItems();
-        foreach ($items as $item) {
+        foreach ($releasePlanNode->getRootLibraryRelease()->getAllItems() as $item) {
             $childName = $item->getLibrary()->getName();
 
             // Ensure this library is allowed to release this dependency (even if shared)
-            if (!isset($composerData['require'][$childName]) || !$parentLibrary->isChildLibrary($childName)) {
+            if (!isset($composerData['require'][$childName])) {
                 continue;
             }
 

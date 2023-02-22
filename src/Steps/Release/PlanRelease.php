@@ -195,7 +195,7 @@ class PlanRelease extends Step
                     . $candidateVersion->getValue() . " without a new release"
                 );
             }
-            return new LibraryRelease($childModule, $candidateVersion, $priorRelease);
+            return new LibraryRelease($childModule, $candidateVersion, $priorRelease, $parentRelease);
         }
 
         // Get all stable tags that match the given composer constraint
@@ -222,7 +222,7 @@ class PlanRelease extends Step
         // Upgrade to highest version
         $tags = Version::sort($candidates, 'descending');
         $candidateVersion = reset($tags);
-        return new LibraryRelease($childModule, $candidateVersion, $priorRelease);
+        return new LibraryRelease($childModule, $candidateVersion, $priorRelease, $parentRelease);
     }
 
     /**
@@ -252,11 +252,11 @@ class PlanRelease extends Step
 
             // If this is already tagged, just upgrade without a new release
             if (array_key_exists($candidateVersion->getValue(), $tags)) {
-                return new LibraryRelease($childModule, $candidateVersion, $priorRelease);
+                return new LibraryRelease($childModule, $candidateVersion, $priorRelease, $parentRelease);
             }
 
             // Build release
-            return new LibraryRelease($childModule, $candidateVersion, $priorRelease);
+            return new LibraryRelease($childModule, $candidateVersion, $priorRelease, $parentRelease);
         }
 
         // Get stability to use for the new tag
@@ -287,7 +287,7 @@ class PlanRelease extends Step
         }
 
         // Report new tag
-        return new LibraryRelease($childModule, $version, $priorRelease);
+        return new LibraryRelease($childModule, $version, $priorRelease, $parentRelease);
     }
 
     /**

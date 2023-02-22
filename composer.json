@@ -40,5 +40,10 @@
     "php-http/message": "<1.13.0"
   },
   "prefer-stable": true,
-  "minimum-stability": "dev"
+  "minimum-stability": "dev",
+  "config": {
+    "allow-plugins": {
+      "php-http/discovery": true
+    }
+  }
 }
