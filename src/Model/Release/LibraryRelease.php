@@ -53,20 +53,40 @@ class LibraryRelease
      */
     private $childPriorVersions;
 
+    private ?LibraryRelease $parentRelease = null;
+
     /**
      * LibraryRelease constructor.
      *
      * @param Library $library
      * @param Version $version
      * @param Version|null $priorVersion
+     * @param LibraryRelease|null $parentRelease
      */
-    public function __construct(Library $library, Version $version, Version $priorVersion = null)
-    {
+    public function __construct(
+        Library $library,
+        Version $version,
+        Version $priorVersion = null,
+        LibraryRelease $parentRelease = null
+    ) {
         $this->setLibrary($library);
         $this->setVersion($version);
         if ($priorVersion) {
             $this->setPriorVersion($priorVersion);
         }
+        if ($parentRelease) {
+            $this->setParentRelease($parentRelease);
+        }
+    }
+
+    public function getParentRelease(): ?LibraryRelease
+    {
+        return $this->parentRelease;
+    }
+
+    public function setParentRelease(LibraryRelease $release)
+    {
+        $this->parentRelease = $release;
     }
 
     /**
@@ -353,5 +373,14 @@ class LibraryRelease
             return false;
         }
         return $matches[1] == $this->getLibrary()->getBranch();
+    }
+
+    public function getRootLibraryRelease(): LibraryRelease
+    {
+        $parentRelease = $this->getParentRelease();
+        if ($parentRelease) {
+            return $parentRelease->getRootLibraryRelease();
+        }
+        return $this;
     }
 }

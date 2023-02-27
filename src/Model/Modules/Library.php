@@ -1021,7 +1021,7 @@ class Library
      * @return LibraryRelease[]
      * @throws Exception
      */
-    protected function unserialisePlan($serialisedPlan)
+    protected function unserialisePlan($serialisedPlan, ?LibraryRelease $parentRelease = null)
     {
         $releases = [];
         foreach ($serialisedPlan as $name => $data) {
@@ -1032,6 +1032,9 @@ class Library
             }
             $version = new Version($data['Version']);
             $libraryRelease = new LibraryRelease($library, $version);
+            if ($parentRelease) {
+                $libraryRelease->setParentRelease($parentRelease);
+            }
 
             // Set the previous version if specified
             if (!empty($data['PriorVersion'])) {
@@ -1041,14 +1044,13 @@ class Library
 
             // Merge with unserialised children
             if (!empty($data['Items'])) {
-                $libraryRelease->addItems($this->unserialisePlan($data['Items']));
+                $libraryRelease->addItems($this->unserialisePlan($data['Items'], $libraryRelease));
             }
 
             // Set branching
             if (!empty($data['Branching'])) {
                 $libraryRelease->setBranching($data['Branching']);
             }
-
             $releases[$name] = $libraryRelease;
         }
         return $releases;
