@@ -11,7 +11,6 @@ use SilverStripe\Cow\Steps\Release\CreateProject;
 use SilverStripe\Cow\Steps\Release\PlanRelease;
 use SilverStripe\Cow\Steps\Release\RewriteReleaseBranches;
 use SilverStripe\Cow\Steps\Release\RunTests;
-use SilverStripe\Cow\Steps\Release\UpdateTranslations;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\Output;
@@ -38,24 +37,6 @@ class Release extends Command
                 null,
                 InputOption::VALUE_NONE,
                 'Skip the tests suite run when performing the release'
-            )
-            ->addOption(
-                'skip-i18n',
-                null,
-                InputOption::VALUE_NONE,
-                'Skip the text collection task when performing the release'
-            )
-            ->addOption(
-                'skip-i18n-translations-pull-and-update',
-                null,
-                InputOption::VALUE_NONE,
-                'Skip running tx pull, i18nTextCollectorTask and js/json updates'
-            )
-            ->addOption(
-                'i18n-translations-push',
-                null,
-                InputOption::VALUE_NONE,
-                'Run tx push -s - only do this during the beta1 release of a new minor'
             )
             ->addOption(
                 'skip-emulate-requirements',
@@ -126,16 +107,6 @@ class Release extends Command
         // Branch all modules properly
         $branchAlias = new RewriteReleaseBranches($this, $project, $releasePlan);
         $branchAlias->run($this->input, $this->output);
-
-        // Update all translations
-        if (!$this->input->getOption('skip-i18n')) {
-            $translate = new UpdateTranslations($this, $project, $releasePlan);
-            $doTxPullAndUpdate = !$this->input->getOption('skip-i18n-translations-pull-and-update');
-            $translate->setDoTransifexPullAndUpdate($doTxPullAndUpdate);
-            $doTxPush = $this->input->getOption('i18n-translations-push');
-            $translate->setDoTransifexPush($doTxPush);
-            $translate->run($this->input, $this->output);
-        }
 
         // Run tests
         if (!$this->input->getOption('skip-tests')) {

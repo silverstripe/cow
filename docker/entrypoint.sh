@@ -29,11 +29,6 @@ if [ ! -z "$COW_MODE_RELEASE" ] ; then
     ssh -qT git@github.com 2>&1 | grep "successfully authenticated" || (echo "GitHub authentication error" && exit 1)
 fi
 
-if [ ! -z "$COW_MODE_TRANSIFEX" ] ; then
-    tx $@
-    exit;
-fi
-
 if [ ! -z "$COW_MODE_COMPOSER" ] ; then
     composer $@
     exit;

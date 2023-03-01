@@ -14,7 +14,6 @@ x-volumes: &volumes
   - '${GIT_CONFIG}:/home/cow/.gitconfig:ro'
   # - '${SSH_AUTH_SOCK}:${SSH_AUTH_SOCK}:rw'  # macOS socket is not writeable by non-root users
   - '~/.ssh:/home/cow/.ssh'
-  - '~/.transifexrc:/home/cow/.transifexrc'
 
 x-debug-env-var: &x-debug-env-var 'remote_enable=1 remote_mode=req remote_port=${XDEBUG_PORT} remote_host=${XDEBUG_HOST} remote_connect_back=0'
 

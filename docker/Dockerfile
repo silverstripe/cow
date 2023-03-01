@@ -44,8 +44,6 @@ FROM php as base
 
 RUN apt-get update -y \
  && apt-get install -y git python3-pip openssh-client \
- && pip3 install -U pip \
- && pip install transifex-client awscli \
  && apt-get install -y ruby \
  && gem install yamlclean
 
