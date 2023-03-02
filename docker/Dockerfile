@@ -1,4 +1,4 @@
-FROM php:7.4-cli as php
+FROM php:8.1-cli as php
 
 RUN apt-get update -y \
  && apt-get install -y \
@@ -43,7 +43,7 @@ RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
 FROM php as base
 
 RUN apt-get update -y \
- && apt-get install -y git python3-pip openssh-client \
+ && apt-get install -y git python3-pip openssh-client gpg \
  && apt-get install -y ruby \
  && gem install yamlclean
 
@@ -61,9 +61,9 @@ RUN composer -vvv global require silverstripe/cow:${COW_VERSION} \
  && chmod 755 /root \
  && ln -s /root/.composer/vendor/bin/cow /usr/bin/. \
  && groupadd -f -g ${GROUP_ID} cow \
- && useradd -g ${GROUP_ID} -d /home/cow -m -u ${USER_ID} cow \
- && mkdir -p /home/cow/.composer/cache \
- && chown -R cow:cow /home/cow/.composer
+ && useradd -g ${GROUP_ID} -d /home/cow -m -u ${USER_ID} cow
+#  && mkdir -p /home/cow/.cache/composer/cache \
+#  && chown -R cow:cow /home/cow/.cache/composer
 
 USER cow
 WORKDIR /home/cow
@@ -76,6 +76,6 @@ FROM stable as debug
 
 USER root
 RUN docker-php-source extract \
- && yes '' | pecl install xdebug-2.9.8 && docker-php-ext-enable xdebug \
+ && yes '' | pecl install xdebug && docker-php-ext-enable xdebug \
  && docker-php-source delete
 USER cow
