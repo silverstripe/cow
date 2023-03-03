@@ -47,9 +47,6 @@ docker_compose_params()
 
 docker_compose_run()
 {
-    # make sure .transifexrc exists (otherwise docker creates a folder there
-    [ -f ~/.transifexrc ] || touch ~/.transifexrc;
-
     cd $DOCKER_DIR && \
     docker-compose run --rm $(docker_compose_params) $EXTRA_FLAGS $1 ${@:2}
 }

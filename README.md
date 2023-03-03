@@ -7,7 +7,7 @@ The ineptly named tool which may one day supercede the older [build tools](https
 ![moo](https://media.giphy.com/media/8AsXV477ls6LS/giphy.gif)
 
 ## DEV_MODE
-Enable DEV_MODE by adding DEV_MODE=1 to a .env file. This will prevent pushing to github and transifex.
+Enable DEV_MODE by adding DEV_MODE=1 to a .env file. This will prevent pushing to github.
 
 Do not perform a release on a directory if you previously used DEV_MODE on that directory because the steps will be out of order. Instead, delete the directory that had DEV_MODE run on it and start the entire release again with DEV_MODE disabled.
 
@@ -63,7 +63,6 @@ To run Cow without Docker, reference the `Dockerfile` for system requirements.
 
 ## Extra setup
 
-* For translation steps you may need the Transifex API Key and ~/.transifexrc (run `./docker/bin/tx init` to generate it).
 * When publishing to GitHub make sure you have `ssh-agent` running and your SSH keys loaded (run `ssh-add`)
 
 ## Commands

@@ -71,7 +71,7 @@ but only used within `docker-compose.yml`
 
 ### Scripts
 
-When you run Cow via one of these scripts, Docker will be given access to the contents of the folder you ran it from, along with some of your environment variables, .transifexrc and SSH agent, to allow creating / modifying releases and publishing them to GitHub.
+When you run Cow via one of these scripts, Docker will be given access to the contents of the folder you ran it from, along with some of your environment variables, and SSH agent, to allow creating / modifying releases and publishing them to GitHub.
 
 #### ./docker/bin/debug
 
@@ -105,8 +105,3 @@ Runs a stable Cow release, based on the latest published Docker container.
 
 Runs `./vendor/bin/phpunit` within a container with Xdebug knocking to port 9000 (configurable through `docker/.env`).
 Can be used for Cow tests development and debugging.
-
-
-#### ./docker/bin/tx
-
-Runs transifex client within the latest stable container published.

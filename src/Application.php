@@ -101,7 +101,6 @@ class Application extends Console\Application
         $commands[] = new Commands\Release\Create();
         $commands[] = new Commands\Release\Plan();
         $commands[] = new Commands\Release\Branch();
-        $commands[] = new Commands\Release\Translate();
         $commands[] = new Commands\Release\Test();
         $commands[] = new Commands\Release\Changelog($this);
         $commands[] = new Commands\Release\MergeUp();
@@ -114,7 +113,6 @@ class Application extends Console\Application
         $commands[] = new Commands\Release\Publish();
 
         // Module commands
-        $commands[] = new Commands\Module\TranslateBuild();
         $commands[] = new Commands\Module\Sync\Metadata($supportedModuleLoader);
 
         // Schema commands
