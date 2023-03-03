@@ -48,13 +48,13 @@ docker_compose_params()
 docker_compose_run()
 {
     cd $DOCKER_DIR && \
-    docker-compose run --rm $(docker_compose_params) $EXTRA_FLAGS $1 ${@:2}
+    docker compose run --rm $(docker_compose_params) $EXTRA_FLAGS $1 ${@:2}
 }
 
 docker_compose_pull()
 {
     cd $DOCKER_DIR && \
-    GIT_CONFIG=$GIT_CONFIG USER_ID=$USER_ID GROUP_ID=$GROUP_ID docker-compose build --pull $1 ${@:2}
+    GIT_CONFIG=$GIT_CONFIG USER_ID=$USER_ID GROUP_ID=$GROUP_ID docker compose build --pull $1 ${@:2}
 }
 
 if [ ! -z "$SKIP_RUN_EXEC" ] ; then
