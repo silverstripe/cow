@@ -177,7 +177,7 @@ Cow includes commands to help synchronise standardised data to all
 * `cow github:ratelimit` Check your current GitHub API rate limiting status (sync commands can use this up quickly)
 
 **Note:** All GitHub API commands require a `GITHUB_ACCESS_TOKEN` environment variable to be set before they can be
-used.
+used. It can be in the .env file (see [dev mode](#dev_mode)).
 
 ### Labels
 

@@ -367,6 +367,9 @@ class PublishRelease extends ReleaseStep
     {
         $token = getenv('GITHUB_API_TOKEN');
         if (empty($token)) {
+            $token = $_ENV['GITHUB_API_TOKEN'];
+        }
+        if (empty($token)) {
             $token = Composer::getOAUTHToken($this->getCommandRunner($output));
         }
         if (empty($token)) {
