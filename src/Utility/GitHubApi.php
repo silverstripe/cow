@@ -28,13 +28,14 @@ class GitHubApi
     public function getClient()
     {
         if (!$this->client) {
+            $token = getenv(self::TOKEN_ENV_VAR) ?: $_ENV[self::TOKEN_ENV_VAR];
             // Handled here rather than constructor so that exceptions will be formatted by SymfonyStyle
-            if (!getenv(self::TOKEN_ENV_VAR)) {
+            if (!$token) {
                 throw new RuntimeException(self::TOKEN_ENV_VAR . ' environment variable is not defined!');
             }
 
             $this->client = new Client();
-            $this->client->authenticate(getenv(self::TOKEN_ENV_VAR), null, Client::AUTH_HTTP_TOKEN);
+            $this->client->authenticate($token, null, Client::AUTH_HTTP_TOKEN);
         }
         return $this->client;
     }
