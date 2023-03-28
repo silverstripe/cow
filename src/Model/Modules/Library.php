@@ -683,6 +683,19 @@ class Library
         return $data['name'];
     }
 
+    /**
+     * Get type of this library
+     */
+    public function getType(): string
+    {
+        $data = $this->getComposerData();
+        return $data['type'] ?? '';
+    }
+
+    public function isRecipe(): bool
+    {
+        return $this->getType() === 'silverstripe-recipe';
+    }
 
     /**
      * Get link to github module
