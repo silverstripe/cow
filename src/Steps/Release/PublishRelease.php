@@ -92,13 +92,17 @@ class PublishRelease extends ReleaseStep
         $this->log($output, "Releasing library <info>{$name}</info> at version <info>{$versionName}</info>");
 
         // Step 1: Rewrite composer.json to all tagged versions only
-        ConstraintStabiliser::stabiliseConstraints($output, $releasePlanNode);
+        if ($library->isRecipe()) {
+            ConstraintStabiliser::stabiliseConstraints($output, $releasePlanNode);
+        }
 
         // Step 2: Tag and push this tag
         $this->publishTag($output, $releasePlanNode);
 
         // Step 3: Rewrite composer.json to destabilise requirements
-        ConstraintStabiliser::destabiliseConstraints($output, $releasePlanNode, false);
+        if ($library->isRecipe()) {
+            ConstraintStabiliser::destabiliseConstraints($output, $releasePlanNode, false);
+        }
 
         // Step 4: Push development branch to origin
         $this->log($output, "Pushing branch <info>{$branch}</info>");

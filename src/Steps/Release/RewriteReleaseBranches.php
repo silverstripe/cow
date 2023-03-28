@@ -67,10 +67,11 @@ class RewriteReleaseBranches extends ReleaseStep
             $this->checkoutLibrary($output, $libraryRelease->getLibrary(), $libraryRelease->getVersion());
         }
 
-        // Ensure any newly created branches have the correct 4.12.x-dev contraints
-        // need to do this because new branches would have been branched from
-        // recipes with 4.x-dev contraints
-        ConstraintStabiliser::destabiliseConstraints($output, $libraryRelease, false);
+        // Ensure any newly created branches on recipes have the correct 4.12.x-dev contraint format.
+        // Need to do this because new branches would have been branched from recipes with 4.x-dev contraint format.
+        if ($libraryRelease->getLibrary()->isRecipe()) {
+            ConstraintStabiliser::destabiliseConstraints($output, $libraryRelease, false);
+        }
     }
 
     /**

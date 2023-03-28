@@ -144,7 +144,9 @@ class MergeUpRelease extends ReleaseStep
         }
 
         // Step 3. Convert constraints to the appropriate dev format
-        ConstraintStabiliser::destabiliseConstraints($output, $releasePlanNode, $isMajorBranch);
+        if ($library->isRecipe()) {
+            ConstraintStabiliser::destabiliseConstraints($output, $releasePlanNode, $isMajorBranch);
+        }
 
         // Step 4. Push branch
         if ($pushToRemote) {
