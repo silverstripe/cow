@@ -17,10 +17,11 @@ interface CommandRunner
      * or a command to run
      * @param string|null $error An error message that must be displayed if something went wrong
      * @param bool $exceptionOnError If an error occurs, this message is an exception rather than a notice
+     * @param bool $allowDebugVerbosity If false temporarily change -vvv to -vv so command results are not echoed
      * @return bool|string Output, or false if error
      * @throw Exception
      */
-    public function runCommand($command, $error = null, $exceptionOnError = true);
+    public function runCommand($command, $error = null, $exceptionOnError = true, $allowDebugVerbosity = true);
 
     /*
      * Log a message with an optional format wrapper
