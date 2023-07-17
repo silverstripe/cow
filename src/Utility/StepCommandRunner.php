@@ -28,12 +28,13 @@ class StepCommandRunner implements CommandRunner
      * or a command to run
      * @param string|null $error An error message that must be displayed if something went wrong
      * @param bool $exceptionOnError If an error occurs, this message is an exception rather than a notice
+     * @param bool $allowDebugVerbosity If false temporarily change -vvv to -vv so command results are not echoed
      * @return bool|string Output, or false if error
      * @throws Exception
      */
-    public function runCommand($command, $error = null, $exceptionOnError = true)
+    public function runCommand($command, $error = null, $exceptionOnError = true, $allowDebugVerbosity = true)
     {
-        return $this->step->runCommand($this->output, $command, $error, $exceptionOnError);
+        return $this->step->runCommand($this->output, $command, $error, $exceptionOnError, $allowDebugVerbosity);
     }
 
     /*

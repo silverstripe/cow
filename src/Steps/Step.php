@@ -93,11 +93,17 @@ abstract class Step
      * or a command to run
      * @param string|null $error An error message that must be displayed if something went wrong
      * @param bool $exceptionOnError If an error occurs, this message is an exception rather than a notice
+     * @param bool $allowDebugVerbosity If false temporarily change -vvv to -vv so command results are not echoed
      * @return bool|string Output, or false if error
      * @throws Exception
      */
-    public function runCommand(OutputInterface $output, $command, $error = null, $exceptionOnError = true)
-    {
+    public function runCommand(
+        OutputInterface $output,
+        $command,
+        $error = null,
+        $exceptionOnError = true,
+        $allowDebugVerbosity = true
+    ) {
         $helper = $this->getProcessHelper();
 
         // Prepare unbound command
@@ -114,7 +120,13 @@ abstract class Step
 
         // Run it
         $process->setTimeout(null);
+
+        $verbosity = $output->getVerbosity();
+        if (!$allowDebugVerbosity && $output->isDebug()) {
+            $output->setVerbosity(OutputInterface::VERBOSITY_VERY_VERBOSE);
+        }
         $result = $helper->run($output, $process, $error);
+        $output->setVerbosity($verbosity);
 
         // And cleanup
         if ($result->isSuccessful()) {

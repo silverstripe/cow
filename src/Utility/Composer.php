@@ -121,7 +121,7 @@ class Composer
         // try composer stored oauth token
         $command = ['composer', 'config', '-g', 'github-oauth.github.com'];
         $error = "Couldn't determine GitHub oAuth token. Please set GITHUB_API_TOKEN";
-        $result = $runner->runCommand($command, $error);
+        $result = $runner->runCommand($command, $error, true, false);
         return trim($result);
     }
 
