@@ -125,7 +125,7 @@ class ChangelogItem
     public function getDistinctDetails()
     {
         // Date, author, and message
-        return $this->getAuthor() . '-' . $this->getDate()->format('Y-m-d') . '-' . $this->getRawMessage();
+        return $this->getAuthor() . '-' . $this->getDate()->format('Y-m-d H:i:s') . '-' . $this->getRawMessage();
     }
 
     /**
