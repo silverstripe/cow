@@ -82,15 +82,15 @@ class ChangelogItemTest extends TestCase
             [
                 '[SS-2047-123] Lower doubt with cow coverage',
                 '[SS-2047-123] Lower doubt with cow coverage',
-                'Other changes'
+                'Security'
             ],
             [
                 '[ss-2047-123] Lower doubt with cow coverage',
                 '[ss-2047-123] Lower doubt with cow coverage',
-                'Other changes'
+                'Security'
             ],
-            ['[SS-2047-123]: Logins now use passwords', '[SS-2047-123]: Logins now use passwords', 'Other changes'],
-            ['[ss-2047-123]: Logins now use passwords', '[ss-2047-123]: Logins now use passwords', 'Other changes'],
+            ['[SS-2047-123]: Logins now use passwords', '[SS-2047-123]: Logins now use passwords', 'Security'],
+            ['[ss-2047-123]: Logins now use passwords', '[ss-2047-123]: Logins now use passwords', 'Security'],
             ['[CVE-1234-56789]: Fix something serious', 'Fix something serious', 'Security'],
             ['[CVE-1234-12345] Remove admin login backdoor', 'Remove admin login backdoor', 'Security'],
             ['[cve-1234-123456] added admin login backdoor', 'added admin login backdoor', 'Security'],
