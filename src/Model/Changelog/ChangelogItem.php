@@ -301,9 +301,13 @@ class ChangelogItem
      */
     public function getSecurityCVE()
     {
-        // New CVE style identifiers
+        // New CVE style identifiers (e.g. CVE-2023-32302)
         if (preg_match('/^\[(?<cve>CVE-(\d){4}-(\d){4,})\]/i', $this->getRawMessage(), $matches)) {
             return strtolower($matches['cve']);
+        }
+        // Non-CVE style identifiers (e.g. SS-2023-001)
+        if (preg_match('/^\[(?<ss>SS-(\d){4}-(\d){3})\]/i', $this->getRawMessage(), $matches)) {
+            return strtolower($matches['ss']);
         }
     }
 
