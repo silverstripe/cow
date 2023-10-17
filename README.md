@@ -216,3 +216,15 @@ The [cow schema file](cow.schema.json) is in the root of this project.
 
 You can run `cow schema:validate` to check the `.cow.json` configuration file in your project or module to
 ensure it matches against the Cow schema.
+
+## Generating for specific timeframe
+
+It can be helpful to generate a changelog by contributor to measure the progress for a given time frame.
+
+This can be done with the `--changelog--since=` flag. A specific date can be provided or a timeframe (`30 days`). When the frag is provided, the "previous versions" from the plan will be ignored.
+
+You can also use the `--changelog--group-by-contributor` to structure the changelog by contributors.
+
+```bash
+cow release:changelog 5.2.0 silverstripe/recipe-kitchen-sink --skip-fetch-tags --changelog--since="30 days" --changelog--group-by-contributor
+```

@@ -82,6 +82,18 @@ class Release extends Command
                 . ' Include every change, use audit template.'
                 . '(implicitly activates include-upgrade-only and include-other-changes)'
             )
+            ->addOption(
+                'changelog--since',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'Constrained changelog to a specific date range'
+            )
+            ->addOption(
+                'changelog--group-by-contributor',
+                null,
+                InputOption::VALUE_NONE,
+                'Constrained changelog to a specific date range'
+            )
             ;
     }
 
@@ -316,5 +328,15 @@ class Release extends Command
     public function getChangelogUseLegacyFormat(): bool
     {
         return $this->input->getOption('changelog--use-legacy-format');
+    }
+
+    public function getChangelogSince(): ?string
+    {
+        return $this->input->getOption('changelog--since');
+    }
+
+    public function getChangelogGroupByContributor(): ?string
+    {
+        return $this->input->getOption('changelog--group-by-contributor');
     }
 }

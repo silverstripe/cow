@@ -141,6 +141,12 @@ class CreateChangelog extends ReleaseStep
         /** @var \SilverStripe\Cow\Commands\Release\Changelog $command */
         $command = $this->getCommand();
         $changelog->setIncludeOtherChanges($command->getIncludeOtherChanges());
+
+        if ($since = $command->getChangelogSince())
+        {
+            $changelog->setForceDateRange($since);
+        }
+
         if ($changelog->getIncludeOtherChanges()) {
             $this->log($output, 'Including "other changes" in changelog');
         }
@@ -149,6 +155,11 @@ class CreateChangelog extends ReleaseStep
             $content = $changelog->getMarkdown(
                 $output,
                 $changelog->getRootLibrary()->getRelease()->getLibrary()->getChangelogFormat()
+            );
+        } else if ($command->getChangelogGroupByContributor()) {
+            $content = $changelog->getMarkdown(
+                $output,
+                Changelog::FORMAT_GROUPED_BY_CONTRIBUTOR
             );
         } else {
             $content = $this->renderChangelogLogs($output, $changelog);

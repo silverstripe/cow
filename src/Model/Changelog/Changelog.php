@@ -21,6 +21,11 @@ class Changelog
     public const FORMAT_FLAT = 'flat';
 
     /**
+     * Group commits by who made them
+     */
+    public const FORMAT_GROUPED_BY_CONTRIBUTOR = 'grouped-by-contributor';
+
+    /**
      * @var ChangelogLibrary
      */
     protected $rootLibrary;
@@ -29,6 +34,11 @@ class Changelog
      * @var bool
      */
     protected $includeOtherChanges = false;
+
+    /**
+     * Force the commit log range to a specific date.
+     */
+    protected ?string $forceDateRange = null;
 
     /**
      * Create a new changelog
@@ -54,18 +64,23 @@ class Changelog
     ) {
         $items = array();
 
-        // Get raw log
-        $fromVersion = $changelogLibrary->getPriorVersion()->getValue();
-        if ($changelogLibrary->getRelease()->getIsNewRelease()) {
-            // Since it won't have been tagged yet, we use the current branch head
-            $toVersion = 'HEAD';
-        } elseif ($changelogAuditMode) {
-            // we may have manually cherry-picked security commits after tagging
-            $toVersion = 'HEAD';
+        if ($this->forceDateRange) {
+            $range = '--since="' . $this->forceDateRange . '"';
         } else {
-            $toVersion = $changelogLibrary->getRelease()->getVersion()->getValue();
+            // Get raw log
+            $fromVersion = $changelogLibrary->getPriorVersion()->getValue();
+            if ($changelogLibrary->getRelease()->getIsNewRelease()) {
+                // Since it won't have been tagged yet, we use the current branch head
+                $toVersion = 'HEAD';
+            } elseif ($changelogAuditMode) {
+                // we may have manually cherry-picked security commits after tagging
+                $toVersion = 'HEAD';
+            } else {
+                $toVersion = $changelogLibrary->getRelease()->getVersion()->getValue();
+            }
+            $range = $fromVersion . ".." . $toVersion;
         }
-        $range = $fromVersion . ".." . $toVersion;
+
         try {
             $log = $changelogLibrary
                 ->getRelease()
@@ -136,6 +151,23 @@ class Changelog
             $changes = array_filter($changes, $filter);
         }
         return $this->sortByType($changes);
+    }
+
+    /**
+     * Get all changes grouped by contributor
+     *
+     * @param OutputInterface $output
+     * @param ?callable $filter function for array_filter on the list of changes
+     * @return ChangelogItem[]
+     */
+    protected function getGroupedChangesByContributor(OutputInterface $output, ?callable $filter = null)
+    {
+        // Sort by type
+        $changes = $this->getChanges($output);
+        if ($filter) {
+            $changes = array_filter($changes, $filter);
+        }
+        return $this->sortByContributor($changes);
     }
 
     /**
@@ -220,6 +252,8 @@ class Changelog
                 return $this->getMarkdownGrouped($output);
             case self::FORMAT_FLAT:
                 return $this->getMarkdownFlat($output);
+            case self::FORMAT_GROUPED_BY_CONTRIBUTOR:
+                return $this->getMarkdownGroupedByContributor($output);
             default:
                 throw new \InvalidArgumentException("Unknown changelog format $formatType");
         }
@@ -278,6 +312,51 @@ class Changelog
         }
 
         return $output;
+    }
+
+    protected function getMarkdownGroupedByContributor(OutputInterface $md)
+    {
+        $groupedLog = $this->getGroupedChangesByContributor($md, $this->getLegacyChangelogCommitFilter());
+
+        $dataByContributor = [];
+        $types = ChangelogItem::getTypes();
+        $types[] = 'Other changes';
+        $types[] = 'Total';
+        $emptyContributorRow = array_reduce($types, function ($carry, $value) {
+            $carry[$value] = 0;
+            return $carry;
+        }, []);
+
+        $total = $emptyContributorRow;
+
+        // Convert to string and generate markdown (add list to beginning of each item)
+        $md = "\n\n## Change Log\n";
+        foreach ($groupedLog as $groupName => $commits) {
+            if (empty($commits)) {
+                continue;
+            }
+
+            $md .= "\n### $groupName\n\n";
+            $dataByContributor[$groupName] = $emptyContributorRow;
+            foreach ($commits as $commit) {
+                /** @var ChangelogItem $commit */
+                $dataByContributor[$groupName][$commit->getType()]++;
+                $dataByContributor[$groupName]['Total']++;
+                $total[$commit->getType()]++;
+                $total['Total']++;
+                $md .= $commit->getMarkdown($this->getLineFormat(), $this->getSecurityFormat());
+            }
+        }
+
+        $md .= "\n\n### Summary\n";
+        $md .= "| Contributor | " . implode(' | ', $types) . " |\n";
+        $md .= "| " . str_repeat(" --- |", sizeof($types) + 1) . "\n";
+        foreach ($dataByContributor as $contributor => $data) {
+            $md .= "| $contributor | " . implode(' | ', $data) . " |\n";
+        }
+        $md .= "| **Total** | " . implode(' | ', $total) . " |\n";
+
+        return $md;
     }
 
     /**
@@ -381,6 +460,29 @@ class Changelog
     }
 
     /**
+     * Sort and filter this list of commits into contributors
+     * @param ChangelogItem[] $commits Flat list of commits
+     * @return array
+     */
+    protected function sortByContributor($commits)
+    {
+        // List types
+        $groupedBy = [];
+
+        // Group by contributor
+        foreach ($commits as $commit) {
+            $contributor = $commit->getAuthor();
+            if (empty($groupedBy[$contributor])) {
+                $groupedBy[$contributor] = [];
+            }
+
+            $groupedBy[$contributor][] = $commit;
+        }
+
+        return $groupedBy;
+    }
+
+    /**
      * @param array $commits
      * @return array
      */
@@ -434,6 +536,23 @@ class Changelog
     public function setRootLibrary($rootLibrary)
     {
         $this->rootLibrary = $rootLibrary;
+        return $this;
+    }
+
+    /**
+     * Force the commit log range to a specific date.
+     */
+    public function getForceDateRange(): ?string
+    {
+        return $this->forceDateRange;
+    }
+
+    /**
+     * Force the commit log range to a specific date.
+     */
+    public function setForceDateRange(?string $forceDateRange): self
+    {
+        $this->forceDateRange = $forceDateRange;
         return $this;
     }
 }
