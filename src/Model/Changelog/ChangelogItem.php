@@ -70,6 +70,9 @@ class ChangelogItem
         'Dependencies' => [
             '/^(DEP)\b:?/',
         ],
+        'Translations' => [
+            '/^(TLN)\b:?/',
+        ],
         'Maintenance' => [
             '/^(MNT)\b:?/',
             '/\btravis\b/'
