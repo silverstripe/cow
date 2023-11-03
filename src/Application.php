@@ -26,7 +26,7 @@ class Application extends Console\Application
 
     public function createTwigEnvironment(): Twig\Environment
     {
-        return new Twig\Environment(new Twig\Loader($this));
+        return new Twig\Environment(new Twig\Loader($this), ['cache' => false]);
     }
 
     /**
