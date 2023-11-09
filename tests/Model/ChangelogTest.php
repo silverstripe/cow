@@ -113,7 +113,7 @@ class ChangelogTest extends TestCase
     {
         $result = $this->changelog->getMarkdown($this->output, Changelog::FORMAT_GROUPED);
 
-        $this->assertStringContainsString('## Change Log', $result);
+        $this->assertStringContainsString('## Change log', $result);
         $this->assertStringContainsString('### Security', $result);
         $this->assertStringContainsString('### Bugfixes', $result);
         $this->assertStringContainsString('### Features and Enhancements', $result);

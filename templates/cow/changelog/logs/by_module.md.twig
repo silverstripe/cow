@@ -13,10 +13,11 @@
 ]
 -%}
 
-## Change Log
+## Change log
 
 {% for section in SECTIONS %}
-    {%- if commits.by_type[section]|length > 0 %}
-        {{~ print_section(libs, commits, section, '### ' ~ section) }}
-    {% endif %}
+{#- Don't indent these, as it will end up with indents in the final changelog which fails linting. -#}
+{%- if commits.by_type[section]|length > 0 %}
+    {{~ print_section(libs, commits, section) }}
+{% endif %}
 {% endfor -%}

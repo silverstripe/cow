@@ -23,6 +23,11 @@ class ChangelogRenderer
     public const BOTTOM_DELIMITER = '<!--- Changes above this line will be automatically regenerated -->';
 
     /**
+     * This prevents certain linting rules from being run against the commits
+     */
+    public const SKIP_LINTING = '<!-- markdownlint-disable proper-names enhanced-proper-names -->';
+
+    /**
      * Renders a basic changelog, with a version title and the provided logs.
      *
      * @param Version $version
@@ -75,7 +80,12 @@ class ChangelogRenderer
 
         // If the top delimiter doesn't exist, fall back to appending the logs
         if ($topDelimiterPos === false) {
-            return $existingChangelog . self::TOP_DELIMITER . $newLogs . self::BOTTOM_DELIMITER;
+            return $existingChangelog
+                . self::TOP_DELIMITER
+                . "\n"
+                . self::SKIP_LINTING
+                . $newLogs
+                . self::BOTTOM_DELIMITER;
         }
 
         // Extract the content preceding the logs (including the top delimiter itself)
@@ -87,10 +97,9 @@ class ChangelogRenderer
             : substr($existingChangelog, $bottomDelimiterPos);
 
         return implode([
-            $beforeLogs,
+            $beforeLogs . "\n" . self::SKIP_LINTING,
             "\n\n",
             $newLogs,
-            "\n\n",
             $afterLogs
         ]);
     }
@@ -104,7 +113,7 @@ class ChangelogRenderer
     private function delimitLogs(string $logs): string
     {
         return implode("\n\n", [
-            self::TOP_DELIMITER,
+            self::TOP_DELIMITER . "\n" . self::SKIP_LINTING,
             $logs,
             self::BOTTOM_DELIMITER
         ]);

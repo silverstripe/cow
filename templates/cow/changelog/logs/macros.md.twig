@@ -2,9 +2,14 @@
     `format_commit` formats and prints a single commit (change)
 -#}
 {%- macro format_commit(commit) %}
-  * {{ commit.date }} [{{ commit.shortHash }}]({{ commit.link }}) {{ commit.shortMessage }} ({{ commit.author }}){% if commit.cve %} - See [{{ commit.cve }}]({{ commit.cveURL }}){% endif %}
+- {{ commit.date }} [{{ commit.shortHash }}]({{ commit.link }}) {{ commit.shortMessage }} ({{ commit.author }}){% if commit.cve %} - See [{{ commit.cve }}]({{ commit.cveURL }}){% endif %}
 {% endmacro -%}
 
+{#-
+    `anchor_for_type` generates an anchor for a changelog heading.
+    Must be on one line to avoid creating new lines which fail linting.
+-#}
+{%- macro anchor_for_type(type) %}{{' {#changelog-' ~ type|lower|replace({' ': '-'}) ~ '}' }}{% endmacro -%}
 
 {#-
     `print_section_by_type` formats and prints a single section (commit type, e.g. Bugfixes)
@@ -32,17 +37,15 @@
     `print_section_by_type_and_module` formats and prints a single section (commit type, e.g. Bugfixes),
                                        splitting the commits by module within the section.
 -#}
-{%- macro print_section_by_type_and_module(libraries, commits, name, title) %}
+{%- macro print_section_by_type_and_module(libraries, commits, name) %}
   {%~ if commits.by_type[name] %}
-    {%- if title %}
-
-      {{~ title }}
-
+    {%- if name %}
+      {{~ '### ' ~ name|capitalize ~ _self.anchor_for_type(name) }}
     {%~ endif %}
     {%~ for library in libraries %}
       {%~ if library.commits.by_type[name] %}
 
-        {{~ ' * ' ~ library.name ~ ' (' ~ library.version.prior ~ ' -> ' ~ library.version.release ~ ')' }}
+        {{~ '- ' ~ library.name ~ ' (' ~ library.version.prior ~ ' -> ' ~ library.version.release ~ ')' }}
         {%~ for commit in library.commits.by_type[name] %}
           {%- set commit = commit.getRenderData %}
           {%~ autoescape false %}
