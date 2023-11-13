@@ -324,7 +324,7 @@ class ChangelogItem
     public function getMarkdown($format = null, $securityFormat = null)
     {
         if (!isset($format)) {
-            $format = ' * {date} [{shortHash}]({link}) {shortMessage} ({author})';
+            $format = '- {date} [{shortHash}]({link}) {shortMessage} ({author})';
         }
         $data = $this->getRenderData();
 

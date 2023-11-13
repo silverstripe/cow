@@ -264,7 +264,7 @@ class Changelog
         $groupedLog = $this->getGroupedChanges($output, $this->getLegacyChangelogCommitFilter());
 
         // Convert to string and generate markdown (add list to beginning of each item)
-        $output = "\n\n## Change Log\n";
+        $output = "\n\n## Change log\n";
         foreach ($groupedLog as $groupName => $commits) {
             if (empty($commits)) {
                 continue;
