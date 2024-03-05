@@ -100,6 +100,9 @@ class ChangelogItemTest extends TestCase
                 'Default fallback doesn\'t categorise commit',
                 'Other changes'
             ],
+            // __CLASS__ and __TRAIT__ will be treated as markdown
+            ['DOC Lorem __CLASS__ ipsum', '`Lorem __CLASS__ ipsum`', 'Documentation'],
+            ['DOC Lorem `__TRAIT__` ipsum', '`Lorem __TRAIT__ ipsum`', 'Documentation'],
         ];
     }
 
