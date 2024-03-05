@@ -162,7 +162,7 @@ class PublishRelease extends ReleaseStep
         // Log release
         $version = $release->getVersion();
         $tag = $version->getValue();
-        $this->log($output, "Creating github release <info>{$org}/{$repo} v{$tag}</info>");
+        $this->log($output, "Creating github release <info>{$org}/{$repo} {$tag}</info>");
 
         $client = $this->getGithubClient($output);
         /** @var Repo $reposAPI */
