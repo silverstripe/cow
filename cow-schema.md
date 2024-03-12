@@ -37,7 +37,7 @@ Basic options are:
   "github-slug": "silverstripe/silverstripe-installer",
   "commit-link": "https://github.com/silverstripe/silverstripe-installer/commit/{sha}",
   "changelog-holder": "silverstripe/framework",
-  "changelog-path": "docs/en/04_Changelogs/{stability}/{version}.md",
+  "changelog-path": "docs/en/08_Changelogs/{stability}/{version}.md",
   "changelog-template": "changelog.md.twig",
   "changelog-type": "grouped",
   "changelog-github": true,
