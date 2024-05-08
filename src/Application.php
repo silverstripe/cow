@@ -3,7 +3,6 @@
 namespace SilverStripe\Cow;
 
 use SilverStripe\Cow\Commands;
-use SilverStripe\Cow\Utility\SupportedModuleLoader;
 use SilverStripe\Cow\Utility\Config;
 use SilverStripe\Cow\Utility\GitHubApi;
 use SilverStripe\Cow\Utility\Twig;
@@ -92,7 +91,6 @@ class Application extends Console\Application
 
         // Create dependencies
         $githubApi = new GitHubApi();
-        $supportedModuleLoader = new SupportedModuleLoader();
 
         // What is this cow doing in here, stop it, get out
         $commands[] = new Commands\MooCommand();
@@ -112,15 +110,11 @@ class Application extends Console\Application
         $commands[] = new Commands\Release\Release();
         $commands[] = new Commands\Release\Publish();
 
-        // Module commands
-        $commands[] = new Commands\Module\Sync\Metadata($supportedModuleLoader);
-
         // Schema commands
         $commands[] = new Commands\Schema\Validate();
 
         // GitHub commands
         $commands[] = new Commands\GitHub\RateLimit($githubApi);
-        $commands[] = new Commands\GitHub\SyncLabels($supportedModuleLoader, $githubApi);
 
         return $commands;
     }
