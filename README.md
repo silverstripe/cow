@@ -168,47 +168,12 @@ information:
 - `{{ logs }}` will inject the commit logs with before/after delimiters, so they can be updated later without destroying
   any other changes to the contents.
 
-## Synchronising data to supported modules
+## GitHub API ratelimit
 
-Cow includes commands to help synchronise standardised data to all
-[commercially supported modules](https://www.silverstripe.org/software/addons/silverstripe-commercially-supported-module-list/):
-
-* `cow github:synclabels` Pushes a centralised list of labels to all supported module GitHub repositories
-* `cow github:ratelimit` Check your current GitHub API rate limiting status (sync commands can use this up quickly)
+Run `cow github:ratelimit` to check your current GitHub API rate limiting status
 
 **Note:** All GitHub API commands require a `GITHUB_ACCESS_TOKEN` environment variable to be set before they can be
 used. It can be in the .env file (see [dev mode](#dev_mode)).
-
-### Labels
-
-[Centralised label configuration](https://github.com/silverstripe/supported-modules/blob/gh-pages/labels.json) can be
-pushed out to all [supported modules](https://github.com/silverstripe/supported-modules/blob/gh-pages/modules.json)
-using the `cow github:synclabels` command.
-
-This command takes an optional argument to specify which module(s) to update:
-
-* `modules` Optionally sync to specific modules (comma delimited)
-
-If the `modules` argument is not provided, the list of supported modules will be loaded from the `supported-modules`
-GitHub repository. You can then confirm the list, before you will be shown a list of the labels that will be sync'd
-and finally all labels will either be created or updated on the target repositories.
-
-This command can max out your GitHub API rate limiting credits, so use it sparingly. If you exceed the limit you may
-need to go and make a coffee and come back in an hour (check current rate limits with `cow github:ratelimit`).
-
-### Metadata files
-
-[File templates](https://github.com/silverstripe/supported-modules/tree/gh-pages/templates) for supported modules can
-be synchronised out to all supported modules using the `module:sync:metadata` command.
-
-This command will pull the latest version from the supported-modules repository, write the contents to each repository
-then stage, commit and push directly to the default branch.
-
-This command takes an optional argument to skip the clone/pull of each repository beforehand:
-
-* `--skip-update` Optionally skip the clone/fetch/pull for each repository before running the sync
-
-You will need `git` available in your system path, as well as write permission to push to each repository.
 
 ## Schema
 
