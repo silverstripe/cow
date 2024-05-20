@@ -37,9 +37,31 @@ class PublishRelease extends ReleaseStep
     {
         $this->log($output, "Running release of all modules");
 
+        // Release silverstripe/developer-docs before all other modules so that the github workflow
+        // to deploy the updated changelog to netlify is run before CI gets bogged down by everything else.
+        $developerDocs = $this->findLibraryRecursive($this->getReleasePlan(), 'silverstripe/developer-docs');
+        $this->releaseLibrary($output, $developerDocs, true);
+
         $this->releaseRecursive($output, $this->getReleasePlan());
 
         $this->log($output, "All releases published");
+    }
+
+    /**
+     * Find a library in the release plan
+     */
+    protected function findLibraryRecursive(LibraryRelease $releasePlanNode, string $name): ?LibraryRelease
+    {
+        if ($releasePlanNode->getLibrary()->getName() === $name) {
+            return $releasePlanNode;
+        }
+        foreach ($releasePlanNode->getItems() as $item) {
+            $ret = $this->findLibraryRecursive($item, $name);
+            if ($ret) {
+                return $ret;
+            }
+        }
+        return null;
     }
 
     /**
@@ -69,13 +91,21 @@ class PublishRelease extends ReleaseStep
      *
      * @param OutputInterface $output
      * @param LibraryRelease $releasePlanNode Node in release plan being released
+     * @param bool $releaseDeveloperDocs - Whether to release silverstripe/developer-docs
      */
-    protected function releaseLibrary(OutputInterface $output, LibraryRelease $releasePlanNode)
-    {
+    protected function releaseLibrary(
+        OutputInterface $output,
+        LibraryRelease $releasePlanNode,
+        bool $releaseDeveloperDocs = false
+    ) {
         // Release this library
         $library = $releasePlanNode->getLibrary();
         $branch = $library->getBranch();
         $name = $library->getName();
+
+        if ($name === 'silverstripe/developer-docs' && !$releaseDeveloperDocs) {
+            return;
+        }
 
         // Confirm we're on a minor branch and exit if not
         if (!$releasePlanNode->isOnCorrectMinorReleaseBranch()) {
