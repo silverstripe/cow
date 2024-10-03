@@ -287,6 +287,20 @@ class Library
     }
 
     /**
+     * Check if a tag exists in the repository
+     */
+    public function hasTag(string $tag): bool
+    {
+        $repo = $this->getRepository();
+        if ($this->getProject()->getFetchTags()) {
+            // Fetch remote tags from origin first
+            $repo->run('fetch', ['--tags']);
+        }
+
+        return (bool) $repo->run('tag', ['--list', $tag]);
+    }
+
+    /**
      * Tag this module
      *
      * @param string $tag
