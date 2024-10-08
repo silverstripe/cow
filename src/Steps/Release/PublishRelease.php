@@ -118,6 +118,11 @@ class PublishRelease extends ReleaseStep
             die();
         }
 
+        if ($this->hasTag($releasePlanNode)) {
+            $this->log($output, "Library <info>{$name}</info> has already been released. <comment>Skipping.</comment>");
+            return;
+        }
+
         $versionName = $releasePlanNode->getVersion()->getValue();
         $this->log($output, "Releasing library <info>{$name}</info> at version <info>{$versionName}</info>");
 
@@ -163,6 +168,15 @@ class PublishRelease extends ReleaseStep
         $this->log($output, 'Tagging complete');
     }
 
+    /**
+     * Check if this release node already has the tag we're going to release
+     */
+    protected function hasTag(LibraryRelease $releasePlan): bool
+    {
+        $library = $releasePlan->getLibrary();
+        $tag = $releasePlan->getVersion()->getValue();
+        return $library->hasTag($tag);
+    }
 
     /**
      * Update github release notes via github API
