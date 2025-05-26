@@ -103,6 +103,25 @@ class ChangelogItemTest extends TestCase
             // __CLASS__ and __TRAIT__ will be treated as markdown
             ['DOC Lorem __CLASS__ ipsum', '`Lorem __CLASS__ ipsum`', 'Documentation'],
             ['DOC Lorem `__TRAIT__` ipsum', '`Lorem __TRAIT__ ipsum`', 'Documentation'],
+            // Markdownlint MD037 - Spaces inside emphasis markers
+            // Only a single underscore will not escape
+            [
+                'ENH Use a _config.php file only',
+                'Use a _config.php file only',
+                'Features and Enhancements'
+            ],
+            // Two underscores will escape
+            [
+                'ENH Use a _config.php file or _config directory',
+                '`Use a _config.php file or _config directory`',
+                'Features and Enhancements'
+            ],
+            // Three underscores will also escape
+            [
+                'ENH Use a _config.php file or _config directory or _config.yml',
+                '`Use a _config.php file or _config directory or _config.yml`',
+                'Features and Enhancements'
+            ],
         ];
     }
 

@@ -232,6 +232,12 @@ class ChangelogItem
         if ($message !== $parsed) {
             $message = str_replace('`', '', $message);
             $message = "`$message`";
+        } else {
+            // Ensure that rules don't fail markdownlint MD037 - Spaces inside emphasis markers
+            // e.g. "a _config.php file or _config directory"
+            if (substr_count($message, '_') >= 2) {
+                $message = "`$message`";
+            }
         }
 
         return $message;
