@@ -8,9 +8,8 @@ use SilverStripe\Cow\Steps\Release\MergeUpRelease;
 use Symfony\Component\Console\Input\InputOption;
 
 /**
- * Merge up released commits to the major branch and optionally remove x.y-release branch.
- * E.g. if you just released 4.12.0, this will merge 4.12-release up to 4.12, and then 4.12
- * up to 4.
+ * Merge up released commits to the major branch and optionally remove x.y branch.
+ * E.g. if you just released 4.12.0, this will merge 4.12 up to 4.
  */
 class MergeUp extends Release
 {

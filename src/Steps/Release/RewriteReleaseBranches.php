@@ -15,7 +15,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * This step performs the below tasks on the checked out project:
  * - Recursively checks out the correct release branch matching the selected version. E.g. the dev
- *   branch may be 3.2, but if doing a 3.3 release we need to check out the 3.3-release branch
+ *   branch may be 3.2, but if doing a 3.3 release we need to check out the 3.3 branch
  *   instead. This could either be a new branch and needs to be branched from 3 / 3.3, or it could
  *   be an existing branch that needs pulling from origin.
  * - As part of the above, the new patch release branch (e.g. 3.3 for the above example) is created
