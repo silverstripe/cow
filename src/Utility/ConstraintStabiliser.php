@@ -9,13 +9,6 @@ use SilverStripe\Cow\Utility\Logger;
 class ConstraintStabiliser
 {
     /**
-     * Used to hack in dual support for graphql on CMS 4
-     * Update this whenever a new version of graphql 3 is released
-     */
-    private const GRAPHQL_3_VERSION_DEV = '3.8.x-dev';
-    private const GRAPHQL_3_VERSION_STABLE = '~3.8.1@stable';
-
-    /**
      * Rewrite all composer constraints for this tag
      *
      * @param OutputInterface $output
@@ -46,9 +39,6 @@ class ConstraintStabiliser
                 $constraintType
             );
         }
-
-        // HACK - update graphql version to dual support for CMS 4
-        $composerData = self::hackInCms4GraphqlContraint($composerData);
 
         // Save modifications to the composer.json for this module
         if ($composerData !== $originalData) {
@@ -115,38 +105,11 @@ class ConstraintStabiliser
             $composerData['require'][$childName] = $constraint;
         }
 
-        // HACK update graphql version to dual support for CMS 4
-        $composerData = self::hackInCms4GraphqlContraint($composerData);
-
         // Save modifications to the composer.json for this module
         if ($composerData !== $originalData) {
             $parentName = $parentLibrary->getName();
             Logger::log($output, "Rewriting composer.json for <info>$parentName</info>");
             $parentLibrary->setComposerData($composerData, true, 'MNT Update development dependencies');
         }
-    }
-
-    /**
-     * Add in dual support for graphql for CMS 4 only
-     */
-    private static function hackInCms4GraphqlContraint(array $composerData): array
-    {
-        if (!isset($composerData['require']["silverstripe/graphql"])) {
-            return $composerData;
-        }
-        $constraint = $composerData['require']["silverstripe/graphql"];
-        // CMS 4 constraint can be: 4.x-dev / 4.3.x-dev / ~4.3.0@stable
-        // CMS 5 uses graphql 5, so it will never match this
-        if (preg_match('#^~?4#', $constraint)) {
-            if ($constraint === '4.x-dev') {
-                $constraint = "3.x-dev || " . $constraint;
-            } elseif (strpos($constraint, '.x-dev') !== false) {
-                $constraint = self::GRAPHQL_3_VERSION_DEV . ' || ' . $constraint;
-            } else {
-                $constraint = self::GRAPHQL_3_VERSION_STABLE . ' || ' . $constraint;
-            }
-            $composerData['require']["silverstripe/graphql"] = $constraint;
-        }
-        return $composerData;
     }
 }
