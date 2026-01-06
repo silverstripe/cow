@@ -13,10 +13,15 @@
 ]
 -%}
 
-## Change log
+## Full commits list
+
+<details>
+<summary>Reveal full list of commits</summary>
 
 {% for section in SECTIONS %}
     {%- if commits.by_type[section]|length > 0 %}
         {{~ print_section(commits, section, '### ' ~ section) }}
     {% endif %}
 {% endfor -%}
+
+</details>

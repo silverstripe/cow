@@ -13,7 +13,10 @@
 ]
 -%}
 
-## Change log
+## Full commits list
+
+<details>
+<summary>Reveal full list of commits</summary>
 
 {% for section in SECTIONS %}
 {#- Don't indent these, as it will end up with indents in the final changelog which fails linting. -#}
@@ -21,3 +24,5 @@
     {{~ print_section(libs, commits, section) }}
 {% endif %}
 {% endfor -%}
+
+</details>
