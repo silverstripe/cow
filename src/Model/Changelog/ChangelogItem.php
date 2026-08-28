@@ -54,28 +54,28 @@ class ChangelogItem
             '/^(\[?CVE-(\d){4}-(\d){4,}\]?):?/i',
         ],
         'API Changes' => [
-            '/^API\b:?/'
+            '/^API\b\s*[:\-]?/'
         ],
         'Features and Enhancements' => [
-            '/^(ENH(ANCEMENT)?|NEW)\b:?/'
+            '/^(ENH(ANCEMENT)?|NEW)\b\s*[:\-]?/'
         ],
         'Bugfixes' => [
-            '/^(FIX|BUG)\b:?/',
+            '/^(FIX|BUG)\b\s*[:\-]?/',
         ],
         'Documentation' => [
-            '/^(DOCS?)\b:?/',
+            '/^(DOCS?)\b\s*[:\-]?/',
         ],
         'Merge' => [
             '/^Merge/',
         ],
         'Dependencies' => [
-            '/^(DEP)\b:?/',
+            '/^(DEP)\b\s*[:\-]?/',
         ],
         'Translations' => [
-            '/^(TLN)\b:?/',
+            '/^(TLN)\b\s*[:\-]?/',
         ],
         'Maintenance' => [
-            '/^(MNT)\b:?/',
+            '/^(MNT)\b\s*[:\-]?/',
             '/\btravis\b/'
         ],
     ];
@@ -197,7 +197,26 @@ class ChangelogItem
      */
     public function getRawMessage()
     {
-        return $this->getCommit()->getSubjectMessage();
+        $commit = $this->getCommit();
+        $subject = $commit->getSubjectMessage();
+
+        // Some PRs are squash merged via the GitHub UI but keep the merge commit boilerplate as their
+        // subject, which leaves the real message (e.g. "FIX Prevent RCE ...") stranded in the body. Without
+        // this fallback they're categorised as 'Merge' and dropped from the changelog entirely.
+        //
+        // Only do this for commits with a single parent. A genuine merge commit's body repeats the subject
+        // of a commit that is itself in the log, so falling back there would list the same change twice -
+        // and getDistinctDetails() can't dedupe them, as the merger and the author differ in both name and
+        // date.
+        if (preg_match('/^Merge pull request /', $subject) && count($commit->getParentHashes()) === 1) {
+            // The body may hold several paragraphs; only its first line is the message
+            $body = trim($commit->getBodyMessage() ?? '');
+            if ($body !== '') {
+                return trim(preg_split('/\R/', $body)[0]);
+            }
+        }
+
+        return $subject;
     }
 
     /**
