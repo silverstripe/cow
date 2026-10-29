@@ -109,6 +109,20 @@ class ChangelogItemTest extends TestCase
             // __CLASS__ and __TRAIT__ will be treated as markdown
             ['DOC Lorem __CLASS__ ipsum', '`Lorem __CLASS__ ipsum`', 'Documentation'],
             ['DOC Lorem `__TRAIT__` ipsum', '`Lorem __TRAIT__ ipsum`', 'Documentation'],
+            // Characters that CommonMark HTML-escapes (quotes, ampersands) aren't markdown, so don't escape
+            ['FIX Guard against overriding "size" attribute', 'Guard against overriding "size" attribute', 'Bugfixes'],
+            ['FIX Handle Foo & Bar', 'Handle Foo & Bar', 'Bugfixes'],
+            // Already-encoded entities in the commit title aren't markdown either
+            ['FIX Guard &quot;size&quot; attribute', 'Guard &quot;size&quot; attribute', 'Bugfixes'],
+            // ... but markdown alongside quotes or ampersands must still be escaped
+            ['FIX Guard "size" in __CLASS__', '`Guard "size" in __CLASS__`', 'Bugfixes'],
+            ['FIX Handle Foo & __CLASS__', '`Handle Foo & __CLASS__`', 'Bugfixes'],
+            ['FIX Handle *Foo* & "Bar"', '`Handle *Foo* & "Bar"`', 'Bugfixes'],
+            [
+                'ENH Use a _config.php file or _config "directory"',
+                '`Use a _config.php file or _config "directory"`',
+                'Features and Enhancements'
+            ],
             // Markdownlint MD037 - Spaces inside emphasis markers
             // Only a single underscore will not escape
             [
