@@ -247,8 +247,10 @@ class ChangelogItem
         $parsed = $converter->convert($message)->getContent();
         // remove <p> tags that were just added
         $parsed = preg_replace(['#^<p>#', '#</p>\n?$#'], '', $parsed);
+        // undo the HTML escaping of plain characters (e.g. quotes become &quot;) so they don't count as markdown
+        $parsed = html_entity_decode($parsed, ENT_QUOTES | ENT_HTML5);
         // compare with original message, if it's changed it means there was markdown in there
-        if ($message !== $parsed) {
+        if (html_entity_decode($message, ENT_QUOTES | ENT_HTML5) !== $parsed) {
             $message = str_replace('`', '', $message);
             $message = "`$message`";
         } else {
